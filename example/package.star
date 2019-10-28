@@ -4,13 +4,13 @@ def init():
     uaa = chart("uaa"),
     database = chart("database"),
     HA = False,
-    memory = stuct(
+    memory = struct(
       requests = False,
       limits = False
     ),
     cpu = struct(
-      requests= false,
-      limits= false
+      requests= False,
+      limits= False
     ),
-    use_istio= false
+    use_istio= False
   )
