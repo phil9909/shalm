@@ -1,0 +1,16 @@
+
+def init():
+  return struct(
+    uaa = chart("uaa"),
+    database = chart("database"),
+    HA = False,
+    memory = stuct(
+      requests = False,
+      limits = False
+    ),
+    cpu = struct(
+      requests= false,
+      limits= false
+    ),
+    use_istio= false
+  )
