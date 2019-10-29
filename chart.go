@@ -1,18 +1,22 @@
 package main
 
 import (
+	"bytes"
 	"fmt"
 	"os"
 	"strings"
+
+	"text/template"
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
 
 type Chart struct {
-	values map[string]starlark.Value
-	init   bool
-	frozen bool
+	values    map[string]starlark.Value
+	init      bool
+	frozen    bool
+	directory string
 }
 
 var (
@@ -20,19 +24,24 @@ var (
 	_ starlark.HasSetField = (*Chart)(nil)
 )
 
+// LoadChart -
 func LoadChart(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if args.Len() != 1 {
 		return nil, fmt.Errorf("chart: expected paramater name")
 	}
 
-	name := args.Index(0).(starlark.String).GoString()
+	return NewChart(thread, args.Index(0).(starlark.String).GoString())
+}
 
+// NewChart -
+func NewChart(thread *starlark.Thread, name string) (*Chart, error) {
 	predeclared := starlark.StringDict{
 		"chart": starlark.NewBuiltin("chart", LoadChart),
 	}
 
-	result := &Chart{}
-	file := fmt.Sprintf("example/%s.star", name)
+	directory := fmt.Sprintf("example/%s", name)
+	result := &Chart{directory: directory}
+	file := fmt.Sprintf("%s/chart.star", directory)
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return result, nil
 	}
@@ -51,6 +60,7 @@ func LoadChart(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 	}
 
 	return result, nil
+
 }
 
 func (c *Chart) String() string {
@@ -62,7 +72,7 @@ func (c *Chart) String() string {
 		if s > 0 {
 			buf.WriteString(", ")
 		}
-		s += 1
+		s++
 		buf.WriteString(i)
 		buf.WriteString(" = ")
 		buf.WriteString(e.String())
@@ -71,8 +81,13 @@ func (c *Chart) String() string {
 	return buf.String()
 }
 
-func (c *Chart) Type() string         { return "chart" }
+// Type -
+func (c *Chart) Type() string { return "chart" }
+
+// Truth -
 func (c *Chart) Truth() starlark.Bool { return true } // even when empty
+
+// Hash -
 func (c *Chart) Hash() (uint32, error) {
 	var x, m uint32 = 8731, 9839
 	for k, e := range c.values {
@@ -88,6 +103,7 @@ func (c *Chart) Hash() (uint32, error) {
 	return x, nil
 }
 
+// Freeze -
 func (c *Chart) Freeze() {
 	if c.frozen {
 		return
@@ -112,14 +128,18 @@ func (c *Chart) Attr(name string) (starlark.Value, error) {
 // AttrNames returns a new sorted list of the struct fields.
 func (c *Chart) AttrNames() []string {
 	names := make([]string, 0)
-	for k, _ := range c.values {
+	for k := range c.values {
 		names = append(names, k)
 	}
+	names = append(names, "template")
 	return names
 }
 
-// SetField
+// SetField -
 func (c *Chart) SetField(name string, val starlark.Value) error {
+	if c.frozen {
+		return fmt.Errorf("chart is frozen")
+	}
 	if c.init {
 		_, ok := c.values[name]
 		if !ok {
@@ -134,8 +154,9 @@ func (c *Chart) SetField(name string, val starlark.Value) error {
 	return nil
 }
 
-func (c *Chart) CompareSameType(op syntax.Token, y_ starlark.Value, depth int) (bool, error) {
-	y := y_.(*Chart)
+// CompareSameType -
+func (c *Chart) CompareSameType(op syntax.Token, yv starlark.Value, depth int) (bool, error) {
+	y := yv.(*Chart)
 	switch op {
 	case syntax.EQL:
 		return chartEqual(c, y, depth)
@@ -163,4 +184,61 @@ func chartEqual(x, y *Chart, depth int) (bool, error) {
 		}
 	}
 	return true, nil
+}
+
+// Template -
+func (c *Chart) Template() (string, error) {
+	glob := c.directory + "/templates/*.yaml"
+	tpl, err := template.ParseGlob(glob)
+	if err != nil {
+		return "", err
+	}
+	var buffer bytes.Buffer
+	err = tpl.Execute(&buffer, struct{ Values interface{} }{Values: toGo(c)})
+	if err != nil {
+		return "", err
+	}
+	return buffer.String(), nil
+}
+
+func toGo(v starlark.Value) interface{} {
+	switch v := v.(type) {
+	case starlark.NoneType:
+		return nil
+	case starlark.Bool:
+		return v
+	case starlark.Int:
+		i, _ := v.Int64()
+		return i
+	case starlark.Float:
+		return v
+	case starlark.String:
+		return v.GoString()
+	case starlark.Indexable: // Tuple, List
+		a := make([]interface{}, 0)
+		for i := 0; i < starlark.Len(v); i++ {
+			a = append(a, toGo(v.Index(i)))
+		}
+		return a
+	case starlark.IterableMapping:
+		d := make(map[string]interface{})
+
+		for _, t := range v.Items() {
+			key, ok := t.Index(0).(starlark.String)
+			if ok {
+				d[key.GoString()] = toGo(t.Index(1))
+			}
+		}
+		return d
+
+	case *Chart:
+		d := make(map[string]interface{})
+
+		for k, v := range v.values {
+			d[k] = toGo(v)
+		}
+		return d
+	default:
+		panic(fmt.Errorf("cannot convert %s to GO", v.Type()))
+	}
 }

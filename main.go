@@ -8,10 +8,14 @@ import (
 
 func main() {
 	thread := &starlark.Thread{Name: "my thread"}
-	chart, err := LoadChart(thread, nil, starlark.Tuple{starlark.String("chart")}, nil)
+	chart, err := NewChart(thread, "cf")
 
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(chart.String())
+	t, err := chart.Template()
+	if err != nil {
+		panic(err)
+	}
+	fmt.Println(t)
 }

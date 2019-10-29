@@ -4,5 +4,6 @@ def init(self):
   self.database = chart("database")
   self.HA = True
   self.use_istio = True
+  self.name = "my-first-chart"
   return self
 
