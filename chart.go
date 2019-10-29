@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"os"
 	"strings"
 
 	"go.starlark.net/starlark"
@@ -19,8 +20,37 @@ var (
 	_ starlark.HasSetField = (*Chart)(nil)
 )
 
-func LoadChart(_ *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	return &Chart{}, nil
+func LoadChart(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+	if args.Len() != 1 {
+		return nil, fmt.Errorf("chart: expected paramater name")
+	}
+
+	name := args.Index(0).String()
+
+	predeclared := starlark.StringDict{
+		"chart": starlark.NewBuiltin("chart", LoadChart),
+	}
+
+	result := &Chart{}
+	file := fmt.Sprintf("example/%s.star", name)
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return result, nil
+	}
+	globals, err := starlark.ExecFile(thread, file, nil, predeclared)
+	if err != nil {
+		panic(err)
+	}
+
+	init, ok := globals["init"]
+
+	if ok {
+		_, err := starlark.Call(thread, init, starlark.Tuple{result}, nil)
+		if err != nil {
+			return nil, err
+		}
+	}
+
+	return result, nil
 }
 
 func (c *Chart) String() string {
