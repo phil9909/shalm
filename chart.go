@@ -25,7 +25,7 @@ func LoadChart(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 		return nil, fmt.Errorf("chart: expected paramater name")
 	}
 
-	name := args.Index(0).String()
+	name := args.Index(0).(starlark.String).GoString()
 
 	predeclared := starlark.StringDict{
 		"chart": starlark.NewBuiltin("chart", LoadChart),
