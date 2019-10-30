@@ -1,3 +1,4 @@
 ---
 test:
   test: {{.Values.name}}
+  helm: {{.Values.helm.default.data.mybool}}

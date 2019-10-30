@@ -91,7 +91,7 @@ func toStarlark(v interface{}) starlark.Value {
 		d := starlark.NewDict(16)
 		for _, key := range v.MapKeys() {
 			strct := v.MapIndex(key)
-			d.SetKey(starlark.String(key.String()), toStarlark(strct.Interface()))
+			d.SetKey(toStarlark(key.Interface()), toStarlark(strct.Interface()))
 		}
 		return d
 
