@@ -1,0 +1,4 @@
+default:
+  data:
+    myint: 999
+    mybool: true

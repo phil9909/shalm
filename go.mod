@@ -2,4 +2,9 @@ module github.wdf.sap.corp/pylm
 
 go 1.13
 
-require go.starlark.net v0.0.0-20191021185836-28350e608555
+require (
+	github.com/Masterminds/semver v1.5.0
+	github.com/blang/semver v3.5.1+incompatible
+	go.starlark.net v0.0.0-20191021185836-28350e608555
+	gopkg.in/yaml.v2 v2.2.4
+)

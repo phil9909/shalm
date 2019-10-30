@@ -1,4 +1,4 @@
-package main
+package chart
 
 import (
 	"bytes"
@@ -8,11 +8,15 @@ import (
 
 	"text/template"
 
+	"github.com/blang/semver"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
 
+// Chart -
 type Chart struct {
+	name      string
+	version   semver.Version
 	values    map[string]starlark.Value
 	init      bool
 	frozen    bool
@@ -33,19 +37,23 @@ func LoadChart(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple
 	return NewChart(thread, args.Index(0).(starlark.String).GoString())
 }
 
+func predeclared() starlark.StringDict {
+	return starlark.StringDict{
+		"chart": starlark.NewBuiltin("chart", LoadChart),
+		"helm":  starlark.NewBuiltin("chart", LoadHelmChart),
+	}
+}
+
 // NewChart -
 func NewChart(thread *starlark.Thread, name string) (*Chart, error) {
-	predeclared := starlark.StringDict{
-		"chart": starlark.NewBuiltin("chart", LoadChart),
-	}
 
-	directory := fmt.Sprintf("example/%s", name)
-	result := &Chart{directory: directory}
+	directory := repo.Directory(name)
+	result := &Chart{directory: directory, name: name}
 	file := fmt.Sprintf("%s/chart.star", directory)
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return result, nil
 	}
-	globals, err := starlark.ExecFile(thread, file, nil, predeclared)
+	globals, err := starlark.ExecFile(thread, file, nil, predeclared())
 	if err != nil {
 		panic(err)
 	}
