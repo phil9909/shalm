@@ -18,6 +18,7 @@ type Chart struct {
 	name      string
 	version   semver.Version
 	values    map[string]starlark.Value
+	methods   map[string]starlark.Callable
 	init      bool
 	frozen    bool
 	directory string
@@ -48,10 +49,13 @@ func predeclared() starlark.StringDict {
 func NewChart(thread *starlark.Thread, name string) (*Chart, error) {
 
 	directory := repo.Directory(name)
-	result := &Chart{directory: directory, name: name}
+	c := &Chart{directory: directory, name: name}
+	c.values = make(map[string]starlark.Value)
+	c.methods = make(map[string]starlark.Callable)
+
 	file := fmt.Sprintf("%s/chart.star", directory)
 	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return result, nil
+		return c, nil
 	}
 	globals, err := starlark.ExecFile(thread, file, nil, predeclared())
 	if err != nil {
@@ -61,13 +65,30 @@ func NewChart(thread *starlark.Thread, name string) (*Chart, error) {
 	init, ok := globals["init"]
 
 	if ok {
-		_, err := starlark.Call(thread, init, starlark.Tuple{result}, nil)
+		_, err := starlark.Call(thread, init, starlark.Tuple{c}, nil)
 		if err != nil {
 			return nil, err
 		}
 	}
 
-	return result, nil
+	for k, v := range globals {
+		if k == "init" {
+			continue
+		}
+		f, ok := v.(starlark.Callable)
+		if ok {
+			c.methods[k] = starlark.NewBuiltin(f.Name(), func(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+				allArgs := make([]starlark.Value, args.Len()+1)
+				allArgs[0] = c
+				for i := 0; i < args.Len(); i++ {
+					allArgs[i+1] = args.Index(i)
+				}
+				return f.CallInternal(thread, allArgs, kwargs)
+			})
+		}
+	}
+
+	return c, nil
 
 }
 
@@ -126,9 +147,13 @@ func (c *Chart) Freeze() {
 func (c *Chart) Attr(name string) (starlark.Value, error) {
 	value, ok := c.values[name]
 	if !ok {
-		return nil, starlark.NoSuchAttrError(
-			fmt.Sprintf("chart has no .%s attribute", name))
+		m, ok := c.methods[name]
+		if !ok {
+			return nil, starlark.NoSuchAttrError(
+				fmt.Sprintf("chart has no .%s attribute", name))
 
+		}
+		return m, nil
 	}
 	return value, nil
 }
@@ -154,9 +179,6 @@ func (c *Chart) SetField(name string, val starlark.Value) error {
 			return starlark.NoSuchAttrError(
 				fmt.Sprintf("chart has no .%s attribute", name))
 		}
-	}
-	if c.values == nil {
-		c.values = make(map[string]starlark.Value)
 	}
 	c.values[name] = val
 	return nil
