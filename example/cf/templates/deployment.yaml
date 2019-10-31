@@ -1,4 +1,0 @@
----
-test:
-  test: {{.Values.name}}
-  helm: {{.Values.mysql.default.data.mybool}}

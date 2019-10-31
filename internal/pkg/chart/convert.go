@@ -7,11 +7,11 @@ import (
 	"go.starlark.net/starlark"
 )
 
-func toStarlark(v interface{}) starlark.Value {
-	if v == nil {
+func toStarlark(vi interface{}) starlark.Value {
+	if vi == nil {
 		return starlark.None
 	}
-	switch v := reflect.ValueOf(v); v.Kind() {
+	switch v := reflect.ValueOf(vi); v.Kind() {
 	case reflect.String:
 		return starlark.String(v.String())
 	case reflect.Bool:
@@ -25,7 +25,7 @@ func toStarlark(v interface{}) starlark.Value {
 	case reflect.Slice:
 		a := make([]starlark.Value, 0)
 		for i := 0; i < v.Len(); i++ {
-			a = append(a, toStarlark(v.Index(i)))
+			a = append(a, toStarlark(v.Index(i).Interface()))
 		}
 		return starlark.NewList(a)
 	case reflect.Ptr:
@@ -34,10 +34,46 @@ func toStarlark(v interface{}) starlark.Value {
 		d := starlark.NewDict(16)
 		for _, key := range v.MapKeys() {
 			strct := v.MapIndex(key)
-			d.SetKey(toStarlark(key.Interface()), toStarlark(strct.Interface()))
+			keyValue := toStarlark(key.Interface())
+			d.SetKey(keyValue, toStarlark(strct.Interface()))
 		}
 		return d
-
+	case reflect.Int8:
+		panic(fmt.Errorf("cannot convert Int8 to starlark"))
+	case reflect.Int16:
+		panic(fmt.Errorf("cannot convert Int16 to starlark"))
+	case reflect.Int32:
+		panic(fmt.Errorf("cannot convert Int32 to starlark"))
+	case reflect.Int64:
+		panic(fmt.Errorf("cannot convert Int64 to starlark"))
+	case reflect.Uint:
+		panic(fmt.Errorf("cannot convert Uint to starlark"))
+	case reflect.Uint8:
+		panic(fmt.Errorf("cannot convert Uint8 to starlark"))
+	case reflect.Uint16:
+		panic(fmt.Errorf("cannot convert Uint16 to starlark"))
+	case reflect.Uint32:
+		panic(fmt.Errorf("cannot convert Uint32 to starlark"))
+	case reflect.Uint64:
+		panic(fmt.Errorf("cannot convert Uint64 to starlark"))
+	case reflect.Uintptr:
+		panic(fmt.Errorf("cannot convert Uintptr to starlark"))
+	case reflect.Complex64:
+		panic(fmt.Errorf("cannot convert Complex64 to starlark"))
+	case reflect.Complex128:
+		panic(fmt.Errorf("cannot convert Complex128 to starlark"))
+	case reflect.Array:
+		panic(fmt.Errorf("cannot convert Array to starlark"))
+	case reflect.Chan:
+		panic(fmt.Errorf("cannot convert Chan to starlark"))
+	case reflect.Func:
+		panic(fmt.Errorf("cannot convert Func to starlark"))
+	case reflect.Interface:
+		panic(fmt.Errorf("cannot convert Interface to starlark"))
+	case reflect.Struct:
+		return starlark.String(v.String())
+	case reflect.UnsafePointer:
+		panic(fmt.Errorf("cannot convert UnsafePointer to starlark"))
 	default:
 		panic(fmt.Errorf("cannot convert %v to starlark", v))
 	}

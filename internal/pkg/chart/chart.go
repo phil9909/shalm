@@ -3,6 +3,7 @@ package chart
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -15,18 +16,6 @@ import (
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
-
-// HelmChart -
-type HelmChart struct {
-	apiVersion  string         `json:"apiVersion,omitempty"`
-	name        string         `json:"name,omitempty"`
-	version     semver.Version `json:"version,omitempty"`
-	description string         `json:"description,omitempty"`
-	keywords    []string       `json:"keywords,omitempty"`
-	home        string         `json:"home,omitempty"`
-	sources     []string       `json:"sources,omitempty"`
-	icon        string         `json:"icon,omitempty"`
-}
 
 // Chart -
 type Chart struct {
@@ -92,8 +81,8 @@ func (c *Chart) loadChartYaml() error {
 	if err != nil {
 		return err
 	}
-	c.Version = helmChart.version
-	c.Name = helmChart.name
+	c.Version = semver.MustParse(helmChart.Version)
+	c.Name = helmChart.Name
 	return nil
 }
 
@@ -281,13 +270,35 @@ func notImplemented(_ interface{}) string {
 
 // Template -
 func (c *Chart) Template(release *Release) (string, error) {
-	glob := c.path("templates", "*.yaml")
-	filenames, err := filepath.Glob(glob)
+	var writer bytes.Buffer
+	err := c.template(release, &writer, make(map[string]bool))
 	if err != nil {
 		return "", err
 	}
+	return writer.String(), nil
+}
+
+func (c *Chart) template(release *Release, writer io.Writer, done map[string]bool) error {
+	if done[c.Name] {
+		return nil
+	}
+	done[c.Name] = true
+	for _, v := range c.values {
+		subChart, ok := v.(*Chart)
+		if ok {
+			err := subChart.template(release, writer, done)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	glob := c.path("templates", "*.yaml")
+	filenames, err := filepath.Glob(glob)
+	if err != nil {
+		return err
+	}
 	if len(filenames) == 0 {
-		return "", fmt.Errorf("No template files found for %s", glob)
+		return nil
 	}
 	helpers := c.path("templates", "_helpers.tpl")
 	if _, err := os.Stat(helpers); err != nil {
@@ -295,7 +306,6 @@ func (c *Chart) Template(release *Release) (string, error) {
 	}
 
 	values := toGo(c)
-	var all bytes.Buffer
 	for _, filename := range filenames {
 		var buffer bytes.Buffer
 		tpl := template.New(filepath.Base(filename))
@@ -307,33 +317,35 @@ func (c *Chart) Template(release *Release) (string, error) {
 		}
 
 		if err != nil {
-			return "", err
+			return err
 		}
 		err = tpl.Execute(&buffer, struct {
 			Values  interface{}
 			Chart   *Chart
 			Release *Release
+			Files   files
 		}{
 			Values:  values,
 			Chart:   c,
 			Release: release,
+			Files:   files(make(map[string][]byte)),
 		})
 		if err != nil {
-			return "", err
+			return err
 		}
 		if buffer.Len() > 0 {
 			content := strings.TrimSpace(buffer.String())
 			if len(content) > 0 {
 				if !strings.HasPrefix(content, "---") {
-					all.Write([]byte("---\n"))
+					writer.Write([]byte("---\n"))
 				}
-				all.Write([]byte(content))
-				all.Write([]byte("\n"))
+				writer.Write([]byte(content))
+				writer.Write([]byte("\n"))
 			}
 		}
 
 	}
-	return all.String(), nil
+	return nil
 }
 
 func loadYamlFile(filename string, value interface{}) error {

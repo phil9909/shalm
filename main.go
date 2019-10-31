@@ -16,7 +16,7 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	t, err := c.Template(&chart.Release{Name: "test", Namespace: "test"})
+	t, err := c.Template(&chart.Release{Name: "cf", Namespace: "test", Service: "cf"})
 	if err != nil {
 		panic(err)
 	}

@@ -4,7 +4,5 @@ def init(self):
   return self
 
 
-def set_database(self,database):
-  print("set_database")
-  print(self)
-  print(database)
+def attach_database(self,database):
+  database.create_database(db="uaa",username="uaa",password="87612349234")

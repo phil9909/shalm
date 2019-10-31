@@ -10,6 +10,27 @@ import (
 	"github.com/Masterminds/sprig/v3"
 )
 
+// Release -
+type Release struct {
+	Name      string
+	Namespace string
+	Service   string
+}
+
+// HelmChart -
+type HelmChart struct {
+	APIVersion  string   `json:"apiVersion,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Version     string   `json:"version,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Keywords    []string `json:"keywords,omitempty"`
+	Home        string   `json:"home,omitempty"`
+	Sources     []string `json:"sources,omitempty"`
+	Icon        string   `json:"icon,omitempty"`
+}
+
+type files map[string][]byte
+
 func addTemplateFuncs(tpl *template.Template) *template.Template {
 	return tpl.
 		Funcs(sprig.TxtFuncMap()).
@@ -23,7 +44,6 @@ func addTemplateFuncs(tpl *template.Template) *template.Template {
 				var buf strings.Builder
 				err := tpl.ExecuteTemplate(&buf, name, data)
 				return buf.String(), err
-
 			},
 			"tpl":      templ,
 			"required": notImplemented,
@@ -50,4 +70,8 @@ func toYAML(v interface{}) string {
 		return ""
 	}
 	return strings.TrimSuffix(string(data), "\n")
+}
+
+func (f files) Glob(pattern string) files {
+	return f
 }
