@@ -4,7 +4,10 @@ import (
 	"bytes"
 	"fmt"
 	"os"
+	"path/filepath"
 	"strings"
+
+	yaml "gopkg.in/yaml.v2"
 
 	"text/template"
 
@@ -13,15 +16,28 @@ import (
 	"go.starlark.net/syntax"
 )
 
+// HelmChart -
+type HelmChart struct {
+	apiVersion  string         `json:"apiVersion,omitempty"`
+	name        string         `json:"name,omitempty"`
+	version     semver.Version `json:"version,omitempty"`
+	description string         `json:"description,omitempty"`
+	keywords    []string       `json:"keywords,omitempty"`
+	home        string         `json:"home,omitempty"`
+	sources     []string       `json:"sources,omitempty"`
+	icon        string         `json:"icon,omitempty"`
+}
+
 // Chart -
 type Chart struct {
-	name      string
-	version   semver.Version
-	values    map[string]starlark.Value
-	methods   map[string]starlark.Callable
-	init      bool
-	frozen    bool
-	directory string
+	Name        string
+	Version     semver.Version
+	values      map[string]starlark.Value
+	methods     map[string]starlark.Callable
+	frozen      bool
+	repo        Repo
+	dir         string
+	initialized bool
 }
 
 var (
@@ -30,36 +46,81 @@ var (
 )
 
 // LoadChart -
-func LoadChart(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func LoadChart(thread *starlark.Thread, repo Repo, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if args.Len() != 1 {
 		return nil, fmt.Errorf("chart: expected paramater name")
 	}
 
-	return NewChart(thread, args.Index(0).(starlark.String).GoString())
-}
-
-func predeclared() starlark.StringDict {
-	return starlark.StringDict{
-		"chart": starlark.NewBuiltin("chart", LoadChart),
-		"helm":  starlark.NewBuiltin("chart", LoadHelmChart),
-	}
+	return NewChart(thread, repo, args.Index(0).(starlark.String).GoString())
 }
 
 // NewChart -
-func NewChart(thread *starlark.Thread, name string) (*Chart, error) {
-
-	directory := repo.Directory(name)
-	c := &Chart{directory: directory, name: name}
+func NewChart(thread *starlark.Thread, repo Repo, name string) (*Chart, error) {
+	dir, err := repo.Directory(name)
+	if err != nil {
+		return nil, err
+	}
+	c := &Chart{Name: name, repo: repo, dir: dir}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
-
-	file := fmt.Sprintf("%s/chart.star", directory)
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return c, nil
+	if err = c.init(thread); err != nil {
+		return nil, err
 	}
-	globals, err := starlark.ExecFile(thread, file, nil, predeclared())
+	if err = c.loadChartYaml(); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+	if err = c.loadValuesYaml(); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+	}
+	c.initialized = true
+	return c, nil
+
+}
+
+func (c *Chart) path(part ...string) string {
+	return filepath.Join(append([]string{c.dir}, part...)...)
+}
+
+func (c *Chart) loadChartYaml() error {
+	var helmChart HelmChart
+
+	err := loadYamlFile(c.path("Chart.yaml"), &helmChart)
 	if err != nil {
-		panic(err)
+		return err
+	}
+	c.Version = helmChart.version
+	c.Name = helmChart.name
+	return nil
+}
+
+func (c *Chart) loadValuesYaml() error {
+	var values map[string]interface{}
+	err := loadYamlFile(c.path("values.yaml"), &values)
+	if err != nil {
+		return err
+	}
+	for k, v := range values {
+		c.values[k] = toStarlark(v)
+	}
+	return nil
+}
+
+func (c *Chart) init(thread *starlark.Thread) error {
+	file := c.path("Chart.star")
+	if _, err := os.Stat(file); os.IsNotExist(err) {
+		return nil
+	}
+	globals, err := starlark.ExecFile(thread, file, nil, starlark.StringDict{
+		"chart": starlark.NewBuiltin("chart", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			return LoadChart(thread, c.repo, fn, args, kwargs)
+		}),
+	})
+	if err != nil {
+		return err
 	}
 
 	init, ok := globals["init"]
@@ -67,7 +128,7 @@ func NewChart(thread *starlark.Thread, name string) (*Chart, error) {
 	if ok {
 		_, err := starlark.Call(thread, init, starlark.Tuple{c}, nil)
 		if err != nil {
-			return nil, err
+			return err
 		}
 	}
 
@@ -87,9 +148,7 @@ func NewChart(thread *starlark.Thread, name string) (*Chart, error) {
 			})
 		}
 	}
-
-	return c, nil
-
+	return nil
 }
 
 func (c *Chart) String() string {
@@ -173,7 +232,7 @@ func (c *Chart) SetField(name string, val starlark.Value) error {
 	if c.frozen {
 		return fmt.Errorf("chart is frozen")
 	}
-	if c.init {
+	if c.initialized {
 		_, ok := c.values[name]
 		if !ok {
 			return starlark.NoSuchAttrError(
@@ -216,59 +275,80 @@ func chartEqual(x, y *Chart, depth int) (bool, error) {
 	return true, nil
 }
 
-// Template -
-func (c *Chart) Template() (string, error) {
-	glob := c.directory + "/templates/*.yaml"
-	tpl, err := template.ParseGlob(glob)
-	if err != nil {
-		return "", err
-	}
-	var buffer bytes.Buffer
-	err = tpl.Execute(&buffer, struct{ Values interface{} }{Values: toGo(c)})
-	if err != nil {
-		return "", err
-	}
-	return buffer.String(), nil
+func notImplemented(_ interface{}) string {
+	panic("not implemented")
 }
 
-func toGo(v starlark.Value) interface{} {
-	switch v := v.(type) {
-	case starlark.NoneType:
-		return nil
-	case starlark.Bool:
-		return v
-	case starlark.Int:
-		i, _ := v.Int64()
-		return i
-	case starlark.Float:
-		return v
-	case starlark.String:
-		return v.GoString()
-	case starlark.Indexable: // Tuple, List
-		a := make([]interface{}, 0)
-		for i := 0; i < starlark.Len(v); i++ {
-			a = append(a, toGo(v.Index(i)))
-		}
-		return a
-	case starlark.IterableMapping:
-		d := make(map[string]interface{})
+// Template -
+func (c *Chart) Template(release *Release) (string, error) {
+	glob := c.path("templates", "*.yaml")
+	filenames, err := filepath.Glob(glob)
+	if err != nil {
+		return "", err
+	}
+	if len(filenames) == 0 {
+		return "", fmt.Errorf("No template files found for %s", glob)
+	}
+	helpers := c.path("templates", "_helpers.tpl")
+	if _, err := os.Stat(helpers); err != nil {
+		helpers = ""
+	}
 
-		for _, t := range v.Items() {
-			key, ok := t.Index(0).(starlark.String)
-			if ok {
-				d[key.GoString()] = toGo(t.Index(1))
+	values := toGo(c)
+	var all bytes.Buffer
+	for _, filename := range filenames {
+		var buffer bytes.Buffer
+		tpl := template.New(filepath.Base(filename))
+		tpl = addTemplateFuncs(tpl)
+		if helpers == "" {
+			tpl, err = tpl.ParseFiles(filename)
+		} else {
+			tpl, err = tpl.ParseFiles(helpers, filename)
+		}
+
+		if err != nil {
+			return "", err
+		}
+		err = tpl.Execute(&buffer, struct {
+			Values  interface{}
+			Chart   *Chart
+			Release *Release
+		}{
+			Values:  values,
+			Chart:   c,
+			Release: release,
+		})
+		if err != nil {
+			return "", err
+		}
+		if buffer.Len() > 0 {
+			content := strings.TrimSpace(buffer.String())
+			if len(content) > 0 {
+				if !strings.HasPrefix(content, "---") {
+					all.Write([]byte("---\n"))
+				}
+				all.Write([]byte(content))
+				all.Write([]byte("\n"))
 			}
 		}
-		return d
 
-	case *Chart:
-		d := make(map[string]interface{})
-
-		for k, v := range v.values {
-			d[k] = toGo(v)
-		}
-		return d
-	default:
-		panic(fmt.Errorf("cannot convert %s to GO", v.Type()))
 	}
+	return all.String(), nil
+}
+
+func loadYamlFile(filename string, value interface{}) error {
+	reader, err := os.Open(filename) // For read access.
+	if err != nil {
+		if os.IsNotExist(err) {
+			return err
+		}
+		return fmt.Errorf("Unable to open file %s for parsing: %s", filename, err.Error())
+	}
+	defer reader.Close()
+	decoder := yaml.NewDecoder(reader)
+	err = decoder.Decode(value)
+	if err != nil {
+		return fmt.Errorf("Error during parsing file %s: %s", filename, err.Error())
+	}
+	return nil
 }

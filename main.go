@@ -8,13 +8,15 @@ import (
 )
 
 func main() {
+	var repo = chart.LocalRepo{BaseDir: "example"}
+
 	thread := &starlark.Thread{Name: "my thread"}
-	chart, err := chart.NewChart(thread, "cf")
+	c, err := chart.NewChart(thread, &repo, "cf")
 
 	if err != nil {
 		panic(err)
 	}
-	t, err := chart.Template()
+	t, err := c.Template(&chart.Release{Name: "test", Namespace: "test"})
 	if err != nil {
 		panic(err)
 	}

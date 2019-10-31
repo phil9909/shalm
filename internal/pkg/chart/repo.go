@@ -1,13 +1,17 @@
 package chart
 
 // Repo -
-type Repo struct {
-	directory string
+type Repo interface {
+	// Directory -
+	Directory(name string) (string, error)
 }
 
-var repo = Repo{directory: "example"}
+// LocalRepo -
+type LocalRepo struct {
+	BaseDir string
+}
 
 // Directory -
-func (r *Repo) Directory(name string) string {
-	return r.directory + "/" + name + "/"
+func (r *LocalRepo) Directory(name string) (string, error) {
+	return r.BaseDir + "/" + name + "/", nil
 }
