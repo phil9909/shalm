@@ -3,7 +3,7 @@ package main
 import (
 	"fmt"
 
-	"github.wdf.sap.corp/pylm/internal/pkg/chart"
+	"github.wdf.sap.corp/shalm/internal/pkg/chart"
 	"go.starlark.net/starlark"
 )
 

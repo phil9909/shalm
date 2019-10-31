@@ -1,4 +1,4 @@
-module github.wdf.sap.corp/pylm
+module github.wdf.sap.corp/shalm
 
 go 1.13
 
