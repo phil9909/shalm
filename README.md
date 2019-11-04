@@ -11,6 +11,7 @@ This project brings the starlark scripting language to helm charts.
 * Use starlark methods in templates (replacement for `_helpers.tpl`)
 * Ability to define an API for each helm chart
 * Ease the configuration of sub charts
+* Share a common service like a database manager or an ingress between a set of subcharts
 
 
 ## Example
