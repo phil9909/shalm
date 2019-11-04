@@ -321,8 +321,9 @@ func (c *Chart) template(thread *starlark.Thread, release *Release, writer io.Wr
 	}
 
 	values := toGo(c).(map[string]interface{})
+	methods := make(map[string]interface{})
 	for k, f := range c.methods {
-		values[k] = func() (interface{}, error) {
+		methods[k] = func() (interface{}, error) {
 			value, err := f.CallInternal(thread, nil, nil)
 			return toGo(value), err
 		}
@@ -342,11 +343,13 @@ func (c *Chart) template(thread *starlark.Thread, release *Release, writer io.Wr
 		}
 		err = tpl.Execute(&buffer, struct {
 			Values  interface{}
+			Methods map[string]interface{}
 			Chart   *Chart
 			Release *Release
 			Files   files
 		}{
 			Values:  values,
+			Methods: methods,
 			Chart:   c,
 			Release: release,
 			Files:   files(make(map[string][]byte)),
