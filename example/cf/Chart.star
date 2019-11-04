@@ -8,3 +8,6 @@ def init(self):
   self.name = "my-first-chart"
   return self
 
+
+def secret_name(self):
+  return "mysecret"

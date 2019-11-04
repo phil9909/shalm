@@ -5,6 +5,8 @@ import (
 	"strings"
 	"text/template"
 
+	"go.starlark.net/starlark"
+
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/Masterminds/sprig/v3"
@@ -16,6 +18,32 @@ type Release struct {
 	Namespace string
 	Service   string
 }
+
+// String -
+func (r *Release) String() string {
+	return "release"
+}
+
+// Type -
+func (r *Release) Type() string {
+	return "release"
+}
+
+// Freeze -
+func (r *Release) Freeze() {
+}
+
+// Truth -
+func (r *Release) Truth() starlark.Bool {
+	return false
+}
+
+// Hash -
+func (r *Release) Hash() (uint32, error) {
+	panic("implement me")
+}
+
+var _ starlark.Value = &Release{}
 
 // HelmChart -
 type HelmChart struct {

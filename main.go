@@ -16,9 +16,9 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	t, err := c.Template(&chart.Release{Name: "cf", Namespace: "test", Service: "cf"})
+	t, err := starlark.Call(thread, c.TemplateFunction(), starlark.Tuple{&chart.Release{Name: "cf", Namespace: "test", Service: "cf"}}, nil)
 	if err != nil {
 		panic(err)
 	}
-	fmt.Println(t)
+	fmt.Println(t.(starlark.String).GoString())
 }

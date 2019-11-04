@@ -268,17 +268,32 @@ func notImplemented(_ interface{}) string {
 	panic("not implemented")
 }
 
+// TemplateFunction -
+func (c *Chart) TemplateFunction() starlark.Value {
+	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		if args.Len() != 1 {
+			return nil, fmt.Errorf("template: expected paramater release")
+		}
+		release, ok := args[0].(*Release)
+		if !ok {
+			return nil, fmt.Errorf("template: expected paramater of type release")
+		}
+		result, err := c.Template(thread, release)
+		return toStarlark(result), err
+	})
+}
+
 // Template -
-func (c *Chart) Template(release *Release) (string, error) {
+func (c *Chart) Template(thread *starlark.Thread, release *Release) (string, error) {
 	var writer bytes.Buffer
-	err := c.template(release, &writer, make(map[string]bool))
+	err := c.template(thread, release, &writer, make(map[string]bool))
 	if err != nil {
 		return "", err
 	}
 	return writer.String(), nil
 }
 
-func (c *Chart) template(release *Release, writer io.Writer, done map[string]bool) error {
+func (c *Chart) template(thread *starlark.Thread, release *Release, writer io.Writer, done map[string]bool) error {
 	if done[c.Name] {
 		return nil
 	}
@@ -286,7 +301,7 @@ func (c *Chart) template(release *Release, writer io.Writer, done map[string]boo
 	for _, v := range c.values {
 		subChart, ok := v.(*Chart)
 		if ok {
-			err := subChart.template(release, writer, done)
+			err := subChart.template(thread, release, writer, done)
 			if err != nil {
 				return err
 			}
@@ -305,7 +320,13 @@ func (c *Chart) template(release *Release, writer io.Writer, done map[string]boo
 		helpers = ""
 	}
 
-	values := toGo(c)
+	values := toGo(c).(map[string]interface{})
+	for k, f := range c.methods {
+		values[k] = func() (interface{}, error) {
+			value, err := f.CallInternal(thread, nil, nil)
+			return toGo(value), err
+		}
+	}
 	for _, filename := range filenames {
 		var buffer bytes.Buffer
 		tpl := template.New(filepath.Base(filename))
