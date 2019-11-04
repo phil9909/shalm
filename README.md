@@ -10,6 +10,7 @@ This project brings the starlark scripting language to helm charts.
 * Calculate values to configure sub charts
 * Use starlark methods in templates (replacement for `_helpers.tpl`)
 * Ability to define an API for each helm chart
+* Ease the configuration of sub charts
 
 
 ## Example
