@@ -10,5 +10,5 @@ def init(self):
   return self
 
 
-def secret_name(self):
+def __secret_name(self):
   return "mysecret"

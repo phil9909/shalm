@@ -195,8 +195,14 @@ func (c *Chart) Freeze() {
 func (c *Chart) Attr(name string) (starlark.Value, error) {
 	value, ok := c.values[name]
 	if !ok {
-		m, ok := c.methods[name]
-		if !ok {
+		var m starlark.Value
+		if !strings.HasPrefix(name, "__") {
+			m, ok = c.methods[name]
+			if !ok {
+				m = nil
+			}
+		}
+		if m == nil {
 			return nil, starlark.NoSuchAttrError(
 				fmt.Sprintf("chart has no .%s attribute", name))
 
