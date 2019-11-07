@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 
@@ -52,9 +53,6 @@ func NewChart(thread *starlark.Thread, repo Repo, name string) (*Chart, error) {
 	c := &Chart{Name: name, repo: repo, dir: dir}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
-	if err = c.init(thread); err != nil {
-		return nil, err
-	}
 	if err = c.loadChartYaml(); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -64,6 +62,9 @@ func NewChart(thread *starlark.Thread, repo Repo, name string) (*Chart, error) {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
+	}
+	if err = c.init(thread); err != nil {
+		return nil, err
 	}
 	c.initialized = true
 	return c, nil
@@ -297,6 +298,47 @@ func (c *Chart) Template(thread *starlark.Thread, release *Release) (string, err
 		return "", err
 	}
 	return writer.String(), nil
+}
+
+// ApplyFunction -
+func (c *Chart) ApplyFunction() starlark.Value {
+	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		if args.Len() != 1 {
+			return nil, fmt.Errorf("apply: expected paramater release")
+		}
+		release, ok := args[0].(*Release)
+		if !ok {
+			return nil, fmt.Errorf("apply: expected paramater of type release")
+		}
+		err := c.Apply(thread, release)
+		return starlark.None, err
+	})
+}
+
+// Apply -
+func (c *Chart) Apply(thread *starlark.Thread, release *Release) error {
+	cmd := exec.Command("kubectl", "-n", release.Namespace, "apply", "-f", "-")
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+
+	writer, err := cmd.StdinPipe()
+	if err != nil {
+		return err
+	}
+	err = cmd.Start()
+	if err != nil {
+		return fmt.Errorf("error starting %s: %s", cmd.String(), err.Error())
+	}
+	err = c.template(thread, release, writer, make(map[string]bool))
+	if err != nil {
+		return err
+	}
+	writer.Close()
+	err = cmd.Wait()
+	if err != nil {
+		return fmt.Errorf("error running %s: %s", cmd.String(), err.Error())
+	}
+	return nil
 }
 
 func (c *Chart) template(thread *starlark.Thread, release *Release, writer io.Writer, done map[string]bool) error {

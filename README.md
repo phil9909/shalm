@@ -47,8 +47,10 @@ def init(self):
 * Allow access to kubernetes during templating
   * Read existing secrets (e.g.`load_or_create_secret()`)
   * Read ClusterIP of service
+  * Wait for deployment‚
 * Implement Push and Pull with [OCI registry](https://github.com/opencontainers/distribution-spec/blob/master/spec.md)
 * Add tags to helm charts `chart("mariadb:3.6.5")`
 * Support passing parameters to `chart("mariadb",instances=5,rootpassword='2324234')`
 * Add cobra command line interface
 * Support `template`, `apply` and `delete` as cobra command
+* Override `apply` and `delete`
