@@ -1,9 +1,9 @@
 package cmd
 
 import (
-	"github.wdf.sap.corp/shalm/internal/pkg/k8s"
+	"github.com/kramerul/shalm/internal/pkg/k8s"
 
-	"github.wdf.sap.corp/shalm/internal/pkg/chart"
+	"github.com/kramerul/shalm/internal/pkg/chart"
 
 	"go.starlark.net/starlark"
 

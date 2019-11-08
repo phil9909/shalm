@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.wdf.sap.corp/shalm/cmd"
+	"github.com/kramerul/shalm/cmd"
 )
 
 func main() {

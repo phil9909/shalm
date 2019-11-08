@@ -1,4 +1,4 @@
-module github.wdf.sap.corp/shalm
+module github.com/kramerul/shalm
 
 go 1.13
 

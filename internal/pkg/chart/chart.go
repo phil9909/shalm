@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.wdf.sap.corp/shalm/internal/pkg/k8s"
+	"github.com/kramerul/shalm/internal/pkg/k8s"
 
 	"github.com/blang/semver"
 	"go.starlark.net/starlark"

@@ -6,14 +6,16 @@ This project brings the starlark scripting language to helm charts.
 
 ## Features
 
-* Calculate values read from `values.yaml`
-* Calculate values to configure sub charts
+* Define APIs for helm charts
+* Ease composition of charts
+* Control deployment by overriding methods
+* Compatible with helm
+* Share a common service like a database manager or an ingress between a set of sub charts
 * Use starlark methods in templates (replacement for `_helpers.tpl`)
-* Ability to define an API for each helm chart
-* Ease the configuration of sub charts
-* Share a common service like a database manager or an ingress between a set of subcharts
-* Support passing parameters to contrustor `chart("mariadb",instances=5,rootpassword='2324234')`
 
+## Installation
+
+go get 
 
 ## Examples
 
@@ -67,7 +69,6 @@ def apply(self,k8s,release):
 | Only simple logic in templates |   +   |   +   |  -  |    +      |
 | Interaction with k8s           |   +   |   -   |  -  |    -      |
 | Repository                     |   +   |   +   |  -  |    -      |
-| No runtime on k8s required     |   +   |   -   |  +  |    +      |
 | Mature technology              |   -   |   +   |  ?  |    +      |
 
 ## TODO

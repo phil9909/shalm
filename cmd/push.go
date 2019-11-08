@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.wdf.sap.corp/shalm/internal/pkg/chart"
+	"github.com/kramerul/shalm/internal/pkg/chart"
 
 	"github.com/google/go-containerregistry/pkg/crane"
 
