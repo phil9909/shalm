@@ -1,17 +1,13 @@
 package chart
 
 import (
-	"bytes"
 	"fmt"
 	"io"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 
-	yaml "gopkg.in/yaml.v2"
-
-	"text/template"
+	"github.wdf.sap.corp/shalm/internal/pkg/k8s"
 
 	"github.com/blang/semver"
 	"go.starlark.net/starlark"
@@ -37,15 +33,15 @@ var (
 
 // LoadChart -
 func LoadChart(thread *starlark.Thread, repo Repo, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	if args.Len() != 1 {
+	if args.Len() == 0 {
 		return nil, fmt.Errorf("chart: expected paramater name")
 	}
 
-	return NewChart(thread, repo, args.Index(0).(starlark.String).GoString())
+	return NewChart(thread, repo, args.Index(0).(starlark.String).GoString(), args[1:], kwargs)
 }
 
 // NewChart -
-func NewChart(thread *starlark.Thread, repo Repo, name string) (*Chart, error) {
+func NewChart(thread *starlark.Thread, repo Repo, name string, args starlark.Tuple, kwargs []starlark.Tuple) (*Chart, error) {
 	dir, err := repo.Directory(name)
 	if err != nil {
 		return nil, err
@@ -63,7 +59,7 @@ func NewChart(thread *starlark.Thread, repo Repo, name string) (*Chart, error) {
 			return nil, err
 		}
 	}
-	if err = c.init(thread); err != nil {
+	if err = c.init(thread, args, kwargs); err != nil {
 		return nil, err
 	}
 	c.initialized = true
@@ -73,72 +69,6 @@ func NewChart(thread *starlark.Thread, repo Repo, name string) (*Chart, error) {
 
 func (c *Chart) path(part ...string) string {
 	return filepath.Join(append([]string{c.dir}, part...)...)
-}
-
-func (c *Chart) loadChartYaml() error {
-	var helmChart HelmChart
-
-	err := loadYamlFile(c.path("Chart.yaml"), &helmChart)
-	if err != nil {
-		return err
-	}
-	c.Version = semver.MustParse(helmChart.Version)
-	c.Name = helmChart.Name
-	return nil
-}
-
-func (c *Chart) loadValuesYaml() error {
-	var values map[string]interface{}
-	err := loadYamlFile(c.path("values.yaml"), &values)
-	if err != nil {
-		return err
-	}
-	for k, v := range values {
-		c.values[k] = toStarlark(v)
-	}
-	return nil
-}
-
-func (c *Chart) init(thread *starlark.Thread) error {
-	file := c.path("Chart.star")
-	if _, err := os.Stat(file); os.IsNotExist(err) {
-		return nil
-	}
-	globals, err := starlark.ExecFile(thread, file, nil, starlark.StringDict{
-		"chart": starlark.NewBuiltin("chart", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-			return LoadChart(thread, c.repo, fn, args, kwargs)
-		}),
-	})
-	if err != nil {
-		return err
-	}
-
-	init, ok := globals["init"]
-
-	if ok {
-		_, err := starlark.Call(thread, init, starlark.Tuple{c}, nil)
-		if err != nil {
-			return err
-		}
-	}
-
-	for k, v := range globals {
-		if k == "init" {
-			continue
-		}
-		f, ok := v.(starlark.Callable)
-		if ok {
-			c.methods[k] = starlark.NewBuiltin(f.Name(), func(thread *starlark.Thread, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-				allArgs := make([]starlark.Value, args.Len()+1)
-				allArgs[0] = c
-				for i := 0; i < args.Len(); i++ {
-					allArgs[i+1] = args.Index(i)
-				}
-				return f.CallInternal(thread, allArgs, kwargs)
-			})
-		}
-	}
-	return nil
 }
 
 func (c *Chart) String() string {
@@ -197,11 +127,9 @@ func (c *Chart) Attr(name string) (starlark.Value, error) {
 	value, ok := c.values[name]
 	if !ok {
 		var m starlark.Value
-		if !strings.HasPrefix(name, "__") {
-			m, ok = c.methods[name]
-			if !ok {
-				m = nil
-			}
+		m, ok = c.methods[name]
+		if !ok {
+			m = nil
 		}
 		if m == nil {
 			return nil, starlark.NoSuchAttrError(
@@ -275,164 +203,103 @@ func notImplemented(_ interface{}) string {
 	panic("not implemented")
 }
 
-// TemplateFunction -
-func (c *Chart) TemplateFunction() starlark.Value {
-	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		if args.Len() != 1 {
-			return nil, fmt.Errorf("template: expected paramater release")
-		}
-		release, ok := args[0].(*Release)
-		if !ok {
-			return nil, fmt.Errorf("template: expected paramater of type release")
-		}
-		result, err := c.Template(thread, release)
-		return toStarlark(result), err
-	})
-}
-
-// Template -
-func (c *Chart) Template(thread *starlark.Thread, release *Release) (string, error) {
-	var writer bytes.Buffer
-	err := c.template(thread, release, &writer, make(map[string]bool))
-	if err != nil {
-		return "", err
-	}
-	return writer.String(), nil
-}
-
 // ApplyFunction -
-func (c *Chart) ApplyFunction() starlark.Value {
-	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		if args.Len() != 1 {
-			return nil, fmt.Errorf("apply: expected paramater release")
+func (c *Chart) ApplyFunction() starlark.Callable {
+	return c.methods["apply"]
+}
+
+func (c *Chart) applyFunction() starlark.Callable {
+	return starlark.NewBuiltin("apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		var release *Release
+		var k *k8s.K8s
+		if err := starlark.UnpackArgs("apply", args, kwargs, "k8s", &k, "release", &release); err != nil {
+			return nil, err
 		}
-		release, ok := args[0].(*Release)
-		if !ok {
-			return nil, fmt.Errorf("apply: expected paramater of type release")
-		}
-		err := c.Apply(thread, release)
-		return starlark.None, err
+		return starlark.None, c.apply(thread, k, release)
 	})
 }
 
-// Apply -
-func (c *Chart) Apply(thread *starlark.Thread, release *Release) error {
-	cmd := exec.Command("kubectl", "-n", release.Namespace, "apply", "-f", "-")
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-
-	writer, err := cmd.StdinPipe()
+func (c *Chart) apply(thread *starlark.Thread, k *k8s.K8s, release *Release) error {
+	err := c.eachSubChart(func(subChart *Chart) error {
+		_, err := subChart.ApplyFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
+		return err
+	})
 	if err != nil {
 		return err
 	}
-	err = cmd.Start()
-	if err != nil {
-		return fmt.Errorf("error starting %s: %s", cmd.String(), err.Error())
-	}
-	err = c.template(thread, release, writer, make(map[string]bool))
-	if err != nil {
-		return err
-	}
-	writer.Close()
-	err = cmd.Wait()
-	if err != nil {
-		return fmt.Errorf("error running %s: %s", cmd.String(), err.Error())
-	}
-	return nil
+	return c.applyLocal(thread, k, release)
 }
 
-func (c *Chart) template(thread *starlark.Thread, release *Release, writer io.Writer, done map[string]bool) error {
-	if done[c.Name] {
-		return nil
+func (c *Chart) applyLocalFunction() starlark.Callable {
+	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		var release *Release
+		var k *k8s.K8s
+		if err := starlark.UnpackArgs("__apply", args, kwargs, "k8s", &k, "release", &release); err != nil {
+			return nil, err
+		}
+		return starlark.None, c.applyLocal(thread, k, release)
+	})
+}
+
+func (c *Chart) applyLocal(thread *starlark.Thread, k *k8s.K8s, release *Release) error {
+	return k.Apply(release.Namespace, func(writer io.Writer) error {
+		return c.template(thread, release, writer)
+	})
+}
+
+// DeleteFunction -
+func (c *Chart) DeleteFunction() starlark.Callable {
+	return c.methods["delete"]
+}
+
+func (c *Chart) deleteFunction() starlark.Callable {
+	return starlark.NewBuiltin("delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		var release *Release
+		var k *k8s.K8s
+		if err := starlark.UnpackArgs("delete", args, kwargs, "k8s", &k, "release", &release); err != nil {
+			return nil, err
+		}
+		return starlark.None, c.delete(thread, k, release)
+	})
+}
+
+func (c *Chart) delete(thread *starlark.Thread, k *k8s.K8s, release *Release) error {
+	err := c.eachSubChart(func(subChart *Chart) error {
+		_, err := subChart.DeleteFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
+		return err
+	})
+	if err != nil {
+		return err
 	}
-	done[c.Name] = true
+	return c.deleteLocal(thread, k, release)
+}
+
+func (c *Chart) deleteLocalFunction() starlark.Callable {
+	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		var release *Release
+		var k *k8s.K8s
+		if err := starlark.UnpackArgs("__delete", args, kwargs, "k8s", &k, "release", &release); err != nil {
+			return nil, err
+		}
+		return starlark.None, c.deleteLocal(thread, k, release)
+	})
+}
+
+func (c *Chart) deleteLocal(thread *starlark.Thread, k *k8s.K8s, release *Release) error {
+	return k.Delete(release.Namespace, func(writer io.Writer) error {
+		return c.template(thread, release, writer)
+	})
+}
+
+func (c *Chart) eachSubChart(block func(subChart *Chart) error) error {
 	for _, v := range c.values {
 		subChart, ok := v.(*Chart)
 		if ok {
-			err := subChart.template(thread, release, writer, done)
+			err := block(subChart)
 			if err != nil {
 				return err
 			}
 		}
-	}
-	glob := c.path("templates", "*.yaml")
-	filenames, err := filepath.Glob(glob)
-	if err != nil {
-		return err
-	}
-	if len(filenames) == 0 {
-		return nil
-	}
-	helpers := c.path("templates", "_helpers.tpl")
-	if _, err := os.Stat(helpers); err != nil {
-		helpers = ""
-	}
-
-	values := toGo(c).(map[string]interface{})
-	methods := make(map[string]interface{})
-	for k, f := range c.methods {
-		methods[k] = func() (interface{}, error) {
-			value, err := f.CallInternal(thread, nil, nil)
-			return toGo(value), err
-		}
-	}
-	for _, filename := range filenames {
-		var buffer bytes.Buffer
-		tpl := template.New(filepath.Base(filename))
-		tpl = addTemplateFuncs(tpl)
-		if helpers == "" {
-			tpl, err = tpl.ParseFiles(filename)
-		} else {
-			tpl, err = tpl.ParseFiles(helpers, filename)
-		}
-
-		if err != nil {
-			return err
-		}
-		err = tpl.Execute(&buffer, struct {
-			Values  interface{}
-			Methods map[string]interface{}
-			Chart   *Chart
-			Release *Release
-			Files   files
-		}{
-			Values:  values,
-			Methods: methods,
-			Chart:   c,
-			Release: release,
-			Files:   files(make(map[string][]byte)),
-		})
-		if err != nil {
-			return err
-		}
-		if buffer.Len() > 0 {
-			content := strings.TrimSpace(buffer.String())
-			if len(content) > 0 {
-				if !strings.HasPrefix(content, "---") {
-					writer.Write([]byte("---\n"))
-				}
-				writer.Write([]byte(content))
-				writer.Write([]byte("\n"))
-			}
-		}
-
-	}
-	return nil
-}
-
-func loadYamlFile(filename string, value interface{}) error {
-	reader, err := os.Open(filename) // For read access.
-	if err != nil {
-		if os.IsNotExist(err) {
-			return err
-		}
-		return fmt.Errorf("Unable to open file %s for parsing: %s", filename, err.Error())
-	}
-	defer reader.Close()
-	decoder := yaml.NewDecoder(reader)
-	err = decoder.Decode(value)
-	if err != nil {
-		return fmt.Errorf("Error during parsing file %s: %s", filename, err.Error())
 	}
 	return nil
 }

@@ -80,6 +80,9 @@ func toStarlark(vi interface{}) starlark.Value {
 }
 
 func toGo(v starlark.Value) interface{} {
+	if v == nil {
+		return nil
+	}
 	switch v := v.(type) {
 	case starlark.NoneType:
 		return nil
