@@ -51,7 +51,7 @@ def init(self):
   self.mariadb = chart("mariadb")
   self.uaa = chart("uaa",database = self.mariadb)
 
-def apply(self,release):
+def apply(self,k8s,release):
   self.mariadb.apply(release)
   self.uaa.apply(release)
 ```
@@ -67,7 +67,7 @@ def apply(self,release):
 | Only simple logic in templates |   +   |   +   |  -  |    +      |
 | Interaction with k8s           |   +   |   -   |  -  |    -      |
 | Repository                     |   +   |   +   |  -  |    -      |
-| Repository                     |   +   |   +   |  -  |    -      |
+| No runtime on k8s required     |   +   |   -   |  +  |    +      |
 | Mature technology              |   -   |   +   |  ?  |    +      |
 
 ## TODO
