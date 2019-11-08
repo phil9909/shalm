@@ -12,16 +12,44 @@ This project brings the starlark scripting language to helm charts.
 * Compatible with helm
 * Share a common service like a database manager or an ingress between a set of sub charts
 * Use starlark methods in templates (replacement for `_helpers.tpl`)
+* Interact with kubernetes during installation
 
 ## Installation
 
-go get 
+```bash
+go get github.com/kramerul/shalm
+```
+
+
+## Usage
+
+```bash
+shalm template <chart>
+shalm apply <chart>
+shalm delete <chart>
+```
+
+A set of example charts can be found in the `examples` folder.
+
+## Writing chars
+
+Just follow the rules of helm to write charts. Additionally, you can put a `Chart.star` file in the charts folder
+
+```bash
+<chart>/
+├── Chart.yaml
+├── values.yaml
+├── Chart.star
+└── templates/
+```
 
 ## Examples
 
 ### Share database
 
-Define an API for a database manager (e.g. mariadb)
+The following example shows how a database manager could be shared.
+
+1. Define an API for a database manager (e.g. mariadb)
 
 ```python
 def create_database(self,db="db",username="",password=""):
@@ -29,7 +57,7 @@ def create_database(self,db="db",username="",password=""):
 ```
 
 
-Define an API for a service, which requires a database
+2. Define an constructor for a service, which requires a database
 
 ```python
 def init(self,database=None):
@@ -38,7 +66,7 @@ def init(self,database=None):
 ```
 
 
-Use the API within another chart
+3. Use the API within another chart
 
 ```python
 def init(self):
@@ -48,14 +76,18 @@ def init(self):
 
 ### Override apply
 
+With `shalm` it's possible to override the `apply` and `delete` methods. The following example illustrates how this could be done
+
 ```python
 def init(self):
   self.mariadb = chart("mariadb")
   self.uaa = chart("uaa",database = self.mariadb)
 
 def apply(self,k8s,release):
-  self.mariadb.apply(release)
-  self.uaa.apply(release)
+  self.mariadb.apply(k8s,release) # Apply mariadb stuff (recursive)
+  k8s.wait???                     # Interact with kubernetes (not defined yet)
+  self.uaa.apply(k8s,release)     # Apply uaa stuff (recursive)
+  self.__apply(k8s,release)       # Apply everthing defined in this chart (not recursive)
 ```
 
 
