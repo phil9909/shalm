@@ -24,7 +24,7 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		_, err = starlark.Call(thread, c.DeleteFunction(), starlark.Tuple{&k8s.K8s{}, &chart.Release{Name: chartName, Namespace: nameSpace, Service: chartName}}, nil)
+		_, err = starlark.Call(thread, c.DeleteFunction(), starlark.Tuple{k8s.New(), &chart.Release{Name: chartName, Namespace: nameSpace, Service: chartName}}, nil)
 		if err != nil {
 			return err
 		}
