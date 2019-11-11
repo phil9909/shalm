@@ -18,16 +18,19 @@ var applyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		var repo = chart.LocalRepo{BaseDir: repoDir}
 		chartName := args[0]
-
-		thread := &starlark.Thread{Name: "my thread"}
-		c, err := chart.NewChart(thread, &repo, chartName, nil, nil)
-		if err != nil {
-			return err
-		}
-		_, err = starlark.Call(thread, c.ApplyFunction(), starlark.Tuple{k8s.New(), &chart.Release{Name: chartName, Namespace: nameSpace, Service: chartName}}, nil)
-		if err != nil {
-			return err
-		}
-		return nil
+		return apply(&repo, chartName, k8s.New(), &chart.Release{Name: chartName, Namespace: nameSpace, Service: chartName})
 	},
+}
+
+func apply(repo chart.Repo, chartName string, k k8s.K8s, release *chart.Release) error {
+	thread := &starlark.Thread{Name: "my thread"}
+	c, err := chart.NewChart(thread, repo, chartName, nil, nil)
+	if err != nil {
+		return err
+	}
+	_, err = starlark.Call(thread, c.ApplyFunction(), starlark.Tuple{k, release}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }

@@ -46,6 +46,9 @@ func NewChart(thread *starlark.Thread, repo Repo, name string, args starlark.Tup
 	if err != nil {
 		return nil, err
 	}
+	if _, err := os.Stat(dir); err != nil {
+		return nil, fmt.Errorf("Chart directory %s: %s", dir, err.Error())
+	}
 	c := &Chart{Name: name, repo: repo, dir: dir}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
