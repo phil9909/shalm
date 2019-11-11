@@ -3,6 +3,8 @@ package cmd
 import (
 	"fmt"
 
+	repo2 "github.com/kramerul/shalm/internal/pkg/repo"
+
 	"github.com/kramerul/shalm/internal/pkg/chart"
 
 	"go.starlark.net/starlark"
@@ -16,7 +18,7 @@ var templateCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var repo = chart.LocalRepo{BaseDir: repoDir}
+		var repo = repo2.LocalRepo{BaseDir: repoDir}
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}

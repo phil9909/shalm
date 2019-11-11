@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/kramerul/shalm/internal/pkg/repo"
+
 	"github.com/kramerul/shalm/internal/pkg/k8s"
 
 	"github.com/blang/semver"
@@ -21,7 +23,7 @@ type Chart struct {
 	values      map[string]starlark.Value
 	methods     map[string]starlark.Callable
 	frozen      bool
-	repo        Repo
+	repo        repo.Repo
 	dir         string
 	initialized bool
 }
@@ -32,7 +34,7 @@ var (
 )
 
 // LoadChart -
-func LoadChart(thread *starlark.Thread, repo Repo, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
+func LoadChart(thread *starlark.Thread, repo repo.Repo, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
 	if args.Len() == 0 {
 		return nil, fmt.Errorf("chart: expected paramater name")
 	}
@@ -41,13 +43,10 @@ func LoadChart(thread *starlark.Thread, repo Repo, _ *starlark.Builtin, args sta
 }
 
 // NewChart -
-func NewChart(thread *starlark.Thread, repo Repo, name string, args starlark.Tuple, kwargs []starlark.Tuple) (*Chart, error) {
+func NewChart(thread *starlark.Thread, repo repo.Repo, name string, args starlark.Tuple, kwargs []starlark.Tuple) (*Chart, error) {
 	dir, err := repo.Directory(name)
 	if err != nil {
 		return nil, err
-	}
-	if _, err := os.Stat(dir); err != nil {
-		return nil, fmt.Errorf("Chart directory %s: %s", dir, err.Error())
 	}
 	c := &Chart{Name: name, repo: repo, dir: dir}
 	c.values = make(map[string]starlark.Value)
