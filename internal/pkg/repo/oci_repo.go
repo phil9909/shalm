@@ -2,7 +2,6 @@ package repo
 
 import (
 	"archive/tar"
-	"bytes"
 	"fmt"
 	"io"
 	"os"
@@ -18,11 +17,11 @@ type OciRepo struct {
 }
 
 func (r *OciRepo) cacheDir() string {
-	return path.Join(r.BaseDir, "cache")
+	return path.Join(r.BaseDir)
 }
 
 func (r *OciRepo) tarDir() string {
-	return path.Join(r.BaseDir, "tar")
+	return path.Join(r.BaseDir, "tgz")
 }
 
 // Directory -
@@ -40,7 +39,8 @@ func (r *OciRepo) Push(name string) error {
 	if err != nil {
 		return err
 	}
-	tarFile := path.Join(r.tarDir(), name+"tar.gz")
+	os.MkdirAll(r.tarDir(), 0755)
+	tarFile := path.Join(r.tarDir(), name+".tar")
 	err = tarCreate(dir, tarFile)
 	if err != nil {
 		return err
@@ -50,21 +50,35 @@ func (r *OciRepo) Push(name string) error {
 }
 
 func tarCreate(dir string, dest string) error {
-	var buf bytes.Buffer
-	tw := tar.NewWriter(&buf)
-	filepath.Walk(dir, func(root string, info os.FileInfo, err error) error {
+	out, err := os.Create(dest)
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	// gzip := gzip.NewWriter(out)
+	// defer gzip.Close()
+	tw := tar.NewWriter(out)
+	defer tw.Close()
+	return filepath.Walk(dir, func(file string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
 		if info.IsDir() {
 			return nil
 		}
+		rel, err := filepath.Rel(dir, file)
+		if err != nil {
+			return err
+		}
 		hdr := &tar.Header{
-			Name: path.Base(info.Name()),
+			Name: rel,
 			Mode: int64(info.Mode()),
 			Size: info.Size(),
 		}
 		if err := tw.WriteHeader(hdr); err != nil {
 			return err
 		}
-		body, err := os.Open(path.Join(root, info.Name()))
+		body, err := os.Open(file)
 		if err != nil {
 			return err
 		}
@@ -74,5 +88,4 @@ func tarCreate(dir string, dest string) error {
 		}
 		return nil
 	})
-	return nil
 }
