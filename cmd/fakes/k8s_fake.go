@@ -2,58 +2,24 @@ package fakes
 
 import (
 	"io"
+	"time"
 
 	"github.com/kramerul/shalm/internal/pkg/k8s"
-
-	"go.starlark.net/starlark"
 )
 
 // K8sFake -
 type K8sFake struct {
-	Writer  io.Writer
-	Methods []string
+	Writer             io.Writer
+	RolloutStatusCalls []string
 }
 
 var (
 	_ k8s.K8s = (*K8sFake)(nil)
 )
 
-// String -
-func (k K8sFake) String() string {
-	panic("implement me")
-}
-
-// Type -
-func (k *K8sFake) Type() string {
-	panic("implement me")
-}
-
-// Freeze -
-func (k *K8sFake) Freeze() {
-	panic("implement me")
-}
-
-// Truth -
-func (k *K8sFake) Truth() starlark.Bool {
-	panic("implement me")
-}
-
-// Hash -
-func (k *K8sFake) Hash() (uint32, error) {
-	panic("implement me")
-}
-
-// Attr -
-func (k *K8sFake) Attr(name string) (starlark.Value, error) {
-	return starlark.NewBuiltin(name, func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		k.Methods = append(k.Methods, name)
-		return starlark.None, nil
-	}), nil
-}
-
-// AttrNames -
-func (k *K8sFake) AttrNames() []string {
-	panic("implement me")
+func (k *K8sFake) RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error {
+	k.RolloutStatusCalls = append(k.RolloutStatusCalls, name)
+	return nil
 }
 
 // Apply -

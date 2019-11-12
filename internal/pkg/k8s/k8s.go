@@ -12,7 +12,7 @@ import (
 
 // K8s kubernetes API
 type K8s interface {
-	starlark.HasAttrs
+	RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error
 	Apply(namespace string, output func(io.Writer) error) error
 	Delete(namespace string, output func(io.Writer) error) error
 }
@@ -22,31 +22,35 @@ func New() K8s {
 	return &k8sImpl{}
 }
 
+type K8sStarlark struct {
+	K8s
+}
+
 // k8sImpl -
 type k8sImpl struct {
 }
 
 var (
-	_ K8s = (*k8sImpl)(nil)
+	_ starlark.HasAttrs = (*K8sStarlark)(nil)
 )
 
 // String -
-func (k *k8sImpl) String() string { return os.Getenv("KUBECONFIG") }
+func (k *K8sStarlark) String() string { return os.Getenv("KUBECONFIG") }
 
 // Type -
-func (k *k8sImpl) Type() string { return "k8s" }
+func (k *K8sStarlark) Type() string { return "k8s" }
 
 // Freeze -
-func (k *k8sImpl) Freeze() {}
+func (k *K8sStarlark) Freeze() {}
 
 // Truth -
-func (k *k8sImpl) Truth() starlark.Bool { return false }
+func (k *K8sStarlark) Truth() starlark.Bool { return false }
 
 // Hash -
-func (k *k8sImpl) Hash() (uint32, error) { panic("implement me") }
+func (k *K8sStarlark) Hash() (uint32, error) { panic("implement me") }
 
 // Attr -
-func (k *k8sImpl) Attr(name string) (starlark.Value, error) {
+func (k *K8sStarlark) Attr(name string) (starlark.Value, error) {
 	if name == "rollout_status" {
 		return starlark.NewBuiltin("rollout_status", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var timeout = 120
@@ -64,7 +68,7 @@ func (k *k8sImpl) Attr(name string) (starlark.Value, error) {
 }
 
 // AttrNames -
-func (k *k8sImpl) AttrNames() []string { return []string{"wait_crd"} }
+func (k *K8sStarlark) AttrNames() []string { return []string{"wait_crd"} }
 
 // Apply -
 func (k *k8sImpl) Apply(namespace string, output func(io.Writer) error) error {
