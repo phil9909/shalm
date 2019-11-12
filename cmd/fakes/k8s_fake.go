@@ -10,7 +10,8 @@ import (
 
 // K8sFake -
 type K8sFake struct {
-	Writer io.Writer
+	Writer  io.Writer
+	Methods []string
 }
 
 var (
@@ -45,6 +46,7 @@ func (k *K8sFake) Hash() (uint32, error) {
 // Attr -
 func (k *K8sFake) Attr(name string) (starlark.Value, error) {
 	return starlark.NewBuiltin(name, func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		k.Methods = append(k.Methods, name)
 		return starlark.None, nil
 	}), nil
 }

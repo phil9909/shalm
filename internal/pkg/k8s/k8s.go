@@ -5,6 +5,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"time"
 
 	"go.starlark.net/starlark"
 )
@@ -46,9 +47,17 @@ func (k *k8sImpl) Hash() (uint32, error) { panic("implement me") }
 
 // Attr -
 func (k *k8sImpl) Attr(name string) (starlark.Value, error) {
-	if name == "wait_crds" {
-		return starlark.NewBuiltin("wait_crds", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-			return starlark.None, nil
+	if name == "rollout_status" {
+		return starlark.NewBuiltin("rollout_status", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			var timeout = 120
+			var namespace string
+			var typ string
+			var name string
+			if err := starlark.UnpackArgs("rollout_status", args, kwargs, "namespace", &namespace,
+				"type", &typ, "name", &name, "timeout?", &timeout); err != nil {
+				return nil, err
+			}
+			return starlark.None, k.RolloutStatus(namespace, typ, name, time.Duration(timeout)*time.Second)
 		}), nil
 	}
 	return starlark.None, starlark.NoSuchAttrError(fmt.Sprintf("k8s has no .%s attribute", name))
@@ -59,19 +68,28 @@ func (k *k8sImpl) AttrNames() []string { return []string{"wait_crd"} }
 
 // Apply -
 func (k *k8sImpl) Apply(namespace string, output func(io.Writer) error) error {
-	return k.run("apply", namespace, output)
+	return k.run(namespace, "apply", output)
 }
 
 // Delete -
 func (k *k8sImpl) Delete(namespace string, output func(io.Writer) error) error {
-	return k.run("delete", namespace, output, "--ignore-not-found")
+	return k.run(namespace, "delete", output, "--ignore-not-found")
 }
 
-func (k *k8sImpl) run(command string, namespace string, output func(io.Writer) error, flags ...string) error {
-	args := append([]string{"-n", namespace, command, "-f", "-"}, flags...)
-	cmd := exec.Command("kubectl", args...)
+// RolloutStatus -
+func (k *k8sImpl) RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error {
+	return k.kubectl(namespace, "rollout", "status", typ, name, "--timeout", fmt.Sprint("%10.0fs", timeout.Seconds())).Run()
+}
+
+func (k *k8sImpl) kubectl(namespace string, command string, flags ...string) *exec.Cmd {
+	cmd := exec.Command("kubectl", append([]string{"-n", namespace, command}, flags...)...)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
+	return cmd
+}
+
+func (k *k8sImpl) run(namespace string, command string, output func(io.Writer) error, flags ...string) error {
+	cmd := k.kubectl(command, "-f", "-")
 
 	writer, err := cmd.StdinPipe()
 	if err != nil {

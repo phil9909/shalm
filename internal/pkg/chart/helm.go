@@ -2,6 +2,7 @@ package chart
 
 import (
 	"bytes"
+	"fmt"
 	"strings"
 	"text/template"
 
@@ -18,6 +19,10 @@ type Release struct {
 	Namespace string
 	Service   string
 }
+
+var (
+	_ starlark.HasAttrs = (*Release)(nil)
+)
 
 // String -
 func (r *Release) String() string {
@@ -41,6 +46,25 @@ func (r *Release) Truth() starlark.Bool {
 // Hash -
 func (r *Release) Hash() (uint32, error) {
 	panic("implement me")
+}
+
+// Attr -
+func (r *Release) Attr(name string) (starlark.Value, error) {
+	if name == "namespace" {
+		return starlark.String(r.Namespace), nil
+	}
+	if name == "name" {
+		return starlark.String(r.Name), nil
+	}
+	if name == "service" {
+		return starlark.String(r.Service), nil
+	}
+	return starlark.None, starlark.NoSuchAttrError(fmt.Sprintf("release has no .%s attribute", name))
+}
+
+// AttrNames -
+func (r *Release) AttrNames() []string {
+	return []string{"namespace", "name", "service"}
 }
 
 var _ starlark.Value = &Release{}

@@ -16,11 +16,14 @@ var _ = Describe("Apply Chart", func() {
 	Context("apply chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
-			err := apply(&repo.LocalRepo{BaseDir: "../example"}, "cf", &fakes.K8sFake{Writer: &writer},
+			k8s := &fakes.K8sFake{Writer: &writer}
+			err := apply(&repo.LocalRepo{BaseDir: "../example"}, "cf", k8s,
 				&chart.Release{Name: "cf", Namespace: "namespace", Service: "cf"})
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))
+			Expect(k8s.Methods).To(HaveLen(1))
+			Expect(k8s.Methods[0]).To(Equal("rollout_status"))
 		})
 	})
 })

@@ -12,6 +12,6 @@ def __secret_name(self):
 
 def apply(self, k8s, release):
   self.mariadb.apply(k8s,release)
-  k8s.wait_crds("dummy")
+  k8s.rollout_status(release.namespace,"statefulset","test")
   self.uaa.apply(k8s,release)
   self.__apply(k8s,release)
