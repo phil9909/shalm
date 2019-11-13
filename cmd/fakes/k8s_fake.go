@@ -17,6 +17,7 @@ var (
 	_ k8s.K8s = (*K8sFake)(nil)
 )
 
+// RolloutStatus -
 func (k *K8sFake) RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error {
 	k.RolloutStatusCalls = append(k.RolloutStatusCalls, name)
 	return nil

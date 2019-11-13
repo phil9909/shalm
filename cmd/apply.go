@@ -23,7 +23,7 @@ var applyCmd = &cobra.Command{
 	},
 }
 
-func apply(repo repo.Repo, chartName string, k k8s.K8s, release *chart.Release) error {
+func apply(repo repo.Repo, chartName string, k starlark.Value, release *chart.Release) error {
 	thread := &starlark.Thread{Name: "my thread"}
 	c, err := chart.NewChart(thread, repo, chartName, nil, nil)
 	if err != nil {

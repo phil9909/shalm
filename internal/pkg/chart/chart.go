@@ -213,7 +213,7 @@ func (c *Chart) ApplyFunction() starlark.Callable {
 func (c *Chart) applyFunction() starlark.Callable {
 	return starlark.NewBuiltin("apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var release *Release
-		var k k8s.K8s
+		var k k8s.K8sValue
 		if err := starlark.UnpackArgs("apply", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -221,7 +221,7 @@ func (c *Chart) applyFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) apply(thread *starlark.Thread, k k8s.K8s, release *Release) error {
+func (c *Chart) apply(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
 	err := c.eachSubChart(func(subChart *Chart) error {
 		_, err := subChart.ApplyFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
 		return err
@@ -235,7 +235,7 @@ func (c *Chart) apply(thread *starlark.Thread, k k8s.K8s, release *Release) erro
 func (c *Chart) applyLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var release *Release
-		var k k8s.K8s
+		var k k8s.K8sValue
 		if err := starlark.UnpackArgs("__apply", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -243,7 +243,7 @@ func (c *Chart) applyLocalFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) applyLocal(thread *starlark.Thread, k k8s.K8s, release *Release) error {
+func (c *Chart) applyLocal(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
 	return k.Apply(release.Namespace, func(writer io.Writer) error {
 		return c.template(thread, release, writer)
 	})
@@ -257,7 +257,7 @@ func (c *Chart) DeleteFunction() starlark.Callable {
 func (c *Chart) deleteFunction() starlark.Callable {
 	return starlark.NewBuiltin("delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var release *Release
-		var k k8s.K8s
+		var k k8s.K8sValue
 		if err := starlark.UnpackArgs("delete", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -265,7 +265,7 @@ func (c *Chart) deleteFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) delete(thread *starlark.Thread, k k8s.K8s, release *Release) error {
+func (c *Chart) delete(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
 	err := c.eachSubChart(func(subChart *Chart) error {
 		_, err := subChart.DeleteFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
 		return err
@@ -279,7 +279,7 @@ func (c *Chart) delete(thread *starlark.Thread, k k8s.K8s, release *Release) err
 func (c *Chart) deleteLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var release *Release
-		var k k8s.K8s
+		var k k8s.K8sValue
 		if err := starlark.UnpackArgs("__delete", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -287,7 +287,7 @@ func (c *Chart) deleteLocalFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) deleteLocal(thread *starlark.Thread, k k8s.K8s, release *Release) error {
+func (c *Chart) deleteLocal(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
 	return k.Delete(release.Namespace, func(writer io.Writer) error {
 		return c.template(thread, release, writer)
 	})

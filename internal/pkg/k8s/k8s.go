@@ -17,12 +17,23 @@ type K8s interface {
 	Delete(namespace string, output func(io.Writer) error) error
 }
 
-// New create new instance to interact with kubernetes
-func New() K8s {
-	return &k8sImpl{}
+// K8sValue -
+type K8sValue interface {
+	starlark.Value
+	K8s
 }
 
-type K8sStarlark struct {
+// New create new instance to interact with kubernetes
+func New() K8sValue {
+	return &k8sValueImpl{&k8sImpl{}}
+}
+
+// NewForTest create new instance to interact with kubernetes
+func NewForTest(k K8s) K8sValue {
+	return &k8sValueImpl{k}
+}
+
+type k8sValueImpl struct {
 	K8s
 }
 
@@ -31,26 +42,26 @@ type k8sImpl struct {
 }
 
 var (
-	_ starlark.HasAttrs = (*K8sStarlark)(nil)
+	_ starlark.HasAttrs = (*k8sValueImpl)(nil)
 )
 
 // String -
-func (k *K8sStarlark) String() string { return os.Getenv("KUBECONFIG") }
+func (k *k8sValueImpl) String() string { return os.Getenv("KUBECONFIG") }
 
 // Type -
-func (k *K8sStarlark) Type() string { return "k8s" }
+func (k *k8sValueImpl) Type() string { return "k8s" }
 
 // Freeze -
-func (k *K8sStarlark) Freeze() {}
+func (k *k8sValueImpl) Freeze() {}
 
 // Truth -
-func (k *K8sStarlark) Truth() starlark.Bool { return false }
+func (k *k8sValueImpl) Truth() starlark.Bool { return false }
 
 // Hash -
-func (k *K8sStarlark) Hash() (uint32, error) { panic("implement me") }
+func (k *k8sValueImpl) Hash() (uint32, error) { panic("implement me") }
 
 // Attr -
-func (k *K8sStarlark) Attr(name string) (starlark.Value, error) {
+func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 	if name == "rollout_status" {
 		return starlark.NewBuiltin("rollout_status", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var timeout = 120
@@ -68,7 +79,7 @@ func (k *K8sStarlark) Attr(name string) (starlark.Value, error) {
 }
 
 // AttrNames -
-func (k *K8sStarlark) AttrNames() []string { return []string{"wait_crd"} }
+func (k *k8sValueImpl) AttrNames() []string { return []string{"wait_crd"} }
 
 // Apply -
 func (k *k8sImpl) Apply(namespace string, output func(io.Writer) error) error {
