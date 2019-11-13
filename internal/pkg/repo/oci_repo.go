@@ -7,8 +7,6 @@ import (
 	"os"
 	"path"
 	"path/filepath"
-
-	"github.com/google/go-containerregistry/pkg/crane"
 )
 
 // OciRepo -
@@ -45,7 +43,6 @@ func (r *OciRepo) Push(name string) error {
 	if err != nil {
 		return err
 	}
-	_, err = crane.Load(tarFile)
 	return err
 }
 

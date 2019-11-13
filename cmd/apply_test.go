@@ -2,6 +2,9 @@ package cmd
 
 import (
 	"bytes"
+	"path"
+	"path/filepath"
+	"runtime"
 
 	"github.com/kramerul/shalm/internal/pkg/k8s"
 
@@ -13,13 +16,19 @@ import (
 	. "github.com/onsi/gomega"
 )
 
+var (
+	_, b, _, _ = runtime.Caller(0)
+	basepath   = filepath.Dir(b)
+	root       = path.Join(filepath.Dir(b), "..")
+)
+
 var _ = Describe("Apply Chart", func() {
 
 	Context("apply chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.K8sFake{Writer: &writer}
-			err := apply(&repo.LocalRepo{BaseDir: "../example"}, "cf", k8s.NewForTest(k),
+			err := apply(&repo.LocalRepo{BaseDir: path.Join(root, "example")}, "cf", k8s.NewForTest(k),
 				&chart.Release{Name: "cf", Namespace: "namespace", Service: "cf"})
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
