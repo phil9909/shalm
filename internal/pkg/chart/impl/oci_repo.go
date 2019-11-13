@@ -4,14 +4,15 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
-	"fmt"
 	"io"
+	"log"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 
 	"github.com/containerd/containerd/remotes"
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"go.starlark.net/starlark"
 
 	"github.com/containerd/containerd/remotes/docker"
 	"github.com/deislabs/oras/pkg/content"
@@ -21,22 +22,28 @@ import (
 
 // OciRepo -
 type OciRepo struct {
-	BaseDir  string
+	baseDir  string
+	cacheDir string
 	resolver remotes.Resolver
 }
+
+var _ api.Repo = &OciRepo{}
 
 const (
 	customMediaType = "application/x-tar"
 )
 
 // NewOciRepo -
-func NewOciRepo(basedir string, auth func(repository string) (username string, password string, err error)) *OciRepo {
+func NewOciRepo(auth func(repository string) (username string, password string, err error)) *OciRepo {
+	homedir, err := os.UserHomeDir()
+	if err != nil {
+		panic(err)
+	}
 	return &OciRepo{
-		BaseDir: basedir,
+		cacheDir: path.Join(homedir, ".shalm", "cache"),
 		resolver: docker.NewResolver(docker.ResolverOptions{
 			Hosts: docker.ConfigureDefaultRegistries(
 				docker.WithPlainHTTP(func(repository string) (bool, error) {
-					fmt.Println(repository)
 					if repository == "localhost" || strings.HasPrefix(repository, "localhost:") {
 						return true, nil
 					}
@@ -46,94 +53,101 @@ func NewOciRepo(basedir string, auth func(repository string) (username string, p
 			)}),
 	}
 }
-func (r *OciRepo) cacheDir() string {
-	return path.Join(r.BaseDir)
-}
-
-func (r *OciRepo) tarDir() string {
-	return path.Join(r.BaseDir, "tgz")
-}
-
-// Directory -
-func (r *OciRepo) Directory(name string) (string, error) {
-	dir := path.Join(r.cacheDir(), name)
-	if _, err := os.Stat(dir); err != nil {
-		return "", fmt.Errorf("directory %s: %s", dir, err.Error())
-	}
-	return dir, nil
-}
 
 // Push -
-func (r *OciRepo) Push(name string, ref string) error {
-	dir, err := r.Directory(name)
-	if err != nil {
-		return err
-	}
+func (r *OciRepo) Push(chart api.Chart, ref string) error {
 	buffer := bytes.Buffer{}
-	os.MkdirAll(r.tarDir(), 0755)
-	err = tarCreate(dir, &buffer)
-	if err != nil {
+	if err := tarCreate(chart, &buffer); err != nil {
 		return err
 	}
 
 	ctx := context.Background()
 
-	// Push file(s) w custom mediatype to registry
 	memoryStore := content.NewMemoryStore()
-	desc := memoryStore.Add(name, customMediaType, buffer.Bytes())
+	desc := memoryStore.Add("chart.tar", customMediaType, buffer.Bytes())
 	pushContents := []ocispec.Descriptor{desc}
-	desc, err = oras.Push(ctx, r.resolver, ref, memoryStore, pushContents)
-	if err != nil {
+	if _, err := oras.Push(ctx, r.resolver, ref, memoryStore, pushContents); err != nil {
 		return err
 	}
 
 	return nil
 }
 
-// Pull -
-func (r *OciRepo) Pull(name string) error {
-	// Pull file(s) from registry and save to disk
-	fileStore := content.NewFileStore(r.cacheDir())
-	defer fileStore.Close()
-	allowedMediaTypes := []string{customMediaType}
-	ctx := context.Background()
-	_, _, err := oras.Pull(ctx, r.resolver, name, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
-	if err != nil {
-		return err
+// Get -
+func (r *OciRepo) Get(thread *starlark.Thread, name string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+	dir := path.Join(r.cacheDir, name)
+	if _, err := os.Stat(dir); err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		if err := os.MkdirAll(dir, 0755); err != nil {
+			return nil, err
+		}
+		{
+			// Pull file(s) from registry and save to disk
+			fileStore := content.NewFileStore(dir)
+			defer fileStore.Close()
+			allowedMediaTypes := []string{customMediaType}
+			ctx := context.Background()
+			_, _, err := oras.Pull(ctx, r.resolver, name, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
+			if err != nil {
+				return nil, err
+			}
+		}
+		if err = tarExtract(path.Join(dir, "chart.tar"), dir); err != nil {
+			return nil, err
+		}
 	}
-	return nil
+	return NewChart(thread, r, dir, name, args, kwargs)
 }
 
-func tarCreate(dir string, writer io.Writer) error {
+func tarCreate(chart api.Chart, writer io.Writer) error {
 	tw := tar.NewWriter(writer)
 	defer tw.Close()
-	return filepath.Walk(dir, func(file string, info os.FileInfo, err error) error {
-		if err != nil {
-			return err
-		}
-		if info.IsDir() {
-			return nil
-		}
-		rel, err := filepath.Rel(dir, file)
-		if err != nil {
-			return err
-		}
+	return chart.Walk(func(file string, size int64, body io.Reader, err error) error {
 		hdr := &tar.Header{
-			Name: rel,
-			Mode: int64(info.Mode()),
-			Size: info.Size(),
+			Name: file,
+			Mode: 0644,
+			Size: size,
 		}
 		if err := tw.WriteHeader(hdr); err != nil {
 			return err
 		}
-		body, err := os.Open(file)
-		if err != nil {
-			return err
-		}
-		defer body.Close()
 		if _, err := io.Copy(tw, body); err != nil {
 			return err
 		}
 		return nil
 	})
+}
+
+func tarExtract(tarFile string, dir string) error {
+	in, err := os.Open(tarFile)
+	if err != nil {
+		return err
+	}
+	defer in.Close()
+	// Open and iterate through the files in the archive.
+	tr := tar.NewReader(in)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return err
+		}
+		fn := path.Join(dir, hdr.Name)
+		if err := os.MkdirAll(path.Dir(fn), 0755); err != nil {
+			return err
+		}
+		out, err := os.Create(fn)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(out, tr); err != nil {
+			log.Fatal(err)
+		}
+		out.Close()
+	}
+	return nil
 }

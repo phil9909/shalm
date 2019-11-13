@@ -35,7 +35,7 @@ func (c *chartImpl) loadValuesYaml() error {
 	return nil
 }
 
-func (c *chartImpl) init(thread *starlark.Thread, args starlark.Tuple, kwargs []starlark.Tuple) error {
+func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
 	file := c.path("Chart.star")
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil
@@ -45,7 +45,7 @@ func (c *chartImpl) init(thread *starlark.Thread, args starlark.Tuple, kwargs []
 			if len(args) == 0 {
 				return nil, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
 			}
-			return c.repo.Get(thread, args[0].(starlark.String).GoString(), args[1:], kwargs)
+			return repo.Get(thread, args[0].(starlark.String).GoString(), args[1:], kwargs)
 		}),
 	})
 	if err != nil {

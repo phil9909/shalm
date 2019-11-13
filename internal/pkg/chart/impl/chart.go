@@ -13,14 +13,12 @@ import (
 	"go.starlark.net/syntax"
 )
 
-// chartImpl -
 type chartImpl struct {
 	Name        string
 	Version     semver.Version
 	values      map[string]starlark.Value
 	methods     map[string]starlark.Callable
 	frozen      bool
-	repo        api.Repo
 	dir         string
 	initialized bool
 }
@@ -32,7 +30,7 @@ var (
 
 // NewChart -
 func NewChart(thread *starlark.Thread, repo api.Repo, dir string, name string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
-	c := &chartImpl{Name: name, repo: repo, dir: dir}
+	c := &chartImpl{Name: name, dir: dir}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
 	if err := c.loadChartYaml(); err != nil {
@@ -45,12 +43,37 @@ func NewChart(thread *starlark.Thread, repo api.Repo, dir string, name string, a
 			return nil, err
 		}
 	}
-	if err := c.init(thread, args, kwargs); err != nil {
+	if err := c.init(thread, repo, args, kwargs); err != nil {
 		return nil, err
 	}
 	c.initialized = true
 	return c, nil
 
+}
+
+func (c *chartImpl) GetName() string {
+	return c.Name
+}
+
+func (c *chartImpl) Walk(cb func(name string, size int64, body io.Reader, err error) error) error {
+	return filepath.Walk(c.dir, func(file string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		rel, err := filepath.Rel(c.dir, file)
+		if err != nil {
+			return err
+		}
+		body, err := os.Open(file)
+		if err != nil {
+			return err
+		}
+		defer body.Close()
+		return cb(rel, info.Size(), body, nil)
+	})
 }
 
 func (c *chartImpl) path(part ...string) string {

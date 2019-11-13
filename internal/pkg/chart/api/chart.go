@@ -1,6 +1,10 @@
 package api
 
-import "go.starlark.net/starlark"
+import (
+	"io"
+
+	"go.starlark.net/starlark"
+)
 
 // Release -
 type Release struct {
@@ -23,13 +27,15 @@ type HelmChart struct {
 
 // Chart -
 type Chart interface {
-	ApplyFunction() starlark.Callable
-	DeleteFunction() starlark.Callable
-	TemplateFunction() starlark.Callable
+	GetName() string
+	Walk(cb func(name string, size int64, body io.Reader, err error) error) error
 }
 
 // ChartValue -
 type ChartValue interface {
 	starlark.HasSetField
 	Chart
+	ApplyFunction() starlark.Callable
+	DeleteFunction() starlark.Callable
+	TemplateFunction() starlark.Callable
 }

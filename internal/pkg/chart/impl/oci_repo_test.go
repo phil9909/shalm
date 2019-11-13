@@ -1,20 +1,13 @@
 package impl
 
 import (
-	"context"
-	"fmt"
-	"os"
 	"path"
 	"path/filepath"
 	"runtime"
 
-	"github.com/deislabs/oras/pkg/content"
-	"github.com/deislabs/oras/pkg/oras"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-
-	"github.com/containerd/containerd/remotes/docker"
-	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
+	"go.starlark.net/starlark"
 )
 
 var (
@@ -27,59 +20,28 @@ var _ = Describe("OCIRepo", func() {
 
 	Context("push chart", func() {
 		var repo *OciRepo
+		var localRepo *LocalRepo
+		var thread *starlark.Thread
+
 		BeforeSuite(func() {
-			repo = NewOciRepo(path.Join(root, "example"), func(repo string) (string, string, error) {
+			thread = &starlark.Thread{Name: "my thread"}
+			localRepo = &LocalRepo{BaseDir: path.Join(root, "example")}
+			repo = NewOciRepo(func(repo string) (string, string, error) {
 				return "", "", nil
 			})
 
 		})
 		It("pushes chart correct", func() {
-			err := repo.Push("uaa", "localhost:5000/uaa:latest")
+			chart, err := localRepo.Get(thread, "mariadb", nil, nil)
+			Expect(err).ToNot(HaveOccurred())
+			err = repo.Push(chart, "localhost:5000/mariadb:current")
 			Expect(err).ToNot(HaveOccurred())
 		})
 		It("pulls chart correct", func() {
-			err := repo.Pull("localhost:5000/uaa:latest")
+			chart, err := repo.Get(thread, "localhost:5000/mariadb:current", nil, nil)
 			Expect(err).ToNot(HaveOccurred())
+			Expect(chart.(*chartImpl).Version.String()).To(Equal("6.12.2"))
 		})
 
 	})
 })
-
-func test() error {
-	ref := "gcr.io/peripli/oras:test"
-	fileName := "hello.txt"
-	fileContent := []byte("Hello World!\n")
-	customMediaType := "my.custom.media.type"
-
-	ctx := context.Background()
-	resolver := docker.NewResolver(docker.ResolverOptions{
-		Hosts: docker.ConfigureDefaultRegistries(
-			docker.WithAuthorizer(
-				docker.NewDockerAuthorizer(docker.WithAuthCreds(func(repository string) (s string, s2 string, e error) {
-					return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
-				})))),
-	})
-
-	// Push file(s) w custom mediatype to registry
-	memoryStore := content.NewMemoryStore()
-	desc := memoryStore.Add(fileName, customMediaType, fileContent)
-	pushContents := []ocispec.Descriptor{desc}
-	fmt.Printf("Pushing %s to %s...\n", fileName, ref)
-	desc, err := oras.Push(ctx, resolver, ref, memoryStore, pushContents)
-	if err != nil {
-		return err
-	}
-
-	// Pull file(s) from registry and save to disk
-	fmt.Printf("Pulling from %s and saving to %s...\n", ref, fileName)
-	fileStore := content.NewFileStore("")
-	defer fileStore.Close()
-	allowedMediaTypes := []string{customMediaType}
-	desc, _, err = oras.Pull(ctx, resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Pulled from %s with digest %s\n", ref, desc.Digest)
-	fmt.Printf("Try running 'cat %s'\n", fileName)
-	return nil
-}
