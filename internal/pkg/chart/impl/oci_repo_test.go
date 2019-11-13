@@ -1,4 +1,4 @@
-package repo
+package impl
 
 import (
 	"context"
@@ -20,19 +20,26 @@ import (
 var (
 	_, b, _, _ = runtime.Caller(0)
 	basepath   = filepath.Dir(b)
-	root       = path.Join(filepath.Dir(b), "..", "..", "..")
+	root       = path.Join(filepath.Dir(b), "..", "..", "..", "..")
 )
 
 var _ = Describe("OCIRepo", func() {
 
 	Context("push chart", func() {
+		var repo *OciRepo
+		BeforeSuite(func() {
+			repo = NewOciRepo(path.Join(root, "example"), func(repo string) (string, string, error) {
+				return "", "", nil
+			})
+
+		})
 		It("pushes chart correct", func() {
-			repo := OciRepo{BaseDir: path.Join(root, "example")}
-			err := repo.Push("uaa")
+			err := repo.Push("uaa", "localhost:5000/uaa:latest")
 			Expect(err).ToNot(HaveOccurred())
 		})
-		It("oras", func() {
-			Expect(test()).NotTo(HaveOccurred())
+		It("pulls chart correct", func() {
+			err := repo.Pull("localhost:5000/uaa:latest")
+			Expect(err).ToNot(HaveOccurred())
 		})
 
 	})

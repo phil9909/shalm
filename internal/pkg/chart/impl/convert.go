@@ -1,4 +1,4 @@
-package chart
+package impl
 
 import (
 	"fmt"
@@ -112,7 +112,7 @@ func toGo(v starlark.Value) interface{} {
 		}
 		return d
 
-	case *Chart:
+	case *chartImpl:
 		d := make(map[string]interface{})
 
 		for k, v := range v.values {

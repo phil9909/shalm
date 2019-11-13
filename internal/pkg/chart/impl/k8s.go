@@ -1,4 +1,4 @@
-package k8s
+package impl
 
 import (
 	"fmt"
@@ -7,34 +7,22 @@ import (
 	"os/exec"
 	"time"
 
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"go.starlark.net/starlark"
 )
 
-// K8s kubernetes API
-type K8s interface {
-	RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error
-	Apply(namespace string, output func(io.Writer) error) error
-	Delete(namespace string, output func(io.Writer) error) error
-}
-
-// K8sValue -
-type K8sValue interface {
-	starlark.Value
-	K8s
-}
-
-// New create new instance to interact with kubernetes
-func New() K8sValue {
+// NewK8s create new instance to interact with kubernetes
+func NewK8s() api.K8sValue {
 	return &k8sValueImpl{&k8sImpl{}}
 }
 
-// NewForTest create new instance to interact with kubernetes
-func NewForTest(k K8s) K8sValue {
+// NewK8sForTest create new instance to interact with kubernetes
+func NewK8sForTest(k api.K8s) api.K8sValue {
 	return &k8sValueImpl{k}
 }
 
 type k8sValueImpl struct {
-	K8s
+	api.K8s
 }
 
 // k8sImpl -
@@ -93,7 +81,7 @@ func (k *k8sImpl) Delete(namespace string, output func(io.Writer) error) error {
 
 // RolloutStatus -
 func (k *k8sImpl) RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error {
-	return k.kubectl(namespace, "rollout", "status", typ, name, "--timeout", fmt.Sprint("%10.0fs", timeout.Seconds())).Run()
+	return k.kubectl(namespace, "rollout", "status", typ, name, "--timeout", fmt.Sprintf("%10.0fs", timeout.Seconds())).Run()
 }
 
 func (k *k8sImpl) kubectl(namespace string, command string, flags ...string) *exec.Cmd {

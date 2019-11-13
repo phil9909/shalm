@@ -1,17 +1,18 @@
-package chart
+package impl
 
 import (
 	"fmt"
 	"os"
 
 	"github.com/blang/semver"
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	yaml "gopkg.in/yaml.v2"
 
 	"go.starlark.net/starlark"
 )
 
-func (c *Chart) loadChartYaml() error {
-	var helmChart HelmChart
+func (c *chartImpl) loadChartYaml() error {
+	var helmChart api.HelmChart
 
 	err := loadYamlFile(c.path("Chart.yaml"), &helmChart)
 	if err != nil {
@@ -22,7 +23,7 @@ func (c *Chart) loadChartYaml() error {
 	return nil
 }
 
-func (c *Chart) loadValuesYaml() error {
+func (c *chartImpl) loadValuesYaml() error {
 	var values map[string]interface{}
 	err := loadYamlFile(c.path("values.yaml"), &values)
 	if err != nil {
@@ -34,14 +35,17 @@ func (c *Chart) loadValuesYaml() error {
 	return nil
 }
 
-func (c *Chart) init(thread *starlark.Thread, args starlark.Tuple, kwargs []starlark.Tuple) error {
+func (c *chartImpl) init(thread *starlark.Thread, args starlark.Tuple, kwargs []starlark.Tuple) error {
 	file := c.path("Chart.star")
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil
 	}
 	globals, err := starlark.ExecFile(thread, file, nil, starlark.StringDict{
 		"chart": starlark.NewBuiltin("chart", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-			return LoadChart(thread, c.repo, fn, args, kwargs)
+			if len(args) == 0 {
+				return nil, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
+			}
+			return c.repo.Get(thread, args[0].(starlark.String).GoString(), args[1:], kwargs)
 		}),
 	})
 	if err != nil {

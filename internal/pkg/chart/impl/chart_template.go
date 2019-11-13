@@ -1,4 +1,4 @@
-package chart
+package impl
 
 import (
 	"bytes"
@@ -8,13 +8,14 @@ import (
 	"strings"
 	"text/template"
 
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"go.starlark.net/starlark"
 )
 
 // TemplateFunction -
-func (c *Chart) TemplateFunction() starlark.Callable {
+func (c *chartImpl) TemplateFunction() starlark.Callable {
 	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var release *Release
+		var release *releaseValue
 		if err := starlark.UnpackArgs("template", args, kwargs, "release", &release); err != nil {
 			return nil, err
 		}
@@ -27,8 +28,8 @@ func (c *Chart) TemplateFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) templateRecursive(thread *starlark.Thread, release *Release, writer io.Writer) error {
-	err := c.eachSubChart(func(subChart *Chart) error {
+func (c *chartImpl) templateRecursive(thread *starlark.Thread, release *releaseValue, writer io.Writer) error {
+	err := c.eachSubChart(func(subChart *chartImpl) error {
 		return subChart.templateRecursive(thread, release, writer)
 	})
 	if err != nil {
@@ -37,7 +38,7 @@ func (c *Chart) templateRecursive(thread *starlark.Thread, release *Release, wri
 	return c.template(thread, release, writer)
 }
 
-func (c *Chart) template(thread *starlark.Thread, release *Release, writer io.Writer) error {
+func (c *chartImpl) template(thread *starlark.Thread, release *releaseValue, writer io.Writer) error {
 	glob := c.path("templates", "*.yaml")
 	filenames, err := filepath.Glob(glob)
 	if err != nil {
@@ -76,14 +77,14 @@ func (c *Chart) template(thread *starlark.Thread, release *Release, writer io.Wr
 		err = tpl.Execute(&buffer, struct {
 			Values  interface{}
 			Methods map[string]interface{}
-			Chart   *Chart
-			Release *Release
+			Chart   *chartImpl
+			Release *api.Release
 			Files   files
 		}{
 			Values:  values,
 			Methods: methods,
 			Chart:   c,
-			Release: release,
+			Release: release.Release,
 			Files:   files(make(map[string][]byte)),
 		})
 		if err != nil {

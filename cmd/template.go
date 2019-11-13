@@ -3,12 +3,10 @@ package cmd
 import (
 	"fmt"
 
-	repo2 "github.com/kramerul/shalm/internal/pkg/repo"
-
-	"github.com/kramerul/shalm/internal/pkg/chart"
-
 	"go.starlark.net/starlark"
 
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	"github.com/spf13/cobra"
 )
 
@@ -18,15 +16,15 @@ var templateCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var repo = repo2.LocalRepo{BaseDir: repoDir}
+		var repo = impl.LocalRepo{BaseDir: repoDir}
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
-		c, err := chart.NewChart(thread, &repo, chartName, nil, nil)
+		c, err := repo.Get(thread, chartName, nil, nil)
 		if err != nil {
 			return err
 		}
-		t, err := starlark.Call(thread, c.TemplateFunction(), starlark.Tuple{&chart.Release{Name: chartName, Namespace: nameSpace, Service: chartName}}, nil)
+		t, err := starlark.Call(thread, c.TemplateFunction(), starlark.Tuple{impl.NewReleaseValue(&api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})}, nil)
 		if err != nil {
 			return err
 		}

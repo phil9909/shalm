@@ -1,4 +1,4 @@
-package chart
+package impl
 
 import (
 	"fmt"
@@ -7,61 +7,45 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kramerul/shalm/internal/pkg/repo"
-
-	"github.com/kramerul/shalm/internal/pkg/k8s"
-
 	"github.com/blang/semver"
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
 
-// Chart -
-type Chart struct {
+// chartImpl -
+type chartImpl struct {
 	Name        string
 	Version     semver.Version
 	values      map[string]starlark.Value
 	methods     map[string]starlark.Callable
 	frozen      bool
-	repo        repo.Repo
+	repo        api.Repo
 	dir         string
 	initialized bool
 }
 
 var (
-	_ starlark.HasAttrs    = (*Chart)(nil)
-	_ starlark.HasSetField = (*Chart)(nil)
+	_ starlark.HasAttrs    = (*chartImpl)(nil)
+	_ starlark.HasSetField = (*chartImpl)(nil)
 )
 
-// LoadChart -
-func LoadChart(thread *starlark.Thread, repo repo.Repo, _ *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (starlark.Value, error) {
-	if args.Len() == 0 {
-		return nil, fmt.Errorf("chart: expected paramater name")
-	}
-
-	return NewChart(thread, repo, args.Index(0).(starlark.String).GoString(), args[1:], kwargs)
-}
-
 // NewChart -
-func NewChart(thread *starlark.Thread, repo repo.Repo, name string, args starlark.Tuple, kwargs []starlark.Tuple) (*Chart, error) {
-	dir, err := repo.Directory(name)
-	if err != nil {
-		return nil, err
-	}
-	c := &Chart{Name: name, repo: repo, dir: dir}
+func NewChart(thread *starlark.Thread, repo api.Repo, dir string, name string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+	c := &chartImpl{Name: name, repo: repo, dir: dir}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
-	if err = c.loadChartYaml(); err != nil {
+	if err := c.loadChartYaml(); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
 	}
-	if err = c.loadValuesYaml(); err != nil {
+	if err := c.loadValuesYaml(); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
 		}
 	}
-	if err = c.init(thread, args, kwargs); err != nil {
+	if err := c.init(thread, args, kwargs); err != nil {
 		return nil, err
 	}
 	c.initialized = true
@@ -69,11 +53,11 @@ func NewChart(thread *starlark.Thread, repo repo.Repo, name string, args starlar
 
 }
 
-func (c *Chart) path(part ...string) string {
+func (c *chartImpl) path(part ...string) string {
 	return filepath.Join(append([]string{c.dir}, part...)...)
 }
 
-func (c *Chart) String() string {
+func (c *chartImpl) String() string {
 	buf := new(strings.Builder)
 	buf.WriteString("chart")
 	buf.WriteByte('(')
@@ -92,13 +76,13 @@ func (c *Chart) String() string {
 }
 
 // Type -
-func (c *Chart) Type() string { return "chart" }
+func (c *chartImpl) Type() string { return "chart" }
 
 // Truth -
-func (c *Chart) Truth() starlark.Bool { return true } // even when empty
+func (c *chartImpl) Truth() starlark.Bool { return true } // even when empty
 
 // Hash -
-func (c *Chart) Hash() (uint32, error) {
+func (c *chartImpl) Hash() (uint32, error) {
 	var x, m uint32 = 8731, 9839
 	for k, e := range c.values {
 		namehash, _ := starlark.String(k).Hash()
@@ -114,7 +98,7 @@ func (c *Chart) Hash() (uint32, error) {
 }
 
 // Freeze -
-func (c *Chart) Freeze() {
+func (c *chartImpl) Freeze() {
 	if c.frozen {
 		return
 	}
@@ -125,7 +109,7 @@ func (c *Chart) Freeze() {
 }
 
 // Attr returns the value of the specified field.
-func (c *Chart) Attr(name string) (starlark.Value, error) {
+func (c *chartImpl) Attr(name string) (starlark.Value, error) {
 	value, ok := c.values[name]
 	if !ok {
 		var m starlark.Value
@@ -144,7 +128,7 @@ func (c *Chart) Attr(name string) (starlark.Value, error) {
 }
 
 // AttrNames returns a new sorted list of the struct fields.
-func (c *Chart) AttrNames() []string {
+func (c *chartImpl) AttrNames() []string {
 	names := make([]string, 0)
 	for k := range c.values {
 		names = append(names, k)
@@ -154,7 +138,7 @@ func (c *Chart) AttrNames() []string {
 }
 
 // SetField -
-func (c *Chart) SetField(name string, val starlark.Value) error {
+func (c *chartImpl) SetField(name string, val starlark.Value) error {
 	if c.frozen {
 		return fmt.Errorf("chart is frozen")
 	}
@@ -170,8 +154,8 @@ func (c *Chart) SetField(name string, val starlark.Value) error {
 }
 
 // CompareSameType -
-func (c *Chart) CompareSameType(op syntax.Token, yv starlark.Value, depth int) (bool, error) {
-	y := yv.(*Chart)
+func (c *chartImpl) CompareSameType(op syntax.Token, yv starlark.Value, depth int) (bool, error) {
+	y := yv.(*chartImpl)
 	switch op {
 	case syntax.EQL:
 		return chartEqual(c, y, depth)
@@ -183,7 +167,7 @@ func (c *Chart) CompareSameType(op syntax.Token, yv starlark.Value, depth int) (
 	}
 }
 
-func chartEqual(x, y *Chart, depth int) (bool, error) {
+func chartEqual(x, y *chartImpl, depth int) (bool, error) {
 	if len(x.values) != len(y.values) {
 		return false, nil
 	}
@@ -206,14 +190,14 @@ func notImplemented(_ interface{}) string {
 }
 
 // ApplyFunction -
-func (c *Chart) ApplyFunction() starlark.Callable {
+func (c *chartImpl) ApplyFunction() starlark.Callable {
 	return c.methods["apply"]
 }
 
-func (c *Chart) applyFunction() starlark.Callable {
+func (c *chartImpl) applyFunction() starlark.Callable {
 	return starlark.NewBuiltin("apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var release *Release
-		var k k8s.K8sValue
+		var release *releaseValue
+		var k api.K8sValue
 		if err := starlark.UnpackArgs("apply", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -221,8 +205,8 @@ func (c *Chart) applyFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) apply(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
-	err := c.eachSubChart(func(subChart *Chart) error {
+func (c *chartImpl) apply(thread *starlark.Thread, k api.K8sValue, release *releaseValue) error {
+	err := c.eachSubChart(func(subChart *chartImpl) error {
 		_, err := subChart.ApplyFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
 		return err
 	})
@@ -232,10 +216,10 @@ func (c *Chart) apply(thread *starlark.Thread, k k8s.K8sValue, release *Release)
 	return c.applyLocal(thread, k, release)
 }
 
-func (c *Chart) applyLocalFunction() starlark.Callable {
+func (c *chartImpl) applyLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var release *Release
-		var k k8s.K8sValue
+		var release *releaseValue
+		var k api.K8sValue
 		if err := starlark.UnpackArgs("__apply", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -243,21 +227,21 @@ func (c *Chart) applyLocalFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) applyLocal(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
+func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, release *releaseValue) error {
 	return k.Apply(release.Namespace, func(writer io.Writer) error {
 		return c.template(thread, release, writer)
 	})
 }
 
 // DeleteFunction -
-func (c *Chart) DeleteFunction() starlark.Callable {
+func (c *chartImpl) DeleteFunction() starlark.Callable {
 	return c.methods["delete"]
 }
 
-func (c *Chart) deleteFunction() starlark.Callable {
+func (c *chartImpl) deleteFunction() starlark.Callable {
 	return starlark.NewBuiltin("delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var release *Release
-		var k k8s.K8sValue
+		var release *releaseValue
+		var k api.K8sValue
 		if err := starlark.UnpackArgs("delete", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -265,8 +249,8 @@ func (c *Chart) deleteFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) delete(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
-	err := c.eachSubChart(func(subChart *Chart) error {
+func (c *chartImpl) delete(thread *starlark.Thread, k api.K8sValue, release *releaseValue) error {
+	err := c.eachSubChart(func(subChart *chartImpl) error {
 		_, err := subChart.DeleteFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
 		return err
 	})
@@ -276,10 +260,10 @@ func (c *Chart) delete(thread *starlark.Thread, k k8s.K8sValue, release *Release
 	return c.deleteLocal(thread, k, release)
 }
 
-func (c *Chart) deleteLocalFunction() starlark.Callable {
+func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var release *Release
-		var k k8s.K8sValue
+		var release *releaseValue
+		var k api.K8sValue
 		if err := starlark.UnpackArgs("__delete", args, kwargs, "k8s", &k, "release", &release); err != nil {
 			return nil, err
 		}
@@ -287,15 +271,15 @@ func (c *Chart) deleteLocalFunction() starlark.Callable {
 	})
 }
 
-func (c *Chart) deleteLocal(thread *starlark.Thread, k k8s.K8sValue, release *Release) error {
+func (c *chartImpl) deleteLocal(thread *starlark.Thread, k api.K8sValue, release *releaseValue) error {
 	return k.Delete(release.Namespace, func(writer io.Writer) error {
 		return c.template(thread, release, writer)
 	})
 }
 
-func (c *Chart) eachSubChart(block func(subChart *Chart) error) error {
+func (c *chartImpl) eachSubChart(block func(subChart *chartImpl) error) error {
 	for _, v := range c.values {
-		subChart, ok := v.(*Chart)
+		subChart, ok := v.(*chartImpl)
 		if ok {
 			err := block(subChart)
 			if err != nil {

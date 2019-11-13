@@ -4,7 +4,7 @@ import (
 	"io"
 	"time"
 
-	"github.com/kramerul/shalm/internal/pkg/k8s"
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
 )
 
 // K8sFake -
@@ -14,7 +14,7 @@ type K8sFake struct {
 }
 
 var (
-	_ k8s.K8s = (*K8sFake)(nil)
+	_ api.K8s = (*K8sFake)(nil)
 )
 
 // RolloutStatus -

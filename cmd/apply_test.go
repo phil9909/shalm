@@ -6,12 +6,9 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/internal/pkg/k8s"
-
-	"github.com/kramerul/shalm/internal/pkg/repo"
-
 	"github.com/kramerul/shalm/cmd/fakes"
-	"github.com/kramerul/shalm/internal/pkg/chart"
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -28,8 +25,8 @@ var _ = Describe("Apply Chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.K8sFake{Writer: &writer}
-			err := apply(&repo.LocalRepo{BaseDir: path.Join(root, "example")}, "cf", k8s.NewForTest(k),
-				&chart.Release{Name: "cf", Namespace: "namespace", Service: "cf"})
+			err := apply(&impl.LocalRepo{BaseDir: path.Join(root, "example")}, "cf", impl.NewK8sForTest(k),
+				&api.Release{Name: "cf", Namespace: "namespace", Service: "cf"})
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))

@@ -1,4 +1,4 @@
-package repo
+package impl
 
 import (
 	"archive/tar"
@@ -9,6 +9,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strings"
 
 	"github.com/containerd/containerd/remotes"
 
@@ -28,16 +29,21 @@ const (
 	customMediaType = "application/x-tar"
 )
 
-func NewOciRepo(basedir string) *OciRepo {
+// NewOciRepo -
+func NewOciRepo(basedir string, auth func(repository string) (username string, password string, err error)) *OciRepo {
 	return &OciRepo{
 		BaseDir: basedir,
 		resolver: docker.NewResolver(docker.ResolverOptions{
 			Hosts: docker.ConfigureDefaultRegistries(
-				docker.WithAuthorizer(
-					docker.NewDockerAuthorizer(docker.WithAuthCreds(func(repository string) (s string, s2 string, e error) {
-						return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
-					})))),
-		}),
+				docker.WithPlainHTTP(func(repository string) (bool, error) {
+					fmt.Println(repository)
+					if repository == "localhost" || strings.HasPrefix(repository, "localhost:") {
+						return true, nil
+					}
+					return false, nil
+				}),
+				docker.WithAuthorizer(docker.NewDockerAuthorizer(docker.WithAuthCreds(auth))),
+			)}),
 	}
 }
 func (r *OciRepo) cacheDir() string {
@@ -58,7 +64,7 @@ func (r *OciRepo) Directory(name string) (string, error) {
 }
 
 // Push -
-func (r *OciRepo) Push(name string) error {
+func (r *OciRepo) Push(name string, ref string) error {
 	dir, err := r.Directory(name)
 	if err != nil {
 		return err
@@ -69,7 +75,6 @@ func (r *OciRepo) Push(name string) error {
 	if err != nil {
 		return err
 	}
-	ref := "gcr.io/peripli/oras:test"
 
 	ctx := context.Background()
 
@@ -83,24 +88,20 @@ func (r *OciRepo) Push(name string) error {
 	}
 
 	return nil
-	// Pull file(s) from registry and save to disk
-	fmt.Printf("Pulling from %s and saving to %s...\n", ref, fileName)
-	fileStore := content.NewFileStore("")
-	defer fileStore.Close()
-	allowedMediaTypes := []string{customMediaType}
-	desc, _, err = oras.Pull(ctx, r.resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Pulled from %s with digest %s\n", ref, desc.Digest)
-	fmt.Printf("Try running 'cat %s'\n", fileName)
-	return nil
-	return err
 }
 
 // Pull -
 func (r *OciRepo) Pull(name string) error {
-	retunr nil
+	// Pull file(s) from registry and save to disk
+	fileStore := content.NewFileStore(r.cacheDir())
+	defer fileStore.Close()
+	allowedMediaTypes := []string{customMediaType}
+	ctx := context.Background()
+	_, _, err := oras.Pull(ctx, r.resolver, name, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func tarCreate(dir string, writer io.Writer) error {
