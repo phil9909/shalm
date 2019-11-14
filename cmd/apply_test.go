@@ -25,7 +25,7 @@ var _ = Describe("Apply Chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.K8sFake{Writer: &writer}
-			err := apply(&impl.LocalRepo{BaseDir: path.Join(root, "example")}, "cf", impl.NewK8sForTest(k),
+			err := apply(&impl.LocalRepo{BaseDir: path.Join(root, "example")}, "cf", impl.NewK8sValue(k),
 				&api.Release{Name: "cf", Namespace: "namespace", Service: "cf"})
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()

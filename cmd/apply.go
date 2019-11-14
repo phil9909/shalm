@@ -21,15 +21,11 @@ var applyCmd = &cobra.Command{
 	},
 }
 
-func apply(repo api.Repo, chartName string, k starlark.Value, release *api.Release) error {
+func apply(repo api.Repo, chartName string, k api.K8s, release *api.Release) error {
 	thread := &starlark.Thread{Name: "my thread"}
 	c, err := repo.Get(thread, chartName, nil, nil)
 	if err != nil {
 		return err
 	}
-	_, err = starlark.Call(thread, c.ApplyFunction(), starlark.Tuple{k, impl.NewReleaseValue(release)}, nil)
-	if err != nil {
-		return err
-	}
-	return nil
+	return c.Apply(thread, k, release)
 }

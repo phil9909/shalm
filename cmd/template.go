@@ -24,11 +24,8 @@ var templateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		t, err := starlark.Call(thread, c.TemplateFunction(), starlark.Tuple{impl.NewReleaseValue(&api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})}, nil)
-		if err != nil {
-			return err
-		}
-		fmt.Println(t.(starlark.String).GoString())
+		t, err := c.Template(thread, &api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})
+		fmt.Println(t)
 		return nil
 	},
 }

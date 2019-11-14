@@ -12,12 +12,12 @@ import (
 )
 
 // NewK8s create new instance to interact with kubernetes
-func NewK8s() api.K8sValue {
-	return &k8sValueImpl{&k8sImpl{}}
+func NewK8s() api.K8s {
+	return &k8sImpl{}
 }
 
-// NewK8sForTest create new instance to interact with kubernetes
-func NewK8sForTest(k api.K8s) api.K8sValue {
+// NewK8sValue create new instance to interact with kubernetes
+func NewK8sValue(k api.K8s) api.K8sValue {
 	return &k8sValueImpl{k}
 }
 

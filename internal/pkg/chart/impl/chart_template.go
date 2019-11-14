@@ -12,8 +12,15 @@ import (
 	"go.starlark.net/starlark"
 )
 
-// TemplateFunction -
-func (c *chartImpl) TemplateFunction() starlark.Callable {
+func (c *chartImpl) Template(thread *starlark.Thread, release *api.Release) (string, error) {
+	t, err := starlark.Call(thread, c.templateFunction(), starlark.Tuple{NewReleaseValue(release)}, nil)
+	if err != nil {
+		return "", err
+	}
+	return t.(*starlark.String).GoString(), nil
+}
+
+func (c *chartImpl) templateFunction() starlark.Callable {
 	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var release *releaseValue
 		if err := starlark.UnpackArgs("template", args, kwargs, "release", &release); err != nil {

@@ -23,10 +23,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		_, err = starlark.Call(thread, c.DeleteFunction(), starlark.Tuple{impl.NewK8s(), impl.NewReleaseValue(&api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})}, nil)
-		if err != nil {
-			return err
-		}
-		return nil
+		return c.Delete(thread, impl.NewK8s(), &api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})
 	},
 }

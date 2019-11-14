@@ -212,11 +212,6 @@ func notImplemented(_ interface{}) string {
 	panic("not implemented")
 }
 
-// ApplyFunction -
-func (c *chartImpl) ApplyFunction() starlark.Callable {
-	return c.methods["apply"]
-}
-
 func (c *chartImpl) applyFunction() starlark.Callable {
 	return starlark.NewBuiltin("apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var release *releaseValue
@@ -228,9 +223,18 @@ func (c *chartImpl) applyFunction() starlark.Callable {
 	})
 }
 
+func (c *chartImpl) Apply(thread *starlark.Thread, k api.K8s, release *api.Release) error {
+	_, err := starlark.Call(thread, c.methods["apply"], starlark.Tuple{NewK8sValue(k), NewReleaseValue(release)}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+
+}
+
 func (c *chartImpl) apply(thread *starlark.Thread, k api.K8sValue, release *releaseValue) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
-		_, err := subChart.ApplyFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
+		_, err := subChart.methods["apply"].CallInternal(thread, starlark.Tuple{k, release}, nil)
 		return err
 	})
 	if err != nil {
@@ -256,9 +260,13 @@ func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, release 
 	})
 }
 
-// DeleteFunction -
-func (c *chartImpl) DeleteFunction() starlark.Callable {
-	return c.methods["delete"]
+func (c *chartImpl) Delete(thread *starlark.Thread, k api.K8s, release *api.Release) error {
+	_, err := starlark.Call(thread, c.methods["delete"], starlark.Tuple{NewK8sValue(k), NewReleaseValue(release)}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }
 
 func (c *chartImpl) deleteFunction() starlark.Callable {
@@ -274,7 +282,7 @@ func (c *chartImpl) deleteFunction() starlark.Callable {
 
 func (c *chartImpl) delete(thread *starlark.Thread, k api.K8sValue, release *releaseValue) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
-		_, err := subChart.DeleteFunction().CallInternal(thread, starlark.Tuple{k, release}, nil)
+		_, err := subChart.methods["delete"].CallInternal(thread, starlark.Tuple{k, release}, nil)
 		return err
 	})
 	if err != nil {

@@ -29,13 +29,13 @@ type HelmChart struct {
 type Chart interface {
 	GetName() string
 	Walk(cb func(name string, size int64, body io.Reader, err error) error) error
+	Apply(thread *starlark.Thread, k K8s, release *Release) error
+	Delete(thread *starlark.Thread, k K8s, release *Release) error
+	Template(thread *starlark.Thread, release *Release) (string, error)
 }
 
 // ChartValue -
 type ChartValue interface {
 	starlark.HasSetField
 	Chart
-	ApplyFunction() starlark.Callable
-	DeleteFunction() starlark.Callable
-	TemplateFunction() starlark.Callable
 }
