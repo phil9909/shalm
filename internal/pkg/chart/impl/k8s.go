@@ -92,7 +92,7 @@ func (k *k8sImpl) kubectl(namespace string, command string, flags ...string) *ex
 }
 
 func (k *k8sImpl) run(namespace string, command string, output func(io.Writer) error, flags ...string) error {
-	cmd := k.kubectl(command, "-f", "-")
+	cmd := k.kubectl(namespace, command, "-f", "-")
 
 	writer, err := cmd.StdinPipe()
 	if err != nil {

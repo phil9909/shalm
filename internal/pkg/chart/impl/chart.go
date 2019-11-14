@@ -24,8 +24,7 @@ type chartImpl struct {
 }
 
 var (
-	_ starlark.HasAttrs    = (*chartImpl)(nil)
-	_ starlark.HasSetField = (*chartImpl)(nil)
+	_ api.ChartValue = (*chartImpl)(nil)
 )
 
 // NewChart -

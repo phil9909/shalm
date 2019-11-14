@@ -17,7 +17,7 @@ func (c *chartImpl) Template(thread *starlark.Thread, release *api.Release) (str
 	if err != nil {
 		return "", err
 	}
-	return t.(*starlark.String).GoString(), nil
+	return t.(starlark.String).GoString(), nil
 }
 
 func (c *chartImpl) templateFunction() starlark.Callable {
