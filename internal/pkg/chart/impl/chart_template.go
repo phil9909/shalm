@@ -18,6 +18,14 @@ type Release struct {
 	Service   string
 }
 
+// Chart -
+type Chart struct {
+	Name       string
+	Version    string
+	AppVersion string
+	APIVersion string
+}
+
 func (c *chartImpl) Template(thread *starlark.Thread, installOpts *api.InstallOpts) (string, error) {
 	t, err := starlark.Call(thread, c.templateFunction(), starlark.Tuple{NewInstallOptsValue(installOpts)}, nil)
 	if err != nil {
@@ -90,15 +98,19 @@ func (c *chartImpl) template(thread *starlark.Thread, installOpts *installOptsVa
 		err = tpl.Execute(&buffer, struct {
 			Values  interface{}
 			Methods map[string]interface{}
-			Chart   *chartImpl
+			Chart   Chart
 			Release Release
 			Files   files
 		}{
 			Values:  values,
 			Methods: methods,
-			Chart:   c,
+			Chart: Chart{
+				Name:       c.Name,
+				AppVersion: c.Version.String(),
+				Version:    c.Version.String(),
+			},
 			Release: Release{Name: c.Name, Namespace: installOpts.Namespace, Service: c.Name},
-			Files:   files(make(map[string][]byte)),
+			Files:   files{c.dir},
 		})
 		if err != nil {
 			return err

@@ -25,6 +25,9 @@ var templateCmd = &cobra.Command{
 			return err
 		}
 		t, err := c.Template(thread, &api.InstallOpts{Namespace: nameSpace})
+		if err != nil {
+			return err
+		}
 		fmt.Println(t)
 		return nil
 	},
