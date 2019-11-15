@@ -9,6 +9,7 @@ import (
 	"log"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/containerd/containerd/remotes"
@@ -107,10 +108,10 @@ func (r *OciRepo) Push(chart api.Chart, ref string) error {
 }
 
 // Get -
-func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, name string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
 	var dir string
-	if strings.HasPrefix(name, "/") {
-		dir = name
+	if filepath.IsAbs(ref) {
+		dir = ref
 	} else {
 		var cwd string
 		if parent == nil {
@@ -122,14 +123,14 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, name string, ar
 		} else {
 			cwd = parent.GetDir()
 		}
-		dir = path.Join(cwd, name)
+		dir = path.Join(cwd, ref)
 	}
 
 	if _, err := os.Stat(dir); err == nil {
-		return NewChart(thread, r, dir, name, args, kwargs)
+		return NewChart(thread, r, dir, args, kwargs)
 	}
 
-	dir = path.Join(r.cacheDir, name)
+	dir = path.Join(r.cacheDir, ref)
 	if _, err := os.Stat(dir); err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -143,7 +144,7 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, name string, ar
 			defer fileStore.Close()
 			allowedMediaTypes := []string{customMediaType}
 			ctx := context.Background()
-			_, _, err := oras.Pull(ctx, r.resolver, name, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
+			_, _, err := oras.Pull(ctx, r.resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
 			if err != nil {
 				return nil, err
 			}
@@ -152,7 +153,7 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, name string, ar
 			return nil, err
 		}
 	}
-	return NewChart(thread, r, dir, name, args, kwargs)
+	return NewChart(thread, r, dir, args, kwargs)
 }
 
 func tarCreate(chart api.Chart, writer io.Writer) error {

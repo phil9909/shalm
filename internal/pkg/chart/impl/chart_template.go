@@ -12,8 +12,14 @@ import (
 	"go.starlark.net/starlark"
 )
 
-func (c *chartImpl) Template(thread *starlark.Thread, release *api.Release) (string, error) {
-	t, err := starlark.Call(thread, c.templateFunction(), starlark.Tuple{NewReleaseValue(release)}, nil)
+type Release struct {
+	Name      string
+	Namespace string
+	Service   string
+}
+
+func (c *chartImpl) Template(thread *starlark.Thread, installOpts *api.InstallOpts) (string, error) {
+	t, err := starlark.Call(thread, c.templateFunction(), starlark.Tuple{NewInstallOptsValue(installOpts)}, nil)
 	if err != nil {
 		return "", err
 	}
@@ -22,12 +28,12 @@ func (c *chartImpl) Template(thread *starlark.Thread, release *api.Release) (str
 
 func (c *chartImpl) templateFunction() starlark.Callable {
 	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var release *releaseValue
-		if err := starlark.UnpackArgs("template", args, kwargs, "release", &release); err != nil {
+		var installOpts *installOptsValue
+		if err := starlark.UnpackArgs("template", args, kwargs, "installOpts", &installOpts); err != nil {
 			return nil, err
 		}
 		var writer bytes.Buffer
-		err := c.templateRecursive(thread, release, &writer)
+		err := c.templateRecursive(thread, installOpts, &writer)
 		if err != nil {
 			return starlark.None, err
 		}
@@ -35,17 +41,17 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) templateRecursive(thread *starlark.Thread, release *releaseValue, writer io.Writer) error {
+func (c *chartImpl) templateRecursive(thread *starlark.Thread, installOpts *installOptsValue, writer io.Writer) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
-		return subChart.templateRecursive(thread, release, writer)
+		return subChart.templateRecursive(thread, installOpts, writer)
 	})
 	if err != nil {
 		return err
 	}
-	return c.template(thread, release, writer)
+	return c.template(thread, installOpts, writer)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, release *releaseValue, writer io.Writer) error {
+func (c *chartImpl) template(thread *starlark.Thread, installOpts *installOptsValue, writer io.Writer) error {
 	glob := c.path("templates", "*.yaml")
 	filenames, err := filepath.Glob(glob)
 	if err != nil {
@@ -85,13 +91,13 @@ func (c *chartImpl) template(thread *starlark.Thread, release *releaseValue, wri
 			Values  interface{}
 			Methods map[string]interface{}
 			Chart   *chartImpl
-			Release *api.Release
+			Release Release
 			Files   files
 		}{
 			Values:  values,
 			Methods: methods,
 			Chart:   c,
-			Release: release.Release,
+			Release: Release{Name: c.Name, Namespace: installOpts.Namespace, Service: c.Name},
 			Files:   files(make(map[string][]byte)),
 		})
 		if err != nil {

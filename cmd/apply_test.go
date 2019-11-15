@@ -27,7 +27,7 @@ var _ = Describe("Apply Chart", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.K8sFake{Writer: &writer}
 			err := apply(impl.NewRepo(), path.Join(example, "cf"), impl.NewK8sValue(k),
-				&api.Release{Name: "cf", Namespace: "namespace", Service: "cf"})
+				&api.InstallOpts{Namespace: "namespace"})
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))

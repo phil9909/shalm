@@ -35,7 +35,7 @@ func (k *k8sImpl) Delete(namespace string, output func(io.Writer) error) error {
 
 // RolloutStatus -
 func (k *k8sImpl) RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error {
-	return k.kubectl(namespace, "rollout", "status", typ, name, "--timeout", fmt.Sprintf("%10.0fs", timeout.Seconds())).Run()
+	return k.kubectl(namespace, "rollout", "status", typ, name, "--timeout", fmt.Sprintf("%.0fs", timeout.Seconds())).Run()
 }
 
 func (k *k8sImpl) kubectl(namespace string, command string, flags ...string) *exec.Cmd {

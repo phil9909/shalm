@@ -23,6 +23,6 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return c.Delete(thread, impl.NewK8s(), &api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})
+		return c.Delete(thread, impl.NewK8s(), &api.InstallOpts{Namespace: nameSpace})
 	},
 }

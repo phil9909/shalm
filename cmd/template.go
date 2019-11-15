@@ -24,7 +24,7 @@ var templateCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		t, err := c.Template(thread, &api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})
+		t, err := c.Template(thread, &api.InstallOpts{Namespace: nameSpace})
 		fmt.Println(t)
 		return nil
 	},

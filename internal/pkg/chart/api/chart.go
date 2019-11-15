@@ -6,11 +6,9 @@ import (
 	"go.starlark.net/starlark"
 )
 
-// Release -
-type Release struct {
-	Name      string
+// InstallOpts -
+type InstallOpts struct {
 	Namespace string
-	Service   string
 }
 
 // HelmChart -
@@ -30,9 +28,9 @@ type Chart interface {
 	GetName() string
 	GetDir() string
 	Walk(cb func(name string, size int64, body io.Reader, err error) error) error
-	Apply(thread *starlark.Thread, k K8s, release *Release) error
-	Delete(thread *starlark.Thread, k K8s, release *Release) error
-	Template(thread *starlark.Thread, release *Release) (string, error)
+	Apply(thread *starlark.Thread, k K8s, release *InstallOpts) error
+	Delete(thread *starlark.Thread, k K8s, release *InstallOpts) error
+	Template(thread *starlark.Thread, release *InstallOpts) (string, error)
 }
 
 // ChartValue -
