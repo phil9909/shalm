@@ -4,6 +4,7 @@ import (
 	"archive/tar"
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"log"
 	"os"
@@ -11,10 +12,10 @@ import (
 	"strings"
 
 	"github.com/containerd/containerd/remotes"
+	"github.com/containerd/containerd/remotes/docker"
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"go.starlark.net/starlark"
 
-	"github.com/containerd/containerd/remotes/docker"
 	"github.com/deislabs/oras/pkg/content"
 	"github.com/deislabs/oras/pkg/oras"
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
@@ -30,7 +31,7 @@ type OciRepo struct {
 var _ api.Repo = &OciRepo{}
 
 const (
-	customMediaType = "application/x-tar"
+	customMediaType = "application/tar"
 )
 
 // NewOciRepo -
@@ -54,8 +55,40 @@ func NewOciRepo(auth func(repository string) (username string, password string, 
 	}
 }
 
+func (r *OciRepo) testOras(ref string) error {
+
+	ctx := context.Background()
+	fileName := "hello.txt"
+	fileContent := []byte("Hello World!\n")
+	customMediaType := "my.custom.media.type"
+	// Push file(s) w custom mediatype to registry
+	memoryStore := content.NewMemoryStore()
+	desc := memoryStore.Add(fileName, customMediaType, fileContent)
+	pushContents := []ocispec.Descriptor{desc}
+	fmt.Printf("Pushing %s to %s...\n", fileName, ref)
+	desc, err := oras.Push(ctx, r.resolver, ref, memoryStore, pushContents)
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Pushed to %s with digest %s\n", ref, desc.Digest)
+
+	// Pull file(s) from registry and save to disk
+	fmt.Printf("Pulling from %s and saving to %s...\n", ref, fileName)
+	fileStore := content.NewFileStore("")
+	defer fileStore.Close()
+	allowedMediaTypes := []string{customMediaType}
+	desc, _, err = oras.Pull(ctx, r.resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
+	if err != nil {
+		return err
+	}
+	fmt.Printf("Pulled from %s with digest %s\n", ref, desc.Digest)
+	fmt.Printf("Try running 'cat %s'\n", fileName)
+	return nil
+}
+
 // Push -
 func (r *OciRepo) Push(chart api.Chart, ref string) error {
+	// return r.testOras(ref)
 	buffer := bytes.Buffer{}
 	if err := tarCreate(chart, &buffer); err != nil {
 		return err

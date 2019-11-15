@@ -18,6 +18,7 @@ var pushCmd = &cobra.Command{
 		thread := &starlark.Thread{Name: "my thread"}
 		localRepo := &impl.LocalRepo{BaseDir: repoDir}
 		repo := impl.NewOciRepo(func(repo string) (string, string, error) {
+			// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
 			return username, password, nil
 		})
 		chart, err := localRepo.Get(thread, args[0], nil, nil)
