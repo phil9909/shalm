@@ -16,11 +16,11 @@ var templateCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var repo = impl.LocalRepo{BaseDir: repoDir}
+		repo := impl.NewRepo(authOpts()...)
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, chartName, nil, nil)
+		c, err := repo.Get(thread, nil, chartName, nil, nil)
 		if err != nil {
 			return err
 		}

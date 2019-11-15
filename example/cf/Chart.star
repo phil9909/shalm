@@ -1,8 +1,8 @@
 
 def init(self):
-  self.mariadb = chart("mariadb")
+  self.mariadb = chart("../mariadb")
   self.mariadb.slave['replicas'] = 2
-  self.uaa = chart("uaa",self.mariadb)
+  self.uaa = chart("../uaa",self.mariadb)
   self.name = "my-first-chart"
   return self
 

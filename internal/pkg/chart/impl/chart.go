@@ -54,6 +54,10 @@ func (c *chartImpl) GetName() string {
 	return c.Name
 }
 
+func (c *chartImpl) GetDir() string {
+	return c.dir
+}
+
 func (c *chartImpl) Walk(cb func(name string, size int64, body io.Reader, err error) error) error {
 	return filepath.Walk(c.dir, func(file string, info os.FileInfo, err error) error {
 		if err != nil {

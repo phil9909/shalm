@@ -17,6 +17,7 @@ var (
 	_, b, _, _ = runtime.Caller(0)
 	basepath   = filepath.Dir(b)
 	root       = path.Join(filepath.Dir(b), "..")
+	example    = path.Join(root, "example")
 )
 
 var _ = Describe("Apply Chart", func() {
@@ -25,7 +26,7 @@ var _ = Describe("Apply Chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.K8sFake{Writer: &writer}
-			err := apply(&impl.LocalRepo{BaseDir: path.Join(root, "example")}, "cf", impl.NewK8sValue(k),
+			err := apply(impl.NewRepo(), path.Join(example, "cf"), impl.NewK8sValue(k),
 				&api.Release{Name: "cf", Namespace: "namespace", Service: "cf"})
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()

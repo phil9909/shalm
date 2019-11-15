@@ -36,6 +36,11 @@ func (c *chartImpl) loadValuesYaml() error {
 }
 
 func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
+	c.methods["apply"] = c.applyFunction()
+	c.methods["delete"] = c.deleteFunction()
+	c.methods["__apply"] = c.applyLocalFunction()
+	c.methods["__delete"] = c.deleteLocalFunction()
+
 	file := c.path("Chart.star")
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil
@@ -45,7 +50,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.T
 			if len(args) == 0 {
 				return nil, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
 			}
-			return repo.Get(thread, args[0].(starlark.String).GoString(), args[1:], kwargs)
+			return repo.Get(thread, c, args[0].(starlark.String).GoString(), args[1:], kwargs)
 		}),
 	})
 	if err != nil {
@@ -77,16 +82,6 @@ func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.T
 			})
 		}
 	}
-	_, ok = c.methods["apply"]
-	if !ok {
-		c.methods["apply"] = c.applyFunction()
-	}
-	_, ok = c.methods["delete"]
-	if !ok {
-		c.methods["delete"] = c.deleteFunction()
-	}
-	c.methods["__apply"] = c.applyLocalFunction()
-	c.methods["__delete"] = c.deleteLocalFunction()
 	return nil
 }
 

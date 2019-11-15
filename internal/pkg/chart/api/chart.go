@@ -28,6 +28,7 @@ type HelmChart struct {
 // Chart -
 type Chart interface {
 	GetName() string
+	GetDir() string
 	Walk(cb func(name string, size int64, body io.Reader, err error) error) error
 	Apply(thread *starlark.Thread, k K8s, release *Release) error
 	Delete(thread *starlark.Thread, k K8s, release *Release) error

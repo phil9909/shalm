@@ -15,15 +15,15 @@ var applyCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		var repo = impl.LocalRepo{BaseDir: repoDir}
 		chartName := args[0]
-		return apply(&repo, chartName, impl.NewK8s(), &api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})
+		repo := impl.NewRepo(authOpts()...)
+		return apply(repo, chartName, impl.NewK8s(), &api.Release{Name: chartName, Namespace: nameSpace, Service: chartName})
 	},
 }
 
 func apply(repo api.Repo, chartName string, k api.K8s, release *api.Release) error {
 	thread := &starlark.Thread{Name: "my thread"}
-	c, err := repo.Get(thread, chartName, nil, nil)
+	c, err := repo.Get(thread, nil, chartName, nil, nil)
 	if err != nil {
 		return err
 	}
