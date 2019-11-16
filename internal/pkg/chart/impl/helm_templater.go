@@ -46,6 +46,7 @@ func NewHelmTemplater(fs afero.Fs, dir string) (*HelmTemplater, error) {
 	return h, nil
 }
 
+// Template -
 func (h *HelmTemplater) Template(externGlob string, value interface{}, writer io.Writer) error {
 	var glob string
 	if externGlob != "" {
@@ -53,7 +54,7 @@ func (h *HelmTemplater) Template(externGlob string, value interface{}, writer io
 	} else {
 		glob = path.Join(h.dir, "templates", "*.yaml")
 	}
-	filenames, err := filepath.Glob(glob)
+	filenames, err := afero.Glob(h.fs, glob)
 	if err != nil {
 		return err
 	}
