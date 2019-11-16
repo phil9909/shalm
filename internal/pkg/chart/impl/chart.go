@@ -9,6 +9,7 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/spf13/afero"
 	"go.starlark.net/starlark"
 	"go.starlark.net/syntax"
 )
@@ -19,6 +20,7 @@ type chartImpl struct {
 	values      map[string]starlark.Value
 	methods     map[string]starlark.Callable
 	frozen      bool
+	fs          afero.Fs
 	dir         string
 	initialized bool
 	namespace   string
@@ -29,9 +31,11 @@ var (
 )
 
 // NewChart -
-func NewChart(thread *starlark.Thread, repo api.Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+func NewChart(thread *starlark.Thread, repo api.Repo, dir string, parent api.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+	namespace := parent.GetNamespace()
+	kwargs = removeArg(kwargs, "namespace", &namespace)
 	name := strings.Split(filepath.Base(dir), ":")[0]
-	c := &chartImpl{Name: name, dir: dir, namespace: namespace}
+	c := &chartImpl{Name: name, dir: dir, namespace: namespace, fs: parent.GetFs()}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
 	if err := c.loadChartYaml(); err != nil {
@@ -52,6 +56,10 @@ func NewChart(thread *starlark.Thread, repo api.Repo, dir string, namespace stri
 
 }
 
+func (c *chartImpl) GetFs() afero.Fs {
+	return c.fs
+}
+
 func (c *chartImpl) GetName() string {
 	return c.Name
 }
@@ -65,7 +73,7 @@ func (c *chartImpl) GetDir() string {
 }
 
 func (c *chartImpl) Walk(cb func(name string, size int64, body io.Reader, err error) error) error {
-	return filepath.Walk(c.dir, func(file string, info os.FileInfo, err error) error {
+	return afero.Walk(c.fs, c.dir, func(file string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -76,7 +84,7 @@ func (c *chartImpl) Walk(cb func(name string, size int64, body io.Reader, err er
 		if err != nil {
 			return err
 		}
-		body, err := os.Open(file)
+		body, err := c.fs.Open(file)
 		if err != nil {
 			return err
 		}
@@ -332,4 +340,20 @@ func (c *chartImpl) eachSubChart(block func(subChart *chartImpl) error) error {
 		}
 	}
 	return nil
+}
+
+func removeArg(kwargs []starlark.Tuple, name string, value *string) []starlark.Tuple {
+	var result []starlark.Tuple
+	for _, arg := range kwargs {
+		if arg.Len() == 2 {
+			key, keyOK := arg.Index(0).(starlark.String)
+			val, valOK := arg.Index(0).(starlark.String)
+			if keyOK && valOK && key.GoString() == name {
+				*value = val.GoString()
+				continue
+			}
+		}
+		result = append(result, arg)
+	}
+	return result
 }

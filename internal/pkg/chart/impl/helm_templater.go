@@ -3,6 +3,7 @@ package impl
 import (
 	"bytes"
 	"encoding/json"
+	"io"
 	"io/ioutil"
 	"os"
 	"path"
@@ -13,23 +14,27 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/Masterminds/sprig/v3"
+	"github.com/spf13/afero"
 )
 
 type HelmTemplater struct {
 	helpers string
 	dir     string
+	fs      afero.Fs
 }
 
 type files struct {
 	dir string
+	fs  afero.Fs
 }
 
 // NewHelmTemplater -
-func NewHelmTemplater(dir string) (*HelmTemplater, error) {
+func NewHelmTemplater(fs afero.Fs, dir string) (*HelmTemplater, error) {
 	h := &HelmTemplater{
 		dir: dir,
+		fs:  fs,
 	}
-	content, err := ioutil.ReadFile(path.Join(dir, "templates", "_helpers.tpl"))
+	content, err := afero.ReadFile(h.fs, path.Join(dir, "templates", "_helpers.tpl"))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -39,6 +44,55 @@ func NewHelmTemplater(dir string) (*HelmTemplater, error) {
 		h.helpers = string(content)
 	}
 	return h, nil
+}
+
+func (h *HelmTemplater) Template(externGlob string, value interface{}, writer io.Writer) error {
+	var glob string
+	if externGlob != "" {
+		glob = path.Join(h.dir, "templates", externGlob)
+	} else {
+		glob = path.Join(h.dir, "templates", "*.yaml")
+	}
+	filenames, err := filepath.Glob(glob)
+	if err != nil {
+		return err
+	}
+	if len(filenames) == 0 {
+		return nil
+	}
+
+	for _, filename := range filenames {
+		var buffer bytes.Buffer
+		tpl, err := h.template(filepath.Base(filename))
+		if err != nil {
+			return err
+		}
+		content, err := afero.ReadFile(h.fs, filename)
+		if err != nil {
+			return err
+		}
+		tpl, err = tpl.Parse(string(content))
+		if err != nil {
+			return err
+		}
+		err = tpl.Execute(&buffer, value)
+		if err != nil {
+			return err
+		}
+		if buffer.Len() > 0 {
+			content := strings.TrimSpace(buffer.String())
+			if len(content) > 0 {
+				if !strings.HasPrefix(content, "---") {
+					writer.Write([]byte("---\n"))
+				}
+				writer.Write([]byte(content))
+				writer.Write([]byte("\n"))
+			}
+		}
+
+	}
+	return nil
+
 }
 
 func (h *HelmTemplater) template(name string) (result *template.Template, err error) {
@@ -107,7 +161,7 @@ func toJSON(v interface{}) string {
 
 func (f files) Glob(pattern string) map[string][]byte {
 	result := make(map[string][]byte)
-	matches, err := filepath.Glob(path.Join(f.dir, pattern))
+	matches, err := afero.Glob(f.fs, path.Join(f.dir, pattern))
 	if err != nil {
 		return result
 	}
@@ -126,7 +180,7 @@ func (f files) Glob(pattern string) map[string][]byte {
 }
 
 func (f files) Get(name string) string {
-	data, err := ioutil.ReadFile(path.Join(f.dir, name))
+	data, err := afero.ReadFile(f.fs, path.Join(f.dir, name))
 	if err != nil {
 		return err.Error()
 	}

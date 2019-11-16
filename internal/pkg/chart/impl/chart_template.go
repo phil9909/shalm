@@ -3,8 +3,6 @@ package impl
 import (
 	"bytes"
 	"io"
-	"path/filepath"
-	"strings"
 
 	"go.starlark.net/starlark"
 )
@@ -56,24 +54,10 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer)
 }
 
 func (c *chartImpl) template(thread *starlark.Thread, externGlob string, writer io.Writer) error {
-	helmTemplater, err := NewHelmTemplater(c.path())
+	h, err := NewHelmTemplater(c.fs, c.path())
 	if err != nil {
 		return err
 	}
-	var glob string
-	if externGlob != "" {
-		glob = c.path("templates", externGlob)
-	} else {
-		glob = c.path("templates", "*.yaml")
-	}
-	filenames, err := filepath.Glob(glob)
-	if err != nil {
-		return err
-	}
-	if len(filenames) == 0 {
-		return nil
-	}
-
 	values := toGo(c).(map[string]interface{})
 	methods := make(map[string]interface{})
 	for k, f := range c.methods {
@@ -83,47 +67,21 @@ func (c *chartImpl) template(thread *starlark.Thread, externGlob string, writer 
 			return toGo(value), err
 		}
 	}
-	for _, filename := range filenames {
-		var buffer bytes.Buffer
-		tpl, err := helmTemplater.template(filepath.Base(filename))
-		if err != nil {
-			return err
-		}
-		tpl, err = tpl.ParseFiles(filename)
-		if err != nil {
-			return err
-		}
-		err = tpl.Execute(&buffer, struct {
-			Values  interface{}
-			Methods map[string]interface{}
-			Chart   Chart
-			Release Release
-			Files   files
-		}{
-			Values:  values,
-			Methods: methods,
-			Chart: Chart{
-				Name:       c.Name,
-				AppVersion: c.Version.String(),
-				Version:    c.Version.String(),
-			},
-			Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name},
-			Files:   files{c.dir},
-		})
-		if err != nil {
-			return err
-		}
-		if buffer.Len() > 0 {
-			content := strings.TrimSpace(buffer.String())
-			if len(content) > 0 {
-				if !strings.HasPrefix(content, "---") {
-					writer.Write([]byte("---\n"))
-				}
-				writer.Write([]byte(content))
-				writer.Write([]byte("\n"))
-			}
-		}
-
-	}
-	return nil
+	return h.Template(externGlob, struct {
+		Values  interface{}
+		Methods map[string]interface{}
+		Chart   Chart
+		Release Release
+		Files   files
+	}{
+		Values:  values,
+		Methods: methods,
+		Chart: Chart{
+			Name:       c.Name,
+			AppVersion: c.Version.String(),
+			Version:    c.Version.String(),
+		},
+		Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name},
+		Files:   files{dir: c.dir, fs: c.fs},
+	}, writer)
 }

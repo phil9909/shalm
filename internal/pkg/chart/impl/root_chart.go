@@ -5,12 +5,14 @@ import (
 	"os"
 
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/spf13/afero"
 	"go.starlark.net/starlark"
 )
 
 type rootChart struct {
 	dir       string
 	namespace string
+	fs        afero.Fs
 }
 
 var (
@@ -24,12 +26,16 @@ func NewRootChart(namespace string) (api.Chart, error) {
 	if err != nil {
 		return nil, err
 	}
-	return NewRootChartForDir(namespace, cwd), nil
+	return NewRootChartForDir(namespace, cwd, afero.NewOsFs()), nil
 }
 
 // NewRootChartForDir -
-func NewRootChartForDir(namespace string, dir string) api.Chart {
-	return &rootChart{dir: dir, namespace: namespace}
+func NewRootChartForDir(namespace string, dir string, fs afero.Fs) api.Chart {
+	return &rootChart{dir: dir, namespace: namespace, fs: fs}
+}
+
+func (c *rootChart) GetFs() afero.Fs {
+	return c.fs
 }
 
 func (c *rootChart) GetName() string {

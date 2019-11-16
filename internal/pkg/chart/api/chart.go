@@ -3,6 +3,7 @@ package api
 import (
 	"io"
 
+	"github.com/spf13/afero"
 	"go.starlark.net/starlark"
 )
 
@@ -28,6 +29,7 @@ type Chart interface {
 	GetName() string
 	GetNamespace() string
 	GetDir() string
+	GetFs() afero.Fs
 	Walk(cb func(name string, size int64, body io.Reader, err error) error) error
 	Apply(thread *starlark.Thread, k K8s) error
 	Delete(thread *starlark.Thread, k K8s) error
