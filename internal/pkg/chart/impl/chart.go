@@ -244,23 +244,24 @@ func (c *chartImpl) apply(thread *starlark.Thread, k api.K8sValue, installOpts *
 	if err != nil {
 		return err
 	}
-	return c.applyLocal(thread, k, installOpts)
+	return c.applyLocal(thread, "", k, installOpts)
 }
 
 func (c *chartImpl) applyLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var installOpts *installOptsValue
 		var k api.K8sValue
-		if err := starlark.UnpackArgs("__apply", args, kwargs, "k8s", &k, "installOpts", &installOpts); err != nil {
+		var glob string
+		if err := starlark.UnpackArgs("__apply", args, kwargs, "k8s", &k, "installOpts", &installOpts, "glob?", &glob); err != nil {
 			return nil, err
 		}
-		return starlark.None, c.applyLocal(thread, k, installOpts)
+		return starlark.None, c.applyLocal(thread, glob, k, installOpts)
 	})
 }
 
-func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, installOpts *installOptsValue) error {
+func (c *chartImpl) applyLocal(thread *starlark.Thread, glob string, k api.K8sValue, installOpts *installOptsValue) error {
 	return k.Apply(installOpts.Namespace, func(writer io.Writer) error {
-		return c.template(thread, installOpts, writer)
+		return c.template(thread, glob, installOpts, writer)
 	})
 }
 
@@ -292,23 +293,24 @@ func (c *chartImpl) delete(thread *starlark.Thread, k api.K8sValue, installOpts 
 	if err != nil {
 		return err
 	}
-	return c.deleteLocal(thread, k, installOpts)
+	return c.deleteLocal(thread, "", k, installOpts)
 }
 
 func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var installOpts *installOptsValue
 		var k api.K8sValue
-		if err := starlark.UnpackArgs("__delete", args, kwargs, "k8s", &k, "installOpts", &installOpts); err != nil {
+		var glob string
+		if err := starlark.UnpackArgs("__delete", args, kwargs, "k8s", &k, "installOpts", &installOpts, "glob?", &glob); err != nil {
 			return nil, err
 		}
-		return starlark.None, c.deleteLocal(thread, k, installOpts)
+		return starlark.None, c.deleteLocal(thread, glob, k, installOpts)
 	})
 }
 
-func (c *chartImpl) deleteLocal(thread *starlark.Thread, k api.K8sValue, installOpts *installOptsValue) error {
+func (c *chartImpl) deleteLocal(thread *starlark.Thread, glob string, k api.K8sValue, installOpts *installOptsValue) error {
 	return k.Delete(installOpts.Namespace, func(writer io.Writer) error {
-		return c.template(thread, installOpts, writer)
+		return c.template(thread, glob, installOpts, writer)
 	})
 }
 

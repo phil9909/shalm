@@ -3,10 +3,8 @@ package impl
 import (
 	"bytes"
 	"io"
-	"os"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"go.starlark.net/starlark"
@@ -56,21 +54,26 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, installOpts *inst
 	if err != nil {
 		return err
 	}
-	return c.template(thread, installOpts, writer)
+	return c.template(thread, "", installOpts, writer)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, installOpts *installOptsValue, writer io.Writer) error {
-	glob := c.path("templates", "*.yaml")
+func (c *chartImpl) template(thread *starlark.Thread, externGlob string, installOpts *installOptsValue, writer io.Writer) error {
+	helmTemplater, err := NewHelmTemplater(c.path())
+	if err != nil {
+		return err
+	}
+	var glob string
+	if externGlob != "" {
+		glob = c.path("templates", externGlob)
+	} else {
+		glob = c.path("templates", "*.yaml")
+	}
 	filenames, err := filepath.Glob(glob)
 	if err != nil {
 		return err
 	}
 	if len(filenames) == 0 {
 		return nil
-	}
-	helpers := c.path("templates", "_helpers.tpl")
-	if _, err := os.Stat(helpers); err != nil {
-		helpers = ""
 	}
 
 	values := toGo(c).(map[string]interface{})
@@ -84,14 +87,11 @@ func (c *chartImpl) template(thread *starlark.Thread, installOpts *installOptsVa
 	}
 	for _, filename := range filenames {
 		var buffer bytes.Buffer
-		tpl := template.New(filepath.Base(filename))
-		tpl = addTemplateFuncs(tpl)
-		if helpers == "" {
-			tpl, err = tpl.ParseFiles(filename)
-		} else {
-			tpl, err = tpl.ParseFiles(helpers, filename)
+		tpl, err := helmTemplater.template(filepath.Base(filename))
+		if err != nil {
+			return err
 		}
-
+		tpl, err = tpl.ParseFiles(filename)
 		if err != nil {
 			return err
 		}
