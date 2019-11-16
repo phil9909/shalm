@@ -107,27 +107,34 @@ func (r *OciRepo) Push(chart api.Chart, ref string) error {
 	return nil
 }
 
+func removeArg(kwargs []starlark.Tuple, name string, value *string) []starlark.Tuple {
+	var result []starlark.Tuple
+	for _, arg := range kwargs {
+		if arg.Len() == 2 {
+			key, keyOK := arg.Index(0).(starlark.String)
+			val, valOK := arg.Index(0).(starlark.String)
+			if keyOK && valOK && key.GoString() == name {
+				*value = val.GoString()
+				continue
+			}
+		}
+		result = append(result, arg)
+	}
+	return result
+}
+
 // Get -
 func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
 	var dir string
 	if filepath.IsAbs(ref) {
 		dir = ref
 	} else {
-		var cwd string
-		if parent == nil {
-			var err error
-			cwd, err = os.Getwd()
-			if err != nil {
-				return nil, err
-			}
-		} else {
-			cwd = parent.GetDir()
-		}
-		dir = path.Join(cwd, ref)
+		dir = path.Join(parent.GetDir(), ref)
 	}
-
+	namespace := parent.GetNamespace()
+	kwargs = removeArg(kwargs, "namespace", &namespace)
 	if _, err := os.Stat(dir); err == nil {
-		return NewChart(thread, r, dir, args, kwargs)
+		return NewChart(thread, r, dir, namespace, args, kwargs)
 	}
 
 	dir = path.Join(r.cacheDir, ref)
@@ -153,7 +160,7 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, arg
 			return nil, err
 		}
 	}
-	return NewChart(thread, r, dir, args, kwargs)
+	return NewChart(thread, r, dir, namespace, args, kwargs)
 }
 
 func tarCreate(chart api.Chart, writer io.Writer) error {

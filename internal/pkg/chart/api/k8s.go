@@ -9,9 +9,11 @@ import (
 
 // K8s kubernetes API
 type K8s interface {
-	RolloutStatus(namespace string, typ string, name string, timeout time.Duration) error
-	Apply(namespace string, output func(io.Writer) error) error
-	Delete(namespace string, output func(io.Writer) error) error
+	ForNamespace(namespace string) K8s
+	RolloutStatus(kind string, name string, timeout time.Duration) error
+	DeleteObject(kind string, name string) error
+	Apply(output func(io.Writer) error) error
+	Delete(output func(io.Writer) error) error
 }
 
 // K8sValue -

@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"go.starlark.net/starlark"
 )
 
@@ -24,8 +23,8 @@ type Chart struct {
 	APIVersion string
 }
 
-func (c *chartImpl) Template(thread *starlark.Thread, installOpts *api.InstallOpts) (string, error) {
-	t, err := starlark.Call(thread, c.templateFunction(), starlark.Tuple{NewInstallOptsValue(installOpts)}, nil)
+func (c *chartImpl) Template(thread *starlark.Thread) (string, error) {
+	t, err := starlark.Call(thread, c.templateFunction(), nil, nil)
 	if err != nil {
 		return "", err
 	}
@@ -34,12 +33,11 @@ func (c *chartImpl) Template(thread *starlark.Thread, installOpts *api.InstallOp
 
 func (c *chartImpl) templateFunction() starlark.Callable {
 	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var installOpts *installOptsValue
-		if err := starlark.UnpackArgs("template", args, kwargs, "installOpts", &installOpts); err != nil {
+		if err := starlark.UnpackArgs("template", args, kwargs); err != nil {
 			return nil, err
 		}
 		var writer bytes.Buffer
-		err := c.templateRecursive(thread, installOpts, &writer)
+		err := c.templateRecursive(thread, &writer)
 		if err != nil {
 			return starlark.None, err
 		}
@@ -47,17 +45,17 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) templateRecursive(thread *starlark.Thread, installOpts *installOptsValue, writer io.Writer) error {
+func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
-		return subChart.templateRecursive(thread, installOpts, writer)
+		return subChart.templateRecursive(thread, writer)
 	})
 	if err != nil {
 		return err
 	}
-	return c.template(thread, "", installOpts, writer)
+	return c.template(thread, "", writer)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, externGlob string, installOpts *installOptsValue, writer io.Writer) error {
+func (c *chartImpl) template(thread *starlark.Thread, externGlob string, writer io.Writer) error {
 	helmTemplater, err := NewHelmTemplater(c.path())
 	if err != nil {
 		return err
@@ -109,7 +107,7 @@ func (c *chartImpl) template(thread *starlark.Thread, externGlob string, install
 				AppVersion: c.Version.String(),
 				Version:    c.Version.String(),
 			},
-			Release: Release{Name: c.Name, Namespace: installOpts.Namespace, Service: c.Name},
+			Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name},
 			Files:   files{c.dir},
 		})
 		if err != nil {

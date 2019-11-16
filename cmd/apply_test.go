@@ -7,7 +7,6 @@ import (
 	"runtime"
 
 	"github.com/kramerul/shalm/cmd/fakes"
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,13 +25,13 @@ var _ = Describe("Apply Chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.K8sFake{Writer: &writer}
-			err := apply(impl.NewRepo(), path.Join(example, "cf"), impl.NewK8sValue(k),
-				&api.InstallOpts{Namespace: "namespace"})
+			err := apply(impl.NewRepo(), impl.NewRootChartForDir("mynamespace", example), "cf", impl.NewK8sValue(k))
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))
 			Expect(k.RolloutStatusCalls).To(HaveLen(1))
-			Expect(k.RolloutStatusCalls[0]).To(Equal("test"))
+			Expect(k.RolloutStatusCalls[0]).To(Equal("mariadb-master"))
+			Expect(k.Namespace).To(Equal("mynamespace"))
 		})
 	})
 })

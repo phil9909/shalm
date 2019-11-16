@@ -5,7 +5,6 @@ import (
 
 	"go.starlark.net/starlark"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	"github.com/spf13/cobra"
 )
@@ -20,11 +19,11 @@ var templateCmd = &cobra.Command{
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, nil, chartName, nil, nil)
+		c, err := repo.Get(thread, rootChart(), chartName, nil, nil)
 		if err != nil {
 			return err
 		}
-		t, err := c.Template(thread, &api.InstallOpts{Namespace: nameSpace})
+		t, err := c.Template(thread)
 		if err != nil {
 			return err
 		}

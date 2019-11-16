@@ -67,22 +67,7 @@ func (h *HelmTemplater) template(name string) (result *template.Template, err er
 			return
 		}
 	}
-	// result = result.Funcs(map[string]interface{}{
-	// 	"include": h.include(),
-	// })
 	return
-}
-
-func (h *HelmTemplater) include() func(name string, data interface{}) (string, error) {
-	return func(name string, data interface{}) (string, error) {
-		var buf strings.Builder
-		t, err := h.template(name)
-		if err != nil {
-			return "", err
-		}
-		err = t.ExecuteTemplate(&buf, name, data)
-		return buf.String(), err
-	}
 }
 
 func (h *HelmTemplater) tpl() func(stringTemplate string, values interface{}) interface{} {

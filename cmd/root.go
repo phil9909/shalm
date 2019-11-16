@@ -4,10 +4,12 @@ import (
 	"fmt"
 
 	"github.com/containerd/containerd/remotes/docker"
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	"github.com/spf13/cobra"
 )
 
-var nameSpace string
+var nameSpace string = "default"
 var username string
 var password string
 
@@ -45,4 +47,12 @@ func authOpts() []docker.AuthorizerOpt {
 		})}
 	}
 	return nil
+}
+
+func rootChart() api.Chart {
+	chart, err := impl.NewRootChart(nameSpace)
+	if err != nil {
+		panic(err)
+	}
+	return chart
 }

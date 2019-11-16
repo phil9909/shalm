@@ -15,7 +15,7 @@ var pushCmd = &cobra.Command{
 		thread := &starlark.Thread{Name: "my thread"}
 
 		repo := impl.NewRepo(authOpts()...)
-		chart, err := repo.Get(thread, nil, args[0], nil, nil)
+		chart, err := repo.Get(thread, rootChart(), args[0], nil, nil)
 		if err != nil {
 			return err
 		}
