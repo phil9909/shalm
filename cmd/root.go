@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/containerd/containerd/remotes/docker"
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	"github.com/spf13/cobra"
@@ -39,9 +38,9 @@ func Execute() error {
 	return rootCmd.Execute()
 }
 
-func authOpts() []docker.AuthorizerOpt {
+func repoOpts() []impl.RepoOpts {
 	if username != "" {
-		return []docker.AuthorizerOpt{docker.WithAuthCreds(func(repo string) (string, string, error) {
+		return []impl.RepoOpts{impl.WithAuthCreds(func(repo string) (string, string, error) {
 			// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
 			return username, password, nil
 		})}

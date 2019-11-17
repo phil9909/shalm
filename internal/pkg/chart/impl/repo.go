@@ -2,15 +2,21 @@ package impl
 
 import (
 	"archive/tar"
+	"bufio"
 	"bytes"
+	"compress/gzip"
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"log"
+	"net/http"
 	"os"
 	"path"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/containerd/containerd/remotes"
 	"github.com/containerd/containerd/remotes/docker"
@@ -22,11 +28,23 @@ import (
 	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
+// RepoOpts -
+type RepoOpts func(*OciRepo)
+
+// WithAuthCreds -
+func WithAuthCreds(credentials func(string) (string, string, error)) RepoOpts {
+	return func(opt *OciRepo) {
+		opt.credentials = credentials
+	}
+}
+
 // OciRepo -
 type OciRepo struct {
-	baseDir  string
-	cacheDir string
-	resolver remotes.Resolver
+	baseDir     string
+	cacheDir    string
+	resolver    remotes.Resolver
+	httpClient  *http.Client
+	credentials func(string) (string, string, error)
 }
 
 var _ api.Repo = &OciRepo{}
@@ -36,55 +54,38 @@ const (
 )
 
 // NewRepo -
-func NewRepo(authOpts ...docker.AuthorizerOpt) api.Repo {
+func NewRepo(authOpts ...RepoOpts) api.Repo {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
 	}
-	return &OciRepo{
+	r := &OciRepo{
 		cacheDir: path.Join(homedir, ".shalm", "cache"),
-		resolver: docker.NewResolver(docker.ResolverOptions{
-			Hosts: docker.ConfigureDefaultRegistries(
-				docker.WithPlainHTTP(func(repository string) (bool, error) {
-					if repository == "localhost" || strings.HasPrefix(repository, "localhost:") {
-						return true, nil
-					}
-					return false, nil
-				}),
-				docker.WithAuthorizer(docker.NewDockerAuthorizer(authOpts...)),
-			)}),
+		httpClient: &http.Client{
+			Timeout: time.Second * 60,
+		},
 	}
-}
-
-func (r *OciRepo) testOras(ref string) error {
-
-	ctx := context.Background()
-	fileName := "hello.txt"
-	fileContent := []byte("Hello World!\n")
-	customMediaType := "my.custom.media.type"
-	// Push file(s) w custom mediatype to registry
-	memoryStore := content.NewMemoryStore()
-	desc := memoryStore.Add(fileName, customMediaType, fileContent)
-	pushContents := []ocispec.Descriptor{desc}
-	fmt.Printf("Pushing %s to %s...\n", fileName, ref)
-	desc, err := oras.Push(ctx, r.resolver, ref, memoryStore, pushContents)
-	if err != nil {
-		return err
+	r.resolver = docker.NewResolver(docker.ResolverOptions{
+		Hosts: docker.ConfigureDefaultRegistries(
+			docker.WithPlainHTTP(func(repository string) (bool, error) {
+				if repository == "localhost" || strings.HasPrefix(repository, "localhost:") {
+					return true, nil
+				}
+				return false, nil
+			}),
+			docker.WithAuthorizer(docker.NewDockerAuthorizer(docker.WithAuthCreds(func(ref string) (string, string, error) {
+				if r.credentials != nil {
+					return r.credentials(ref)
+				} else {
+					return "", "", nil
+				}
+			}))),
+		)})
+	for _, a := range authOpts {
+		a(r)
 	}
-	fmt.Printf("Pushed to %s with digest %s\n", ref, desc.Digest)
 
-	// Pull file(s) from registry and save to disk
-	fmt.Printf("Pulling from %s and saving to %s...\n", ref, fileName)
-	fileStore := content.NewFileStore("")
-	defer fileStore.Close()
-	allowedMediaTypes := []string{customMediaType}
-	desc, _, err = oras.Pull(ctx, r.resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
-	if err != nil {
-		return err
-	}
-	fmt.Printf("Pulled from %s with digest %s\n", ref, desc.Digest)
-	fmt.Printf("Try running 'cat %s'\n", fileName)
-	return nil
+	return r
 }
 
 // Push -
@@ -115,34 +116,48 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, arg
 	} else {
 		dir = path.Join(parent.GetDir(), ref)
 	}
-	if _, err := os.Stat(dir); err == nil {
-		return NewChart(thread, r, dir, parent, args, kwargs)
+	md5Sum := md5.Sum([]byte(ref))
+	cacheDir := path.Join(r.cacheDir, hex.EncodeToString(md5Sum[:]))
+	os.RemoveAll(cacheDir)
+
+	if stat, err := os.Stat(dir); err == nil {
+		if stat.IsDir() {
+			return NewChart(thread, r, dir, parent, args, kwargs)
+		}
+		if err = tarExtractFromFile(dir, cacheDir); err != nil {
+			return nil, err
+		}
+		return NewChart(thread, r, cacheDir, parent, args, kwargs)
+
 	}
 
-	dir = path.Join(r.cacheDir, ref)
-	if _, err := os.Stat(dir); err != nil {
-		if !os.IsNotExist(err) {
+	if strings.HasPrefix(ref, "https:") || strings.HasPrefix(ref, "http:") {
+		res, err := r.httpClient.Get(ref)
+		if err != nil {
+			return nil, fmt.Errorf("Error fetching %s: %v", ref, err)
+		}
+		if res.StatusCode != 200 {
+			return nil, fmt.Errorf("Error fetching %s: status=%d", ref, res.StatusCode)
+		}
+		defer res.Body.Close()
+		if err = tarExtract(res.Body, cacheDir); err != nil {
 			return nil, err
 		}
-		if err := os.MkdirAll(dir, 0755); err != nil {
+	} else {
+		// Pull file(s) from registry and save to disk
+		fileStore := content.NewFileStore(cacheDir)
+		defer fileStore.Close()
+		allowedMediaTypes := []string{customMediaType}
+		ctx := context.Background()
+		_, _, err := oras.Pull(ctx, r.resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
+		if err != nil {
 			return nil, err
 		}
-		{
-			// Pull file(s) from registry and save to disk
-			fileStore := content.NewFileStore(dir)
-			defer fileStore.Close()
-			allowedMediaTypes := []string{customMediaType}
-			ctx := context.Background()
-			_, _, err := oras.Pull(ctx, r.resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
-			if err != nil {
-				return nil, err
-			}
-		}
-		if err = tarExtract(path.Join(dir, "chart.tar"), dir); err != nil {
+		if err = tarExtractFromFile(path.Join(cacheDir, "chart.tar"), cacheDir); err != nil {
 			return nil, err
 		}
 	}
-	return NewChart(thread, r, dir, parent, args, kwargs)
+	return NewChart(thread, r, cacheDir, parent, args, kwargs)
 }
 
 func tarCreate(chart api.Chart, writer io.Writer) error {
@@ -164,13 +179,29 @@ func tarCreate(chart api.Chart, writer io.Writer) error {
 	})
 }
 
-func tarExtract(tarFile string, dir string) error {
+func tarExtractFromFile(tarFile string, dir string) error {
 	in, err := os.Open(tarFile)
 	if err != nil {
 		return err
 	}
 	defer in.Close()
-	// Open and iterate through the files in the archive.
+	return tarExtract(in, dir)
+}
+
+func tarExtract(in io.Reader, dir string) error {
+	reader := bufio.NewReader(in)
+	testBytes, err := reader.Peek(64)
+	if err != nil {
+		return err
+	}
+	in = reader
+	contentType := http.DetectContentType(testBytes)
+	if strings.Contains(contentType, "x-gzip") {
+		in, err = gzip.NewReader(in)
+		if err != nil {
+			return err
+		}
+	}
 	tr := tar.NewReader(in)
 	for {
 		hdr, err := tr.Next()
@@ -179,6 +210,9 @@ func tarExtract(tarFile string, dir string) error {
 		}
 		if err != nil {
 			return err
+		}
+		if hdr.FileInfo().IsDir() {
+			continue
 		}
 		fn := path.Join(dir, hdr.Name)
 		if err := os.MkdirAll(path.Dir(fn), 0755); err != nil {

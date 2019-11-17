@@ -14,7 +14,7 @@ var pushCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		thread := &starlark.Thread{Name: "my thread"}
 
-		repo := impl.NewRepo(authOpts()...)
+		repo := impl.NewRepo(repoOpts()...)
 		chart, err := repo.Get(thread, rootChart(), args[0], nil, nil)
 		if err != nil {
 			return err

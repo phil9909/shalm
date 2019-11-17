@@ -1,6 +1,8 @@
 package impl
 
 import (
+	"io/ioutil"
+	"net/http"
 	"path"
 	"path/filepath"
 	"runtime"
@@ -8,6 +10,7 @@ import (
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
+	"github.com/spf13/afero"
 	"go.starlark.net/starlark"
 )
 
@@ -23,25 +26,39 @@ var _ = Describe("OCIRepo", func() {
 	Context("push chart", func() {
 		var repo api.Repo
 		var thread *starlark.Thread
+		var rootChart api.Chart
 
 		BeforeEach(func() {
 			thread = &starlark.Thread{Name: "my thread"}
-			repo = NewRepo()
+			repo = NewRepo(WithAuthCreds(func(repo string) (string, string, error) {
+				// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
+				return "", "", nil
+			}))
+			rootChart = NewRootChartForDir("default", example, afero.NewOsFs())
 
 		})
-		It("pushes chart correct", func() {
-			rc, err := NewRootChart(example)
+		It("reads chart from directory", func() {
+			chart, err := repo.Get(thread, rootChart, "mariadb", nil, nil)
 			Expect(err).ToNot(HaveOccurred())
-			_, err = repo.Get(thread, rc, "mariadb", nil, nil)
-			Expect(err).ToNot(HaveOccurred())
-			// err = repo.Push(chart, "localhost:5000/mariadb:current")
-			// Expect(err).ToNot(HaveOccurred())
+			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
-		// It("pulls chart correct", func() {
-		// 	chart, err := repo.Get(thread, nil, "localhost:5000/mariadb:current", nil, nil)
-		// 	Expect(err).ToNot(HaveOccurred())
-		// 	Expect(chart.(*chartImpl).Version.String()).To(Equal("6.12.2"))
-		// })
+		It("reads chart from tar file", func() {
+			chart, err := repo.Get(thread, rootChart, "mariadb.tgz", nil, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(chart.GetName()).To(Equal("mariadb"))
+		})
+		It("reads chart from http", func() {
+
+			http.HandleFunc("/mariadb.tgz", func(w http.ResponseWriter, r *http.Request) {
+				content, _ := ioutil.ReadFile(path.Join(example, "mariadb.tgz"))
+				w.Write(content)
+			})
+
+			go http.ListenAndServe("127.0.0.1:8675", nil)
+			chart, err := repo.Get(thread, rootChart, "http://localhost:8675/mariadb.tgz", nil, nil)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(chart.GetName()).To(Equal("mariadb"))
+		})
 
 	})
 })

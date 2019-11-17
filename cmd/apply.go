@@ -16,7 +16,7 @@ var applyCmd = &cobra.Command{
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		chartName := args[0]
-		repo := impl.NewRepo(authOpts()...)
+		repo := impl.NewRepo(repoOpts()...)
 		return apply(repo, rootChart(), chartName, impl.NewK8s())
 	},
 }

@@ -14,7 +14,7 @@ var deleteCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		repo := impl.NewRepo(authOpts()...)
+		repo := impl.NewRepo(repoOpts()...)
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
