@@ -14,7 +14,7 @@ import (
 func (c *chartImpl) loadChartYaml() error {
 	var helmChart api.HelmChart
 
-	err := loadYamlFile(c.path("Chart.yaml"), &helmChart)
+	err := c.loadYamlFile(c.path("Chart.yaml"), &helmChart)
 	if err != nil {
 		return err
 	}
@@ -25,7 +25,7 @@ func (c *chartImpl) loadChartYaml() error {
 
 func (c *chartImpl) loadValuesYaml() error {
 	var values map[string]interface{}
-	err := loadYamlFile(c.path("values.yaml"), &values)
+	err := c.loadYamlFile(c.path("values.yaml"), &values)
 	if err != nil {
 		return err
 	}
@@ -42,7 +42,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.T
 	c.methods["__delete"] = c.deleteLocalFunction()
 
 	file := c.path("Chart.star")
-	if _, err := os.Stat(file); os.IsNotExist(err) {
+	if _, err := c.fs.Stat(file); os.IsNotExist(err) {
 		return nil
 	}
 	globals, err := starlark.ExecFile(thread, file, nil, starlark.StringDict{
@@ -85,8 +85,8 @@ func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.T
 	return nil
 }
 
-func loadYamlFile(filename string, value interface{}) error {
-	reader, err := os.Open(filename) // For read access.
+func (c *chartImpl) loadYamlFile(filename string, value interface{}) error {
+	reader, err := c.fs.Open(filename) // For read access.
 	if err != nil {
 		if os.IsNotExist(err) {
 			return err
