@@ -246,7 +246,7 @@ func (c *chartImpl) applyFunction() starlark.Callable {
 }
 
 func (c *chartImpl) Apply(thread *starlark.Thread, k api.K8s) error {
-	_, err := starlark.Call(thread, c.methods["apply"], starlark.Tuple{NewK8sValue(k)}, nil)
+	_, err := starlark.Call(thread, c.methods["apply"], starlark.Tuple{NewK8sValue(k.ForNamespace(c.GetNamespace()))}, nil)
 	if err != nil {
 		return err
 	}
@@ -277,13 +277,13 @@ func (c *chartImpl) applyLocalFunction() starlark.Callable {
 }
 
 func (c *chartImpl) applyLocal(thread *starlark.Thread, glob string, k api.K8sValue) error {
-	return k.ForNamespace(c.namespace).Apply(func(writer io.Writer) error {
+	return k.Apply(func(writer io.Writer) error {
 		return c.template(thread, glob, writer)
 	})
 }
 
 func (c *chartImpl) Delete(thread *starlark.Thread, k api.K8s) error {
-	_, err := starlark.Call(thread, c.methods["delete"], starlark.Tuple{NewK8sValue(k)}, nil)
+	_, err := starlark.Call(thread, c.methods["delete"], starlark.Tuple{NewK8sValue(k.ForNamespace(c.GetNamespace()))}, nil)
 	if err != nil {
 		return err
 	}

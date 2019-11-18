@@ -38,6 +38,8 @@ func toStarlark(vi interface{}) starlark.Value {
 			d.SetKey(keyValue, toStarlark(strct.Interface()))
 		}
 		return d
+	case reflect.Struct:
+		panic(fmt.Errorf("cannot convert Struct to starlark"))
 	case reflect.Int8:
 		panic(fmt.Errorf("cannot convert Int8 to starlark"))
 	case reflect.Int16:
@@ -70,8 +72,6 @@ func toStarlark(vi interface{}) starlark.Value {
 		panic(fmt.Errorf("cannot convert Func to starlark"))
 	case reflect.Interface:
 		panic(fmt.Errorf("cannot convert Interface to starlark"))
-	case reflect.Struct:
-		return starlark.String(v.String())
 	case reflect.UnsafePointer:
 		panic(fmt.Errorf("cannot convert UnsafePointer to starlark"))
 	default:

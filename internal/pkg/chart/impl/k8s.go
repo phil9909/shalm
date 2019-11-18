@@ -50,6 +50,7 @@ func (k *k8sImpl) RolloutStatus(typ string, name string, timeout time.Duration) 
 
 func (k *k8sImpl) kubectl(command string, flags ...string) *exec.Cmd {
 	cmd := exec.Command("kubectl", append([]string{"-n", k.namespace, command}, flags...)...)
+	fmt.Println(cmd.String())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd
