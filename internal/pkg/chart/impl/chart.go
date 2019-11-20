@@ -11,7 +11,6 @@ import (
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	"github.com/spf13/afero"
 	"go.starlark.net/starlark"
-	"go.starlark.net/syntax"
 )
 
 type chartImpl struct {
@@ -197,38 +196,6 @@ func (c *chartImpl) SetField(name string, val starlark.Value) error {
 	}
 	c.values[name] = val
 	return nil
-}
-
-// CompareSameType -
-func (c *chartImpl) CompareSameType(op syntax.Token, yv starlark.Value, depth int) (bool, error) {
-	y := yv.(*chartImpl)
-	switch op {
-	case syntax.EQL:
-		return chartEqual(c, y, depth)
-	case syntax.NEQ:
-		eq, err := chartEqual(c, y, depth)
-		return !eq, err
-	default:
-		return false, fmt.Errorf("%s %s %s not implemented", c.Type(), op, y.Type())
-	}
-}
-
-func chartEqual(x, y *chartImpl, depth int) (bool, error) {
-	if len(x.values) != len(y.values) {
-		return false, nil
-	}
-
-	for k, vx := range x.values {
-		vy, ok := y.values[k]
-		if !ok {
-			return false, nil
-		} else if eq, err := starlark.EqualDepth(vx, vy, depth-1); err != nil {
-			return false, err
-		} else if !eq {
-			return false, nil
-		}
-	}
-	return true, nil
 }
 
 func notImplemented(_ interface{}) string {
