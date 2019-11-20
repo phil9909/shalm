@@ -11,11 +11,15 @@ var _ = Describe("Converter", func() {
 		data := make(map[string]interface{})
 		data["String"] = "test"
 		data["Array"] = []string{"test1", "test2"}
+		data["Bool"] = true
+		data["Float"] = 0.1
 		data["Map"] = map[string]string{"test1": "test1", "test2": "test2"}
 		starlarkValue := toStarlark(data)
 		goValue := toGo(starlarkValue).(map[string]interface{})
 		Expect(goValue["String"]).To(Equal("test"))
 		Expect(goValue["Array"]).To(ConsistOf("test1", "test2"))
+		Expect(goValue["Bool"]).To(BeEquivalentTo(true))
+		Expect(goValue["Float"]).To(BeEquivalentTo(0.1))
 		Expect(goValue["Map"]).To(HaveKeyWithValue("test1", "test1"))
 		Expect(goValue["Map"]).To(HaveKeyWithValue("test2", "test2"))
 	})

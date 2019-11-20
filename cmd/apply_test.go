@@ -2,11 +2,14 @@ package cmd
 
 import (
 	"bytes"
+	"io"
 	"path"
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/cmd/fakes"
+	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/internal/pkg/chart/fakes"
+
 	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -25,14 +28,24 @@ var _ = Describe("Apply Chart", func() {
 	Context("apply chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
-			k := &fakes.K8sFake{Writer: &writer}
+			k := &fakes.FakeK8s{
+				ApplyStub: func(i func(io.Writer) error) error {
+					i(&writer)
+					return nil
+				},
+			}
+			k.ForNamespaceStub = func(s string) api.K8s {
+				return k
+			}
+
 			err := apply(impl.NewRepo(), impl.NewRootChartForDir("mynamespace", example, afero.NewOsFs()), "cf", impl.NewK8sValue(k))
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))
-			Expect(k.RolloutStatusCalls).To(HaveLen(1))
-			Expect(k.RolloutStatusCalls[0]).To(Equal("mariadb-master"))
-			Expect(k.Namespace).To(Equal("mynamespace"))
+			Expect(k.RolloutStatusCallCount()).To(Equal(1))
+			kind, name, _ := k.RolloutStatusArgsForCall(0)
+			Expect(name).To(Equal("mariadb-master"))
+			Expect(kind).To(Equal("statefulset"))
 		})
 	})
 })
