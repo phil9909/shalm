@@ -213,7 +213,7 @@ func (c *chartImpl) applyFunction() starlark.Callable {
 }
 
 func (c *chartImpl) Apply(thread *starlark.Thread, k api.K8s) error {
-	_, err := starlark.Call(thread, c.methods["apply"], starlark.Tuple{NewK8sValue(k.ForNamespace(c.GetNamespace()))}, nil)
+	_, err := starlark.Call(thread, c.methods["apply"], starlark.Tuple{NewK8sValue(k)}, nil)
 	if err != nil {
 		return err
 	}
@@ -250,7 +250,7 @@ func (c *chartImpl) applyLocal(thread *starlark.Thread, glob string, k api.K8sVa
 }
 
 func (c *chartImpl) Delete(thread *starlark.Thread, k api.K8s) error {
-	_, err := starlark.Call(thread, c.methods["delete"], starlark.Tuple{NewK8sValue(k.ForNamespace(c.GetNamespace()))}, nil)
+	_, err := starlark.Call(thread, c.methods["delete"], starlark.Tuple{NewK8sValue(k)}, nil)
 	if err != nil {
 		return err
 	}
@@ -291,7 +291,7 @@ func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 }
 
 func (c *chartImpl) deleteLocal(thread *starlark.Thread, glob string, k api.K8sValue) error {
-	return k.ForNamespace(c.namespace).Delete(func(writer io.Writer) error {
+	return k.Delete(func(writer io.Writer) error {
 		return c.template(thread, glob, writer)
 	})
 }
@@ -314,7 +314,7 @@ func removeArg(kwargs []starlark.Tuple, name string, value *string) []starlark.T
 	for _, arg := range kwargs {
 		if arg.Len() == 2 {
 			key, keyOK := arg.Index(0).(starlark.String)
-			val, valOK := arg.Index(0).(starlark.String)
+			val, valOK := arg.Index(1).(starlark.String)
 			if keyOK && valOK && key.GoString() == name {
 				*value = val.GoString()
 				continue

@@ -82,7 +82,24 @@ func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.T
 			})
 		}
 	}
+	c.methods["apply"] = wrapNamespace(c.methods["apply"], c.namespace)
+	c.methods["delete"] = wrapNamespace(c.methods["delete"], c.namespace)
+
 	return nil
+}
+
+func wrapNamespace(callable starlark.Callable, namespace string) starlark.Callable {
+	return starlark.NewBuiltin(callable.Name(), func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+		if len(args) == 0 {
+			return nil, fmt.Errorf("Missing first argument k8s")
+		}
+		k, ok := args[0].(api.K8sValue)
+		if !ok {
+			return nil, fmt.Errorf("Invalid first argument to %s", callable.Name())
+		}
+		args[0] = &k8sValueImpl{k.ForNamespace(namespace)}
+		return callable.CallInternal(thread, args, kwargs)
+	})
 }
 
 func (c *chartImpl) loadYamlFile(filename string, value interface{}) error {
