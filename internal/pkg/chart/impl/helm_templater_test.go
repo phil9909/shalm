@@ -22,7 +22,7 @@ var _ = Describe("HelmTemplater", func() {
 			h, err = NewHelmTemplater(fs, ".")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
-			err = h.Template("", struct {
+			err = h.Template(struct {
 				Value string
 			}{
 				Value: "test",
@@ -43,7 +43,7 @@ var _ = Describe("HelmTemplater", func() {
 			h, err = NewHelmTemplater(fs, ".")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
-			err = h.Template("", struct {
+			err = h.Template(struct {
 				Value string
 			}{
 				Value: "test",
@@ -60,7 +60,7 @@ var _ = Describe("HelmTemplater", func() {
 			h, err = NewHelmTemplater(fs, ".")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
-			err = h.Template("", struct {
+			err = h.Template(struct {
 				Value string
 			}{
 				Value: "test",
@@ -77,13 +77,43 @@ var _ = Describe("HelmTemplater", func() {
 			h, err = NewHelmTemplater(fs, ".")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
-			err = h.Template("*[1-2].yaml", struct {
+			err = h.Template(struct {
+				Value string
+			}{
+				Value: "test",
+			}, writer, WithGlob("*[1-2].yaml"))
+			Expect(err).ToNot(HaveOccurred())
+			Expect(writer.String()).To(Equal("---\ntest: test1\n"))
+		})
+		FIt("sorts by kind", func() {
+			var err error
+			fs = afero.NewMemMapFs()
+			fs.MkdirAll("templates", 0755)
+			afero.WriteFile(fs, "templates/test1.yaml", []byte("kind: Other"), 0644)
+			afero.WriteFile(fs, "templates/test2.yaml", []byte("kind: StatefulSet"), 0644)
+			afero.WriteFile(fs, "templates/test3.yaml", []byte("kind: Service"), 0644)
+			h, err = NewHelmTemplater(fs, ".")
+			Expect(err).ToNot(HaveOccurred())
+
+			By("Sorts in install order")
+			writer := &bytes.Buffer{}
+			err = h.Template(struct {
 				Value string
 			}{
 				Value: "test",
 			}, writer)
 			Expect(err).ToNot(HaveOccurred())
-			Expect(writer.String()).To(Equal("---\ntest: test1\n"))
+			Expect(writer.String()).To(Equal("kind: Service\n---\nkind: StatefulSet\n---\nkind: Other\n"))
+
+			By("Sorts in uninstall order")
+			writer = &bytes.Buffer{}
+			err = h.Template(struct {
+				Value string
+			}{
+				Value: "test",
+			}, writer, WithUninstallOrder())
+			Expect(err).ToNot(HaveOccurred())
+			Expect(writer.String()).To(Equal("kind: Other\n---\nkind: StatefulSet\n---\nkind: Service\n"))
 		})
 	})
 })

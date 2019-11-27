@@ -229,7 +229,7 @@ func (c *chartImpl) apply(thread *starlark.Thread, k api.K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.applyLocal(thread, "", k)
+	return c.applyLocal(thread, k)
 }
 
 func (c *chartImpl) applyLocalFunction() starlark.Callable {
@@ -239,13 +239,17 @@ func (c *chartImpl) applyLocalFunction() starlark.Callable {
 		if err := starlark.UnpackArgs("__apply", args, kwargs, "k8s", &k, "glob?", &glob); err != nil {
 			return nil, err
 		}
-		return starlark.None, c.applyLocal(thread, glob, k)
+		var options []Option
+		if glob != "" {
+			options = append(options, WithGlob(glob))
+		}
+		return starlark.None, c.applyLocal(thread, k, options...)
 	})
 }
 
-func (c *chartImpl) applyLocal(thread *starlark.Thread, glob string, k api.K8sValue) error {
+func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, option ...Option) error {
 	return k.Apply(func(writer io.Writer) error {
-		return c.template(thread, glob, writer)
+		return c.template(thread, writer, option...)
 	})
 }
 
@@ -276,7 +280,7 @@ func (c *chartImpl) delete(thread *starlark.Thread, k api.K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.deleteLocal(thread, "", k)
+	return c.deleteLocal(thread, k)
 }
 
 func (c *chartImpl) deleteLocalFunction() starlark.Callable {
@@ -286,13 +290,17 @@ func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 		if err := starlark.UnpackArgs("__delete", args, kwargs, "k8s", &k, "glob?", &glob); err != nil {
 			return nil, err
 		}
-		return starlark.None, c.deleteLocal(thread, glob, k)
+		var options []Option
+		if glob != "" {
+			options = append(options, WithGlob(glob))
+		}
+		return starlark.None, c.deleteLocal(thread, k, options...)
 	})
 }
 
-func (c *chartImpl) deleteLocal(thread *starlark.Thread, glob string, k api.K8sValue) error {
+func (c *chartImpl) deleteLocal(thread *starlark.Thread, k api.K8sValue, options ...Option) error {
 	return k.Delete(func(writer io.Writer) error {
-		return c.template(thread, glob, writer)
+		return c.template(thread, writer, append(options, WithUninstallOrder())...)
 	})
 }
 

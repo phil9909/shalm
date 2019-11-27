@@ -7,6 +7,7 @@ import (
 	"go.starlark.net/starlark"
 )
 
+// Release -
 type Release struct {
 	Name      string
 	Namespace string
@@ -50,10 +51,10 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer)
 	if err != nil {
 		return err
 	}
-	return c.template(thread, "", writer)
+	return c.template(thread, writer)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, externGlob string, writer io.Writer) error {
+func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options ...Option) error {
 	h, err := NewHelmTemplater(c.fs, c.path())
 	if err != nil {
 		return err
@@ -67,7 +68,7 @@ func (c *chartImpl) template(thread *starlark.Thread, externGlob string, writer 
 			return toGo(value), err
 		}
 	}
-	return h.Template(externGlob, struct {
+	return h.Template(struct {
 		Values  interface{}
 		Methods map[string]interface{}
 		Chart   Chart
@@ -83,5 +84,5 @@ func (c *chartImpl) template(thread *starlark.Thread, externGlob string, writer 
 		},
 		Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name},
 		Files:   files{dir: c.dir, fs: c.fs},
-	}, writer)
+	}, writer, options...)
 }
