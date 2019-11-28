@@ -26,7 +26,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value string
 			}{
 				Value: "test",
-			}, writer)
+			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\ntest: test\n"))
 		})
@@ -47,7 +47,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value string
 			}{
 				Value: "test",
-			}, writer)
+			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\ntest: chart-version\n"))
 		})
@@ -64,7 +64,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value string
 			}{
 				Value: "test",
-			}, writer)
+			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\ntest: test1\n---\ntest: test2\n"))
 		})
@@ -81,7 +81,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value string
 			}{
 				Value: "test",
-			}, writer, WithGlob("*[1-2].yaml"))
+			}, writer, &HelmOptions{glob: "*[1-2].yaml"})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\ntest: test1\n"))
 		})
@@ -101,7 +101,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value string
 			}{
 				Value: "test",
-			}, writer)
+			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("kind: Service\n---\nkind: StatefulSet\n---\nkind: Other\n"))
 
@@ -111,7 +111,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value string
 			}{
 				Value: "test",
-			}, writer, WithUninstallOrder())
+			}, writer, &HelmOptions{uninstallOrder: true})
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("kind: Other\n---\nkind: StatefulSet\n---\nkind: Service\n"))
 		})

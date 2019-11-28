@@ -4,16 +4,16 @@ package fakes
 import (
 	"io"
 	"sync"
-	"time"
 
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 )
 
 type FakeK8s struct {
-	ApplyStub        func(func(io.Writer) error) error
+	ApplyStub        func(func(io.Writer) error, *api.K8sOptions) error
 	applyMutex       sync.RWMutex
 	applyArgsForCall []struct {
 		arg1 func(io.Writer) error
+		arg2 *api.K8sOptions
 	}
 	applyReturns struct {
 		result1 error
@@ -21,10 +21,11 @@ type FakeK8s struct {
 	applyReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DeleteStub        func(func(io.Writer) error) error
+	DeleteStub        func(func(io.Writer) error, *api.K8sOptions) error
 	deleteMutex       sync.RWMutex
 	deleteArgsForCall []struct {
 		arg1 func(io.Writer) error
+		arg2 *api.K8sOptions
 	}
 	deleteReturns struct {
 		result1 error
@@ -32,11 +33,12 @@ type FakeK8s struct {
 	deleteReturnsOnCall map[int]struct {
 		result1 error
 	}
-	DeleteObjectStub        func(string, string) error
+	DeleteObjectStub        func(string, string, *api.K8sOptions) error
 	deleteObjectMutex       sync.RWMutex
 	deleteObjectArgsForCall []struct {
 		arg1 string
 		arg2 string
+		arg3 *api.K8sOptions
 	}
 	deleteObjectReturns struct {
 		result1 error
@@ -55,12 +57,12 @@ type FakeK8s struct {
 	forNamespaceReturnsOnCall map[int]struct {
 		result1 api.K8s
 	}
-	RolloutStatusStub        func(string, string, time.Duration) error
+	RolloutStatusStub        func(string, string, *api.K8sOptions) error
 	rolloutStatusMutex       sync.RWMutex
 	rolloutStatusArgsForCall []struct {
 		arg1 string
 		arg2 string
-		arg3 time.Duration
+		arg3 *api.K8sOptions
 	}
 	rolloutStatusReturns struct {
 		result1 error
@@ -72,16 +74,17 @@ type FakeK8s struct {
 	invocationsMutex sync.RWMutex
 }
 
-func (fake *FakeK8s) Apply(arg1 func(io.Writer) error) error {
+func (fake *FakeK8s) Apply(arg1 func(io.Writer) error, arg2 *api.K8sOptions) error {
 	fake.applyMutex.Lock()
 	ret, specificReturn := fake.applyReturnsOnCall[len(fake.applyArgsForCall)]
 	fake.applyArgsForCall = append(fake.applyArgsForCall, struct {
 		arg1 func(io.Writer) error
-	}{arg1})
-	fake.recordInvocation("Apply", []interface{}{arg1})
+		arg2 *api.K8sOptions
+	}{arg1, arg2})
+	fake.recordInvocation("Apply", []interface{}{arg1, arg2})
 	fake.applyMutex.Unlock()
 	if fake.ApplyStub != nil {
-		return fake.ApplyStub(arg1)
+		return fake.ApplyStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -96,17 +99,17 @@ func (fake *FakeK8s) ApplyCallCount() int {
 	return len(fake.applyArgsForCall)
 }
 
-func (fake *FakeK8s) ApplyCalls(stub func(func(io.Writer) error) error) {
+func (fake *FakeK8s) ApplyCalls(stub func(func(io.Writer) error, *api.K8sOptions) error) {
 	fake.applyMutex.Lock()
 	defer fake.applyMutex.Unlock()
 	fake.ApplyStub = stub
 }
 
-func (fake *FakeK8s) ApplyArgsForCall(i int) func(io.Writer) error {
+func (fake *FakeK8s) ApplyArgsForCall(i int) (func(io.Writer) error, *api.K8sOptions) {
 	fake.applyMutex.RLock()
 	defer fake.applyMutex.RUnlock()
 	argsForCall := fake.applyArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeK8s) ApplyReturns(result1 error) {
@@ -132,16 +135,17 @@ func (fake *FakeK8s) ApplyReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeK8s) Delete(arg1 func(io.Writer) error) error {
+func (fake *FakeK8s) Delete(arg1 func(io.Writer) error, arg2 *api.K8sOptions) error {
 	fake.deleteMutex.Lock()
 	ret, specificReturn := fake.deleteReturnsOnCall[len(fake.deleteArgsForCall)]
 	fake.deleteArgsForCall = append(fake.deleteArgsForCall, struct {
 		arg1 func(io.Writer) error
-	}{arg1})
-	fake.recordInvocation("Delete", []interface{}{arg1})
+		arg2 *api.K8sOptions
+	}{arg1, arg2})
+	fake.recordInvocation("Delete", []interface{}{arg1, arg2})
 	fake.deleteMutex.Unlock()
 	if fake.DeleteStub != nil {
-		return fake.DeleteStub(arg1)
+		return fake.DeleteStub(arg1, arg2)
 	}
 	if specificReturn {
 		return ret.result1
@@ -156,17 +160,17 @@ func (fake *FakeK8s) DeleteCallCount() int {
 	return len(fake.deleteArgsForCall)
 }
 
-func (fake *FakeK8s) DeleteCalls(stub func(func(io.Writer) error) error) {
+func (fake *FakeK8s) DeleteCalls(stub func(func(io.Writer) error, *api.K8sOptions) error) {
 	fake.deleteMutex.Lock()
 	defer fake.deleteMutex.Unlock()
 	fake.DeleteStub = stub
 }
 
-func (fake *FakeK8s) DeleteArgsForCall(i int) func(io.Writer) error {
+func (fake *FakeK8s) DeleteArgsForCall(i int) (func(io.Writer) error, *api.K8sOptions) {
 	fake.deleteMutex.RLock()
 	defer fake.deleteMutex.RUnlock()
 	argsForCall := fake.deleteArgsForCall[i]
-	return argsForCall.arg1
+	return argsForCall.arg1, argsForCall.arg2
 }
 
 func (fake *FakeK8s) DeleteReturns(result1 error) {
@@ -192,17 +196,18 @@ func (fake *FakeK8s) DeleteReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
-func (fake *FakeK8s) DeleteObject(arg1 string, arg2 string) error {
+func (fake *FakeK8s) DeleteObject(arg1 string, arg2 string, arg3 *api.K8sOptions) error {
 	fake.deleteObjectMutex.Lock()
 	ret, specificReturn := fake.deleteObjectReturnsOnCall[len(fake.deleteObjectArgsForCall)]
 	fake.deleteObjectArgsForCall = append(fake.deleteObjectArgsForCall, struct {
 		arg1 string
 		arg2 string
-	}{arg1, arg2})
-	fake.recordInvocation("DeleteObject", []interface{}{arg1, arg2})
+		arg3 *api.K8sOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("DeleteObject", []interface{}{arg1, arg2, arg3})
 	fake.deleteObjectMutex.Unlock()
 	if fake.DeleteObjectStub != nil {
-		return fake.DeleteObjectStub(arg1, arg2)
+		return fake.DeleteObjectStub(arg1, arg2, arg3)
 	}
 	if specificReturn {
 		return ret.result1
@@ -217,17 +222,17 @@ func (fake *FakeK8s) DeleteObjectCallCount() int {
 	return len(fake.deleteObjectArgsForCall)
 }
 
-func (fake *FakeK8s) DeleteObjectCalls(stub func(string, string) error) {
+func (fake *FakeK8s) DeleteObjectCalls(stub func(string, string, *api.K8sOptions) error) {
 	fake.deleteObjectMutex.Lock()
 	defer fake.deleteObjectMutex.Unlock()
 	fake.DeleteObjectStub = stub
 }
 
-func (fake *FakeK8s) DeleteObjectArgsForCall(i int) (string, string) {
+func (fake *FakeK8s) DeleteObjectArgsForCall(i int) (string, string, *api.K8sOptions) {
 	fake.deleteObjectMutex.RLock()
 	defer fake.deleteObjectMutex.RUnlock()
 	argsForCall := fake.deleteObjectArgsForCall[i]
-	return argsForCall.arg1, argsForCall.arg2
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
 }
 
 func (fake *FakeK8s) DeleteObjectReturns(result1 error) {
@@ -313,13 +318,13 @@ func (fake *FakeK8s) ForNamespaceReturnsOnCall(i int, result1 api.K8s) {
 	}{result1}
 }
 
-func (fake *FakeK8s) RolloutStatus(arg1 string, arg2 string, arg3 time.Duration) error {
+func (fake *FakeK8s) RolloutStatus(arg1 string, arg2 string, arg3 *api.K8sOptions) error {
 	fake.rolloutStatusMutex.Lock()
 	ret, specificReturn := fake.rolloutStatusReturnsOnCall[len(fake.rolloutStatusArgsForCall)]
 	fake.rolloutStatusArgsForCall = append(fake.rolloutStatusArgsForCall, struct {
 		arg1 string
 		arg2 string
-		arg3 time.Duration
+		arg3 *api.K8sOptions
 	}{arg1, arg2, arg3})
 	fake.recordInvocation("RolloutStatus", []interface{}{arg1, arg2, arg3})
 	fake.rolloutStatusMutex.Unlock()
@@ -339,13 +344,13 @@ func (fake *FakeK8s) RolloutStatusCallCount() int {
 	return len(fake.rolloutStatusArgsForCall)
 }
 
-func (fake *FakeK8s) RolloutStatusCalls(stub func(string, string, time.Duration) error) {
+func (fake *FakeK8s) RolloutStatusCalls(stub func(string, string, *api.K8sOptions) error) {
 	fake.rolloutStatusMutex.Lock()
 	defer fake.rolloutStatusMutex.Unlock()
 	fake.RolloutStatusStub = stub
 }
 
-func (fake *FakeK8s) RolloutStatusArgsForCall(i int) (string, string, time.Duration) {
+func (fake *FakeK8s) RolloutStatusArgsForCall(i int) (string, string, *api.K8sOptions) {
 	fake.rolloutStatusMutex.RLock()
 	defer fake.rolloutStatusMutex.RUnlock()
 	argsForCall := fake.rolloutStatusArgsForCall[i]

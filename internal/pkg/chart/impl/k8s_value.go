@@ -42,32 +42,49 @@ func (k *k8sValueImpl) Hash() (uint32, error) { panic("implement me") }
 func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 	if name == "rollout_status" {
 		return starlark.NewBuiltin("rollout_status", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-			var timeout = 120
 			var kind string
 			var name string
-			if err := starlark.UnpackArgs("rollout_status", args, kwargs,
-				"type", &kind, "name", &name, "timeout?", &timeout); err != nil {
+			parser := kwargsParser{kwargs: kwargs}
+			k8sOptions := unpackK8sOptions(parser)
+			if err := starlark.UnpackArgs("rollout_status", args, parser.Parse(),
+				"type", &kind, "name", &name); err != nil {
 				return nil, err
 			}
-			return starlark.None, k.RolloutStatus(kind, name, time.Duration(timeout)*time.Second)
+			return starlark.None, k.RolloutStatus(kind, name, k8sOptions)
 		}), nil
 	}
 	if name == "delete" {
 		return starlark.NewBuiltin("delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var kind string
 			var name string
-			if err := starlark.UnpackArgs("delete", args, kwargs,
+			parser := kwargsParser{kwargs: kwargs}
+			k8sOptions := unpackK8sOptions(parser)
+			if err := starlark.UnpackArgs("delete", args, parser.Parse(),
 				"type", &kind, "name?", &name); err != nil {
 				return nil, err
 			}
 			if name == "" {
 				return starlark.None, errors.New("no parameter name given")
 			}
-			return starlark.None, k.DeleteObject(kind, name)
+			return starlark.None, k.DeleteObject(kind, name, k8sOptions)
 		}), nil
 	}
 	return starlark.None, starlark.NoSuchAttrError(fmt.Sprintf("k8s has no .%s attribute", name))
 }
 
 // AttrNames -
-func (k *k8sValueImpl) AttrNames() []string { return []string{"wait_crd"} }
+func (k *k8sValueImpl) AttrNames() []string { return []string{"rollout_status", "delete"} }
+
+func unpackK8sOptions(parser kwargsParser) *api.K8sOptions {
+	result := &api.K8sOptions{Namespaced: true}
+	parser.Arg("namespaced", func(value starlark.Value) {
+		result.Namespaced = bool(value.(starlark.Bool))
+	})
+	parser.Arg("timeout", func(value starlark.Value) {
+		timeout, ok := value.(starlark.Int).Int64()
+		if ok {
+			result.Timeout = time.Duration(timeout) * time.Second
+		}
+	})
+	return result
+}

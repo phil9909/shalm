@@ -29,7 +29,7 @@ var _ = Describe("Apply Chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error) error {
+				ApplyStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
 					i(&writer)
 					return nil
 				},

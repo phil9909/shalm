@@ -84,7 +84,7 @@ var _ = Describe("Chart", func() {
 			Expect(chart.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error) error {
+				ApplyStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
@@ -109,7 +109,7 @@ var _ = Describe("Chart", func() {
 			Expect(chart.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				DeleteStub: func(i func(io.Writer) error) error {
+				DeleteStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
@@ -135,7 +135,7 @@ var _ = Describe("Chart", func() {
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				DeleteStub: func(i func(io.Writer) error) error {
+				DeleteStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
 					i(&writer)
 					return nil
 				},

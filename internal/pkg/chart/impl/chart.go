@@ -32,7 +32,11 @@ var (
 // NewChart -
 func NewChart(thread *starlark.Thread, repo api.Repo, dir string, parent api.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
 	namespace := parent.GetNamespace()
-	kwargs = removeArg(kwargs, "namespace", &namespace)
+	parser := kwargsParser{kwargs: kwargs}
+	parser.Arg("namespace", func(value starlark.Value) {
+		namespace = value.(starlark.String).GoString()
+	})
+	kwargs = parser.Parse()
 	name := strings.Split(filepath.Base(dir), ":")[0]
 	c := &chartImpl{Name: name, dir: dir, namespace: namespace, fs: parent.GetFs()}
 	c.values = make(map[string]starlark.Value)
@@ -229,28 +233,26 @@ func (c *chartImpl) apply(thread *starlark.Thread, k api.K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.applyLocal(thread, k)
+	return c.applyLocal(thread, k, &api.K8sOptions{}, &HelmOptions{})
 }
 
 func (c *chartImpl) applyLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var k api.K8sValue
-		var glob string
-		if err := starlark.UnpackArgs("__apply", args, kwargs, "k8s", &k, "glob?", &glob); err != nil {
+		parser := kwargsParser{kwargs: kwargs}
+		helmOptions := unpackHelmOptions(parser)
+		k8sOptions := unpackK8sOptions(parser)
+		if err := starlark.UnpackArgs("__apply", args, parser.Parse(), "k8s", &k); err != nil {
 			return nil, err
 		}
-		var options []Option
-		if glob != "" {
-			options = append(options, WithGlob(glob))
-		}
-		return starlark.None, c.applyLocal(thread, k, options...)
+		return starlark.None, c.applyLocal(thread, k, k8sOptions, helmOptions)
 	})
 }
 
-func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, option ...Option) error {
+func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, k8sOptions *api.K8sOptions, helmOption *HelmOptions) error {
 	return k.Apply(func(writer io.Writer) error {
-		return c.template(thread, writer, option...)
-	})
+		return c.template(thread, writer, helmOption)
+	}, k8sOptions)
 }
 
 func (c *chartImpl) Delete(thread *starlark.Thread, k api.K8s) error {
@@ -280,28 +282,27 @@ func (c *chartImpl) delete(thread *starlark.Thread, k api.K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.deleteLocal(thread, k)
+	return c.deleteLocal(thread, k, &api.K8sOptions{}, &HelmOptions{})
 }
 
 func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var k api.K8sValue
-		var glob string
-		if err := starlark.UnpackArgs("__delete", args, kwargs, "k8s", &k, "glob?", &glob); err != nil {
+		parser := kwargsParser{kwargs: kwargs}
+		helmOptions := unpackHelmOptions(parser)
+		k8sOptions := unpackK8sOptions(parser)
+		if err := starlark.UnpackArgs("__delete", args, parser.Parse(), "k8s", &k); err != nil {
 			return nil, err
 		}
-		var options []Option
-		if glob != "" {
-			options = append(options, WithGlob(glob))
-		}
-		return starlark.None, c.deleteLocal(thread, k, options...)
+		return starlark.None, c.deleteLocal(thread, k, k8sOptions, helmOptions)
 	})
 }
 
-func (c *chartImpl) deleteLocal(thread *starlark.Thread, k api.K8sValue, options ...Option) error {
+func (c *chartImpl) deleteLocal(thread *starlark.Thread, k api.K8sValue, k8sOptions *api.K8sOptions, helmOption *HelmOptions) error {
+	helmOption.uninstallOrder = true
 	return k.Delete(func(writer io.Writer) error {
-		return c.template(thread, writer, append(options, WithUninstallOrder())...)
-	})
+		return c.template(thread, writer, helmOption)
+	}, k8sOptions)
 }
 
 func (c *chartImpl) eachSubChart(block func(subChart *chartImpl) error) error {
@@ -317,18 +318,10 @@ func (c *chartImpl) eachSubChart(block func(subChart *chartImpl) error) error {
 	return nil
 }
 
-func removeArg(kwargs []starlark.Tuple, name string, value *string) []starlark.Tuple {
-	var result []starlark.Tuple
-	for _, arg := range kwargs {
-		if arg.Len() == 2 {
-			key, keyOK := arg.Index(0).(starlark.String)
-			val, valOK := arg.Index(1).(starlark.String)
-			if keyOK && valOK && key.GoString() == name {
-				*value = val.GoString()
-				continue
-			}
-		}
-		result = append(result, arg)
-	}
+func unpackHelmOptions(parser kwargsParser) *HelmOptions {
+	result := &HelmOptions{}
+	parser.Arg("glob", func(value starlark.Value) {
+		result.glob = value.(starlark.String).GoString()
+	})
 	return result
 }

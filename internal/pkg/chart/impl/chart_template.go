@@ -36,7 +36,7 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 			return nil, err
 		}
 		var writer bytes.Buffer
-		err := c.templateRecursive(thread, &writer)
+		err := c.templateRecursive(thread, &writer, &HelmOptions{})
 		if err != nil {
 			return starlark.None, err
 		}
@@ -44,17 +44,17 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer) error {
+func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer, options *HelmOptions) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
-		return subChart.templateRecursive(thread, writer)
+		return subChart.templateRecursive(thread, writer, options)
 	})
 	if err != nil {
 		return err
 	}
-	return c.template(thread, writer)
+	return c.template(thread, writer, options)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options ...Option) error {
+func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *HelmOptions) error {
 	h, err := NewHelmTemplater(c.fs, c.path())
 	if err != nil {
 		return err
@@ -84,5 +84,5 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 		},
 		Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name},
 		Files:   files{dir: c.dir, fs: c.fs},
-	}, writer, options...)
+	}, writer, options)
 }

@@ -25,26 +25,10 @@ type HelmTemplater struct {
 	fs      afero.Fs
 }
 
-type options struct {
-	glob           *string
+// HelmOptions -
+type HelmOptions struct {
+	glob           string
 	uninstallOrder bool
-}
-
-// Option for templating
-type Option func(o *options)
-
-// WithGlob only use a subset of templates
-func WithGlob(glob string) Option {
-	return func(o *options) {
-		o.glob = &glob
-	}
-}
-
-// WithUninstallOrder sort yaml docs in reverse order
-func WithUninstallOrder() Option {
-	return func(o *options) {
-		o.uninstallOrder = true
-	}
 }
 
 type files struct {
@@ -152,14 +136,10 @@ func (a yamlDocs) Less(i, j int) bool {
 }
 
 // Template -
-func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts ...Option) error {
+func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *HelmOptions) error {
 	var glob string
-	o := options{}
-	for _, f := range opts {
-		f(&o)
-	}
-	if o.glob != nil {
-		glob = path.Join(h.dir, "templates", *o.glob)
+	if opts.glob != "" {
+		glob = path.Join(h.dir, "templates", opts.glob)
 	} else {
 		glob = path.Join(h.dir, "templates", "*.yaml")
 	}
@@ -198,11 +178,12 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts ...Op
 			}
 		}
 	}
-	if o.uninstallOrder {
+	if opts.uninstallOrder {
 		sort.Sort(sort.Reverse(docs))
 	} else {
 		sort.Sort(docs)
 	}
+	writer.Write([]byte("---\n"))
 	enc := yaml.NewEncoder(writer)
 	for _, doc := range docs {
 		enc.Encode(doc)

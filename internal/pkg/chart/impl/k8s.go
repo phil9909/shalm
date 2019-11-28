@@ -5,7 +5,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"time"
 
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 )
@@ -25,8 +24,8 @@ var (
 )
 
 // Apply -
-func (k *k8sImpl) Apply(output func(io.Writer) error) error {
-	return k.run("apply", output)
+func (k *k8sImpl) Apply(output func(io.Writer) error, options *api.K8sOptions) error {
+	return k.run("apply", output, options)
 }
 func (k *k8sImpl) ForNamespace(namespace string) api.K8s {
 	result := &k8sImpl{namespace: namespace}
@@ -34,30 +33,37 @@ func (k *k8sImpl) ForNamespace(namespace string) api.K8s {
 }
 
 // Delete -
-func (k *k8sImpl) Delete(output func(io.Writer) error) error {
-	return k.run("delete", output, "--ignore-not-found")
+func (k *k8sImpl) Delete(output func(io.Writer) error, options *api.K8sOptions) error {
+	return k.run("delete", output, options, "--ignore-not-found")
 }
 
 // Delete -
-func (k *k8sImpl) DeleteObject(kind string, name string) error {
-	return k.kubectl("delete", kind, name, "--ignore-not-found").Run()
+func (k *k8sImpl) DeleteObject(kind string, name string, options *api.K8sOptions) error {
+	return k.kubectl("delete", options, kind, name, "--ignore-not-found").Run()
 }
 
 // RolloutStatus -
-func (k *k8sImpl) RolloutStatus(typ string, name string, timeout time.Duration) error {
-	return k.kubectl("rollout", "status", typ, name, "--timeout", fmt.Sprintf("%.0fs", timeout.Seconds())).Run()
+func (k *k8sImpl) RolloutStatus(typ string, name string, options *api.K8sOptions) error {
+	return k.kubectl("rollout", options, "status", typ, name).Run()
 }
 
-func (k *k8sImpl) kubectl(command string, flags ...string) *exec.Cmd {
-	cmd := exec.Command("kubectl", append([]string{"-n", k.namespace, command}, flags...)...)
+func (k *k8sImpl) kubectl(command string, options *api.K8sOptions, flags ...string) *exec.Cmd {
+	if options.Namespaced {
+		flags = append(flags, "-n", k.namespace)
+	}
+	if options.Timeout > 0 {
+		flags = append(flags, "--timeout", fmt.Sprintf("%.0fs", options.Timeout.Seconds()))
+	}
+	flags = append(flags, command)
+	cmd := exec.Command("kubectl", flags...)
 	fmt.Println(cmd.String())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	return cmd
 }
 
-func (k *k8sImpl) run(command string, output func(io.Writer) error, flags ...string) error {
-	cmd := k.kubectl(command, append([]string{"-f", "-"}, flags...)...)
+func (k *k8sImpl) run(command string, output func(io.Writer) error, options *api.K8sOptions, flags ...string) error {
+	cmd := k.kubectl(command, options, append([]string{"-f", "-"}, flags...)...)
 
 	writer, err := cmd.StdinPipe()
 	if err != nil {
