@@ -10,7 +10,6 @@ import (
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/afero"
 	"go.starlark.net/starlark"
 )
 
@@ -34,7 +33,7 @@ var _ = Describe("OCIRepo", func() {
 				// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
 				return "", "", nil
 			}))
-			rootChart = NewRootChartForDir("default", example, afero.NewOsFs())
+			rootChart = NewRootChartForDir("default", example)
 
 		})
 		It("reads chart from directory", func() {

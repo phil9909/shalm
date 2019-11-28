@@ -9,7 +9,6 @@ import (
 
 	"github.com/blang/semver"
 	"github.com/kramerul/shalm/internal/pkg/chart/api"
-	"github.com/spf13/afero"
 	"go.starlark.net/starlark"
 )
 
@@ -19,7 +18,6 @@ type chartImpl struct {
 	values      map[string]starlark.Value
 	methods     map[string]starlark.Callable
 	frozen      bool
-	fs          afero.Fs
 	dir         string
 	initialized bool
 	namespace   string
@@ -38,7 +36,7 @@ func NewChart(thread *starlark.Thread, repo api.Repo, dir string, parent api.Cha
 	})
 	kwargs = parser.Parse()
 	name := strings.Split(filepath.Base(dir), ":")[0]
-	c := &chartImpl{Name: name, dir: dir, namespace: namespace, fs: parent.GetFs()}
+	c := &chartImpl{Name: name, dir: dir, namespace: namespace}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
 	if err := c.loadChartYaml(); err != nil {
@@ -59,10 +57,6 @@ func NewChart(thread *starlark.Thread, repo api.Repo, dir string, parent api.Cha
 
 }
 
-func (c *chartImpl) GetFs() afero.Fs {
-	return c.fs
-}
-
 func (c *chartImpl) GetName() string {
 	return c.Name
 }
@@ -76,7 +70,7 @@ func (c *chartImpl) GetDir() string {
 }
 
 func (c *chartImpl) Walk(cb func(name string, size int64, body io.Reader, err error) error) error {
-	return afero.Walk(c.fs, c.dir, func(file string, info os.FileInfo, err error) error {
+	return filepath.Walk(c.dir, func(file string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
 		}
@@ -87,7 +81,7 @@ func (c *chartImpl) Walk(cb func(name string, size int64, body io.Reader, err er
 		if err != nil {
 			return err
 		}
-		body, err := c.fs.Open(file)
+		body, err := os.Open(file)
 		if err != nil {
 			return err
 		}

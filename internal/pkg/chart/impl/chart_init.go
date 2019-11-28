@@ -42,7 +42,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.T
 	c.methods["__delete"] = c.deleteLocalFunction()
 
 	file := c.path("Chart.star")
-	if _, err := c.fs.Stat(file); os.IsNotExist(err) {
+	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil
 	}
 	globals, err := starlark.ExecFile(thread, file, nil, starlark.StringDict{
@@ -103,7 +103,7 @@ func wrapNamespace(callable starlark.Callable, namespace string) starlark.Callab
 }
 
 func (c *chartImpl) loadYamlFile(filename string, value interface{}) error {
-	reader, err := c.fs.Open(filename) // For read access.
+	reader, err := os.Open(filename) // For read access.
 	if err != nil {
 		if os.IsNotExist(err) {
 			return err

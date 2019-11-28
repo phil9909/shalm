@@ -13,7 +13,6 @@ import (
 	"github.com/kramerul/shalm/internal/pkg/chart/impl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
-	"github.com/spf13/afero"
 )
 
 var (
@@ -38,7 +37,7 @@ var _ = Describe("Apply Chart", func() {
 				return k
 			}
 
-			err := apply(impl.NewRepo(), impl.NewRootChartForDir("mynamespace", example, afero.NewOsFs()), "cf", impl.NewK8sValue(k))
+			err := apply(impl.NewRepo(), impl.NewRootChartForDir("mynamespace", example), "cf", impl.NewK8sValue(k))
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))

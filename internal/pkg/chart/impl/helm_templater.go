@@ -15,14 +15,12 @@ import (
 	yaml "gopkg.in/yaml.v2"
 
 	"github.com/Masterminds/sprig/v3"
-	"github.com/spf13/afero"
 )
 
 // HelmTemplater -
 type HelmTemplater struct {
 	helpers string
 	dir     string
-	fs      afero.Fs
 }
 
 // HelmOptions -
@@ -33,16 +31,14 @@ type HelmOptions struct {
 
 type files struct {
 	dir string
-	fs  afero.Fs
 }
 
 // NewHelmTemplater -
-func NewHelmTemplater(fs afero.Fs, dir string) (*HelmTemplater, error) {
+func NewHelmTemplater(dir string) (*HelmTemplater, error) {
 	h := &HelmTemplater{
 		dir: dir,
-		fs:  fs,
 	}
-	content, err := afero.ReadFile(h.fs, path.Join(dir, "templates", "_helpers.tpl"))
+	content, err := ioutil.ReadFile(path.Join(dir, "templates", "_helpers.tpl"))
 	if err != nil {
 		if !os.IsNotExist(err) {
 			return nil, err
@@ -143,7 +139,7 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 	} else {
 		glob = path.Join(h.dir, "templates", "*.yaml")
 	}
-	filenames, err := afero.Glob(h.fs, glob)
+	filenames, err := filepath.Glob(glob)
 	if err != nil {
 		return err
 	}
@@ -158,7 +154,7 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 		if err != nil {
 			return err
 		}
-		content, err := afero.ReadFile(h.fs, filename)
+		content, err := ioutil.ReadFile(filename)
 		if err != nil {
 			return err
 		}
@@ -258,7 +254,7 @@ func toJSON(v interface{}) string {
 
 func (f files) Glob(pattern string) map[string][]byte {
 	result := make(map[string][]byte)
-	matches, err := afero.Glob(f.fs, path.Join(f.dir, pattern))
+	matches, err := filepath.Glob(path.Join(f.dir, pattern))
 	if err != nil {
 		return result
 	}
@@ -277,7 +273,7 @@ func (f files) Glob(pattern string) map[string][]byte {
 }
 
 func (f files) Get(name string) string {
-	data, err := afero.ReadFile(f.fs, path.Join(f.dir, name))
+	data, err := ioutil.ReadFile(path.Join(f.dir, name))
 	if err != nil {
 		return err.Error()
 	}
