@@ -21,4 +21,4 @@ These API can be used to share instances
 
 ### Example
 
-See 
+See [cloudfoundry example](https://github.com/kramerul/shalm/tree/master/example/cloudfoundry)
