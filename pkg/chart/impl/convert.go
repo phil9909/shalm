@@ -51,12 +51,12 @@ func toGo(v starlark.Value) interface{} {
 	case starlark.NoneType:
 		return nil
 	case starlark.Bool:
-		return v
+		return bool(v)
 	case starlark.Int:
 		i, _ := v.Int64()
 		return i
 	case starlark.Float:
-		return v
+		return float64(v)
 	case starlark.String:
 		return v.GoString()
 	case starlark.Indexable: // Tuple, List
