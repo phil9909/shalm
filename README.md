@@ -190,6 +190,9 @@ Deletes one kubernetes object
 
 * Subcharts are not loaded automatically. They must be loaded using the `chart` command
 * Global variables are not supported.
+* The `--set` command line parameters are passed to the `init` method of the corresponding chart. 
+It's not possible to set values directly. 
+If you would like to set a lot of values, it's more convenient to write a separate shalm chart.
 
 ## TODO
 
