@@ -55,7 +55,7 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer,
 }
 
 func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *HelmOptions) error {
-	h, err := NewHelmTemplater(c.path())
+	h, err := NewHelmTemplater(c.path(), c.namespace)
 	if err != nil {
 		return err
 	}

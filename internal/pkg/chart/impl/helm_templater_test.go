@@ -18,7 +18,7 @@ var _ = Describe("HelmTemplater", func() {
 			defer dir.Remove()
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/test.yaml", []byte("test: {{ .Value }}"), 0644)
-			h, err = NewHelmTemplater(dir.Root())
+			h, err = NewHelmTemplater(dir.Root(), "namespace")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
 			err = h.Template(struct {
@@ -40,7 +40,7 @@ var _ = Describe("HelmTemplater", func() {
 {{- printf "%s-%s" "chart" "version" | replace "+" "_" | trunc 63 | trimSuffix "-" -}}
 {{- end -}}
 `), 0644)
-			h, err = NewHelmTemplater(dir.Root())
+			h, err = NewHelmTemplater(dir.Root(), "namespace")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
 			err = h.Template(struct {
@@ -58,7 +58,7 @@ var _ = Describe("HelmTemplater", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/test1.yaml", []byte("test: test1"), 0644)
 			dir.WriteFile("templates/test2.yaml", []byte("test: test2"), 0644)
-			h, err = NewHelmTemplater(dir.Root())
+			h, err = NewHelmTemplater(dir.Root(), "namespace")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
 			err = h.Template(struct {
@@ -76,7 +76,7 @@ var _ = Describe("HelmTemplater", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/test1.yaml", []byte("test: test1"), 0644)
 			dir.WriteFile("templates/test3.yaml", []byte("test: test2"), 0644)
-			h, err = NewHelmTemplater(dir.Root())
+			h, err = NewHelmTemplater(dir.Root(), "namespace")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}
 			err = h.Template(struct {
@@ -95,7 +95,7 @@ var _ = Describe("HelmTemplater", func() {
 			dir.WriteFile("templates/test1.yaml", []byte("kind: Other"), 0644)
 			dir.WriteFile("templates/test2.yaml", []byte("kind: StatefulSet"), 0644)
 			dir.WriteFile("templates/test3.yaml", []byte("kind: Service"), 0644)
-			h, err = NewHelmTemplater(dir.Root())
+			h, err = NewHelmTemplater(dir.Root(), "namespace")
 			Expect(err).ToNot(HaveOccurred())
 
 			By("Sorts in install order")
@@ -106,7 +106,19 @@ var _ = Describe("HelmTemplater", func() {
 				Value: "test",
 			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(writer.String()).To(Equal("---\nkind: Service\n---\nkind: StatefulSet\n---\nkind: Other\n"))
+			Expect(writer.String()).To(Equal(`---
+metadata:
+  namespace: namespace
+kind: Service
+---
+metadata:
+  namespace: namespace
+kind: StatefulSet
+---
+metadata:
+  namespace: namespace
+kind: Other
+`))
 
 			By("Sorts in uninstall order")
 			writer = &bytes.Buffer{}
@@ -116,7 +128,19 @@ var _ = Describe("HelmTemplater", func() {
 				Value: "test",
 			}, writer, &HelmOptions{uninstallOrder: true})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(writer.String()).To(Equal("---\nkind: Other\n---\nkind: StatefulSet\n---\nkind: Service\n"))
+			Expect(writer.String()).To(Equal(`---
+metadata:
+  namespace: namespace
+kind: Other
+---
+metadata:
+  namespace: namespace
+kind: StatefulSet
+---
+metadata:
+  namespace: namespace
+kind: Service
+`))
 		})
 	})
 })

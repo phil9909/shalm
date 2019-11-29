@@ -19,8 +19,9 @@ import (
 
 // HelmTemplater -
 type HelmTemplater struct {
-	helpers string
-	dir     string
+	helpers   string
+	dir       string
+	namespace string
 }
 
 // HelmOptions -
@@ -29,33 +30,46 @@ type HelmOptions struct {
 	uninstallOrder bool
 }
 
-type files struct {
-	dir string
+// MetaData -
+type MetaData struct {
+	Namespace  string                 `yaml:"namespace,omitempty"`
+	Name       string                 `yaml:"name,omitempty"`
+	Additional map[string]interface{} `yaml:",inline"`
 }
 
-// NewHelmTemplater -
-func NewHelmTemplater(dir string) (*HelmTemplater, error) {
-	h := &HelmTemplater{
-		dir: dir,
-	}
-	content, err := ioutil.ReadFile(path.Join(dir, "templates", "_helpers.tpl"))
-	if err != nil {
-		if !os.IsNotExist(err) {
-			return nil, err
-		}
-		h.helpers = ""
-	} else {
-		h.helpers = string(content)
-	}
-	return h, nil
+// Object -
+type Object struct {
+	MetaData   MetaData               `yaml:"metadata,omitempty"`
+	Kind       string                 `yaml:"kind"`
+	Additional map[string]interface{} `yaml:",inline"`
 }
 
-type yamlDocs []map[string]interface{}
+func (o *Object) setDefaultNamespace(namespace string) {
+	switch o.Kind {
+	case "Namespace":
+		return
+	case "ResourceQuota":
+		return
+	case "CustomResourceDefinition":
+		return
+	case "ClusterRole":
+		return
+	case "ClusterRoleList":
+		return
+	case "ClusterRoleBinding":
+		return
+	case "ClusterRoleBindingList":
+		return
+	case "APIService":
+		return
+	}
+	if o.MetaData.Namespace == "" {
+		o.MetaData.Namespace = namespace
+	}
+}
 
-func (a yamlDocs) Len() int      { return len(a) }
-func (a yamlDocs) Swap(i, j int) { a[i], a[j] = a[j], a[i] }
-func kindOrdinal(kind interface{}) int {
-	switch kind {
+func (o *Object) kindOrdinal() int {
+	switch o.Kind {
 	case "Namespace":
 		return 1
 	case "NetworkPolicy":
@@ -127,8 +141,26 @@ func kindOrdinal(kind interface{}) int {
 	}
 }
 
-func (a yamlDocs) Less(i, j int) bool {
-	return kindOrdinal(a[i]["kind"]) < kindOrdinal(a[j]["kind"])
+type files struct {
+	dir string
+}
+
+// NewHelmTemplater -
+func NewHelmTemplater(dir string, namespace string) (*HelmTemplater, error) {
+	h := &HelmTemplater{
+		dir:       dir,
+		namespace: namespace,
+	}
+	content, err := ioutil.ReadFile(path.Join(dir, "templates", "_helpers.tpl"))
+	if err != nil {
+		if !os.IsNotExist(err) {
+			return nil, err
+		}
+		h.helpers = ""
+	} else {
+		h.helpers = string(content)
+	}
+	return h, nil
 }
 
 // Template -
@@ -147,7 +179,7 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 		return nil
 	}
 
-	var docs yamlDocs
+	var docs []Object
 	for _, filename := range filenames {
 		var buffer bytes.Buffer
 		tpl, err := h.template(filepath.Base(filename))
@@ -168,16 +200,21 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 		}
 		if buffer.Len() > 0 {
 			dec := yaml.NewDecoder(&buffer)
-			var doc map[string]interface{}
+			var doc Object
 			for dec.Decode(&doc) == nil {
+				doc.setDefaultNamespace(h.namespace)
 				docs = append(docs, doc)
 			}
 		}
 	}
 	if opts.uninstallOrder {
-		sort.Sort(sort.Reverse(docs))
+		sort.Slice(docs, func(i, j int) bool {
+			return docs[i].kindOrdinal() > docs[j].kindOrdinal()
+		})
 	} else {
-		sort.Sort(docs)
+		sort.Slice(docs, func(i, j int) bool {
+			return docs[i].kindOrdinal() < docs[j].kindOrdinal()
+		})
 	}
 	writer.Write([]byte("---\n"))
 	enc := yaml.NewEncoder(writer)
