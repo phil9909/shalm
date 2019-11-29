@@ -12,7 +12,7 @@ import (
 	"strings"
 	"text/template"
 
-	yaml "gopkg.in/yaml.v2"
+	"gopkg.in/yaml.v2"
 
 	"github.com/Masterminds/sprig/v3"
 )
@@ -229,13 +229,13 @@ func (h *HelmTemplater) template(name string) (result *template.Template, err er
 	result = template.New(name)
 	result = result.Funcs(sprig.TxtFuncMap())
 	result = result.Funcs(map[string]interface{}{
-		"toToml":   notImplemented,
+		"toToml":   main.notImplemented,
 		"toYaml":   toYAML,
-		"fromYaml": notImplemented,
+		"fromYaml": main.notImplemented,
 		"toJson":   toJSON,
-		"fromJson": notImplemented,
+		"fromJson": main.notImplemented,
 		"tpl":      h.tpl(),
-		"required": notImplemented,
+		"required": main.notImplemented,
 	})
 	incResult := result
 	result = result.Funcs(map[string]interface{}{

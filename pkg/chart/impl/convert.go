@@ -76,7 +76,7 @@ func toGo(v starlark.Value) interface{} {
 		}
 		return d
 
-	case *chartImpl:
+	case *main.chartImpl:
 		d := make(map[string]interface{})
 
 		for k, v := range v.values {

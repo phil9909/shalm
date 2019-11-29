@@ -22,7 +22,7 @@ type Chart struct {
 	APIVersion string
 }
 
-func (c *chartImpl) Template(thread *starlark.Thread) (string, error) {
+func (c *main.chartImpl) Template(thread *starlark.Thread) (string, error) {
 	t, err := starlark.Call(thread, c.templateFunction(), nil, nil)
 	if err != nil {
 		return "", err
@@ -30,13 +30,13 @@ func (c *chartImpl) Template(thread *starlark.Thread) (string, error) {
 	return t.(starlark.String).GoString(), nil
 }
 
-func (c *chartImpl) templateFunction() starlark.Callable {
+func (c *main.chartImpl) templateFunction() starlark.Callable {
 	return starlark.NewBuiltin("template", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		if err := starlark.UnpackArgs("template", args, kwargs); err != nil {
 			return nil, err
 		}
 		var writer bytes.Buffer
-		err := c.templateRecursive(thread, &writer, &HelmOptions{})
+		err := c.templateRecursive(thread, &writer, &main.HelmOptions{})
 		if err != nil {
 			return starlark.None, err
 		}
@@ -44,8 +44,8 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer, options *HelmOptions) error {
-	err := c.eachSubChart(func(subChart *chartImpl) error {
+func (c *main.chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer, options *main.HelmOptions) error {
+	err := c.eachSubChart(func(subChart *main.chartImpl) error {
 		return subChart.templateRecursive(thread, writer, options)
 	})
 	if err != nil {
@@ -54,18 +54,18 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer,
 	return c.template(thread, writer, options)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *HelmOptions) error {
-	h, err := NewHelmTemplater(c.path(), c.namespace)
+func (c *main.chartImpl) template(thread *starlark.Thread, writer io.Writer, options *main.HelmOptions) error {
+	h, err := main.NewHelmTemplater(c.path(), c.namespace)
 	if err != nil {
 		return err
 	}
-	values := toGo(c).(map[string]interface{})
+	values := main.toGo(c).(map[string]interface{})
 	methods := make(map[string]interface{})
 	for k, f := range c.methods {
 		method := f
 		methods[k] = func() (interface{}, error) {
 			value, err := method.CallInternal(thread, nil, nil)
-			return toGo(value), err
+			return main.toGo(value), err
 		}
 	}
 	return h.Template(struct {
@@ -73,7 +73,7 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 		Methods map[string]interface{}
 		Chart   Chart
 		Release Release
-		Files   files
+		Files   main.files
 	}{
 		Values:  values,
 		Methods: methods,
@@ -83,6 +83,6 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 			Version:    c.Version.String(),
 		},
 		Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name},
-		Files:   files{dir: c.dir},
+		Files:   main.files{dir: c.dir},
 	}, writer, options)
 }

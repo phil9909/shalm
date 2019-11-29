@@ -1,8 +1,8 @@
 package cmd
 
 import (
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
-	"github.com/kramerul/shalm/internal/pkg/chart/impl"
+	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart/impl"
 
 	"go.starlark.net/starlark"
 

@@ -5,7 +5,7 @@ import (
 	"io"
 	"sync"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart/api"
 )
 
 type FakeK8s struct {

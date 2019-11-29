@@ -20,7 +20,7 @@ import (
 
 	"github.com/containerd/containerd/remotes"
 	"github.com/containerd/containerd/remotes/docker"
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart/api"
 	"go.starlark.net/starlark"
 
 	"github.com/deislabs/oras/pkg/content"
@@ -76,9 +76,8 @@ func NewRepo(authOpts ...RepoOpts) api.Repo {
 			docker.WithAuthorizer(docker.NewDockerAuthorizer(docker.WithAuthCreds(func(ref string) (string, string, error) {
 				if r.credentials != nil {
 					return r.credentials(ref)
-				} else {
-					return "", "", nil
 				}
+				return "", "", nil
 			}))),
 		)})
 	for _, a := range authOpts {
@@ -122,12 +121,12 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, arg
 
 	if stat, err := os.Stat(dir); err == nil {
 		if stat.IsDir() {
-			return NewChart(thread, r, dir, parent, args, kwargs)
+			return main.NewChart(thread, r, dir, parent, args, kwargs)
 		}
 		if err = tarExtractFromFile(dir, cacheDir); err != nil {
 			return nil, err
 		}
-		return NewChart(thread, r, cacheDir, parent, args, kwargs)
+		return main.NewChart(thread, r, cacheDir, parent, args, kwargs)
 
 	}
 
@@ -157,7 +156,7 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, arg
 			return nil, err
 		}
 	}
-	return NewChart(thread, r, cacheDir, parent, args, kwargs)
+	return main.NewChart(thread, r, cacheDir, parent, args, kwargs)
 }
 
 func tarCreate(chart api.Chart, writer io.Writer) error {

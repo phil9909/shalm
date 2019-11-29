@@ -5,7 +5,7 @@ import (
 
 	"go.starlark.net/starlark"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/impl"
+	"github.com/kramerul/shalm/pkg/chart/impl"
 	"github.com/spf13/cobra"
 )
 

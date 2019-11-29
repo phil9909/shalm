@@ -6,7 +6,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart/api"
 )
 
 // NewK8s create new instance to interact with kubernetes

@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart/api"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.starlark.net/starlark"
@@ -29,11 +29,11 @@ var _ = Describe("OCIRepo", func() {
 
 		BeforeEach(func() {
 			thread = &starlark.Thread{Name: "my thread"}
-			repo = NewRepo(WithAuthCreds(func(repo string) (string, string, error) {
+			repo = main.NewRepo(main.WithAuthCreds(func(repo string) (string, string, error) {
 				// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
 				return "", "", nil
 			}))
-			rootChart = NewRootChartForDir("default", example)
+			rootChart = main.NewRootChartForDir("default", example)
 
 		})
 		It("reads chart from directory", func() {

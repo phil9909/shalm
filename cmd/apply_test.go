@@ -7,10 +7,10 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
-	"github.com/kramerul/shalm/internal/pkg/chart/fakes"
+	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart/fakes"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/impl"
+	"github.com/kramerul/shalm/pkg/chart/impl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )

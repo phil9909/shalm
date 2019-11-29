@@ -4,7 +4,7 @@ import (
 	"io"
 	"os"
 
-	"github.com/kramerul/shalm/internal/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart/api"
 	"go.starlark.net/starlark"
 )
 
