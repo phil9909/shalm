@@ -229,13 +229,13 @@ func (h *HelmTemplater) template(name string) (result *template.Template, err er
 	result = template.New(name)
 	result = result.Funcs(sprig.TxtFuncMap())
 	result = result.Funcs(map[string]interface{}{
-		"toToml":   main.notImplemented,
+		"toToml":   notImplemented,
 		"toYaml":   toYAML,
-		"fromYaml": main.notImplemented,
+		"fromYaml": notImplemented,
 		"toJson":   toJSON,
-		"fromJson": main.notImplemented,
+		"fromJson": notImplemented,
 		"tpl":      h.tpl(),
-		"required": main.notImplemented,
+		"required": notImplemented,
 	})
 	incResult := result
 	result = result.Funcs(map[string]interface{}{

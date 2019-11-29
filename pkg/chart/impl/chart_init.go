@@ -11,7 +11,7 @@ import (
 	"go.starlark.net/starlark"
 )
 
-func (c *main.chartImpl) loadChartYaml() error {
+func (c *chartImpl) loadChartYaml() error {
 	var helmChart api.HelmChart
 
 	err := c.loadYamlFile(c.path("Chart.yaml"), &helmChart)
@@ -23,19 +23,19 @@ func (c *main.chartImpl) loadChartYaml() error {
 	return nil
 }
 
-func (c *main.chartImpl) loadValuesYaml() error {
+func (c *chartImpl) loadValuesYaml() error {
 	var values map[string]interface{}
 	err := c.loadYamlFile(c.path("values.yaml"), &values)
 	if err != nil {
 		return err
 	}
 	for k, v := range values {
-		c.values[k] = main.toStarlark(v)
+		c.values[k] = toStarlark(v)
 	}
 	return nil
 }
 
-func (c *main.chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
+func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
 	c.methods["apply"] = c.applyFunction()
 	c.methods["delete"] = c.deleteFunction()
 	c.methods["__apply"] = c.applyLocalFunction()
@@ -97,12 +97,12 @@ func wrapNamespace(callable starlark.Callable, namespace string) starlark.Callab
 		if !ok {
 			return nil, fmt.Errorf("Invalid first argument to %s", callable.Name())
 		}
-		args[0] = &main.k8sValueImpl{k.ForNamespace(namespace)}
+		args[0] = &k8sValueImpl{k.ForNamespace(namespace)}
 		return callable.CallInternal(thread, args, kwargs)
 	})
 }
 
-func (c *main.chartImpl) loadYamlFile(filename string, value interface{}) error {
+func (c *chartImpl) loadYamlFile(filename string, value interface{}) error {
 	reader, err := os.Open(filename) // For read access.
 	if err != nil {
 		if os.IsNotExist(err) {

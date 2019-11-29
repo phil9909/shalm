@@ -44,7 +44,7 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 		return starlark.NewBuiltin("rollout_status", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var kind string
 			var name string
-			parser := main.kwargsParser{kwargs: kwargs}
+			parser := kwargsParser{kwargs: kwargs}
 			k8sOptions := unpackK8sOptions(parser)
 			if err := starlark.UnpackArgs("rollout_status", args, parser.Parse(),
 				"type", &kind, "name", &name); err != nil {
@@ -57,7 +57,7 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 		return starlark.NewBuiltin("delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var kind string
 			var name string
-			parser := main.kwargsParser{kwargs: kwargs}
+			parser := kwargsParser{kwargs: kwargs}
 			k8sOptions := unpackK8sOptions(parser)
 			if err := starlark.UnpackArgs("delete", args, parser.Parse(),
 				"type", &kind, "name?", &name); err != nil {
@@ -75,7 +75,7 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 // AttrNames -
 func (k *k8sValueImpl) AttrNames() []string { return []string{"rollout_status", "delete"} }
 
-func unpackK8sOptions(parser main.kwargsParser) *api.K8sOptions {
+func unpackK8sOptions(parser kwargsParser) *api.K8sOptions {
 	result := &api.K8sOptions{Namespaced: true}
 	parser.Arg("namespaced", func(value starlark.Value) {
 		result.Namespaced = bool(value.(starlark.Bool))

@@ -7,7 +7,7 @@ import (
 // Repo -
 type Repo interface {
 	// Get -
-	Get(thread *starlark.Thread, parent main.Chart, name string, args starlark.Tuple, kwargs []starlark.Tuple) (main.ChartValue, error)
+	Get(thread *starlark.Thread, parent Chart, name string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error)
 	// Push -
-	Push(chart main.Chart, ref string) error
+	Push(chart Chart, ref string) error
 }

@@ -29,8 +29,8 @@ type Chart interface {
 	GetNamespace() string
 	GetDir() string
 	Walk(cb func(name string, size int64, body io.Reader, err error) error) error
-	Apply(thread *starlark.Thread, k main.K8s) error
-	Delete(thread *starlark.Thread, k main.K8s) error
+	Apply(thread *starlark.Thread, k K8s) error
+	Delete(thread *starlark.Thread, k K8s) error
 	Template(thread *starlark.Thread) (string, error)
 }
 

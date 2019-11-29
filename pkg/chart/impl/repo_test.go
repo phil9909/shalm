@@ -29,11 +29,11 @@ var _ = Describe("OCIRepo", func() {
 
 		BeforeEach(func() {
 			thread = &starlark.Thread{Name: "my thread"}
-			repo = main.NewRepo(main.WithAuthCreds(func(repo string) (string, string, error) {
+			repo = NewRepo(WithAuthCreds(func(repo string) (string, string, error) {
 				// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
 				return "", "", nil
 			}))
-			rootChart = main.NewRootChartForDir("default", example)
+			rootChart = NewRootChartForDir("default", example)
 
 		})
 		It("reads chart from directory", func() {

@@ -121,12 +121,12 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, arg
 
 	if stat, err := os.Stat(dir); err == nil {
 		if stat.IsDir() {
-			return main.NewChart(thread, r, dir, parent, args, kwargs)
+			return NewChart(thread, r, dir, parent, args, kwargs)
 		}
 		if err = tarExtractFromFile(dir, cacheDir); err != nil {
 			return nil, err
 		}
-		return main.NewChart(thread, r, cacheDir, parent, args, kwargs)
+		return NewChart(thread, r, cacheDir, parent, args, kwargs)
 
 	}
 
@@ -156,7 +156,7 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, arg
 			return nil, err
 		}
 	}
-	return main.NewChart(thread, r, cacheDir, parent, args, kwargs)
+	return NewChart(thread, r, cacheDir, parent, args, kwargs)
 }
 
 func tarCreate(chart api.Chart, writer io.Writer) error {
