@@ -187,7 +187,9 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 	})
 
 	if err != nil {
-		return err
+		if !os.IsNotExist(err) {
+			return err
+		}
 	}
 
 	if len(filenames) == 0 {
