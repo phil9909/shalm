@@ -164,7 +164,7 @@ Deletes the chart from k8s without recursion. This should only be used within `d
 
 ### K8s
 
-#### `k8s.delete(kind,name,namespaced=false,timeout=0,)`
+#### `k8s.delete(kind,name,namespaced=false,timeout=0)`
 
 Deletes one kubernetes object
 
@@ -175,9 +175,9 @@ Deletes one kubernetes object
 | timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
 | namespaced |  If true object in the current namespace are deleted. Otherwise object in cluster scope will be deleted. Default is `true`  |
 
-#### `k8s.rollout_status(kind,name,timeout=0,)`
+#### `k8s.rollout_status(kind,name,timeout=0)`
 
-Deletes one kubernetes object
+Wait for rollout status of one kubernetes object
 
 | Parameter | Description |
 |-----------|-------------|
