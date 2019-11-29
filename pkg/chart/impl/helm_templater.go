@@ -166,23 +166,30 @@ func NewHelmTemplater(dir string, namespace string) (*HelmTemplater, error) {
 // Template -
 func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *HelmOptions) error {
 	var filenames []string
-	var err error
+	glob := "*.yaml"
 	if opts.glob != "" {
-		filenames, err = filepath.Glob(path.Join(h.dir, "templates", opts.glob))
-		if err != nil {
-			return err
-		}
-	} else {
-		filenames, err = filepath.Glob(path.Join(h.dir, "templates/*.yaml"))
-		if err != nil {
-			return err
-		}
-		subdirs, err := filepath.Glob(path.Join(h.dir, "templates/*/*.yaml"))
-		if err != nil {
-			return err
-		}
-		filenames = append(filenames, subdirs...)
+		glob = opts.glob
 	}
+	err := filepath.Walk(path.Join(h.dir, "templates"), func(file string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if !info.IsDir() {
+			match, err := filepath.Match(glob, path.Base(file))
+			if err != nil {
+				return err
+			}
+			if match {
+				filenames = append(filenames, file)
+			}
+		}
+		return nil
+	})
+
+	if err != nil {
+		return err
+	}
+
 	if len(filenames) == 0 {
 		return nil
 	}
