@@ -48,13 +48,13 @@ func (k *k8sImpl) RolloutStatus(typ string, name string, options *api.K8sOptions
 }
 
 func (k *k8sImpl) kubectl(command string, options *api.K8sOptions, flags ...string) *exec.Cmd {
+	flags = append([]string{command}, flags...)
 	if options.Namespaced {
 		flags = append(flags, "-n", k.namespace)
 	}
 	if options.Timeout > 0 {
 		flags = append(flags, "--timeout", fmt.Sprintf("%.0fs", options.Timeout.Seconds()))
 	}
-	flags = append(flags, command)
 	cmd := exec.Command("kubectl", flags...)
 	fmt.Println(cmd.String())
 	cmd.Stdout = os.Stdout
