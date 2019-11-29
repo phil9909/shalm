@@ -3,6 +3,9 @@ package impl
 import (
 	"fmt"
 	"os"
+	"strings"
+
+	"github.com/pkg/errors"
 
 	"github.com/blang/semver"
 	"github.com/kramerul/shalm/pkg/chart/api"
@@ -18,7 +21,17 @@ func (c *chartImpl) loadChartYaml() error {
 	if err != nil {
 		return err
 	}
-	c.Version = semver.MustParse(helmChart.Version)
+	if strings.HasPrefix(helmChart.Version, "v") {
+		c.Version, err = semver.Parse(helmChart.Version[1:])
+		if err != nil {
+			return errors.Wrap(err, "Invalid version in helm chart")
+		}
+	} else {
+		c.Version, err = semver.Parse(helmChart.Version)
+		if err != nil {
+			return errors.Wrap(err, "Invalid version in helm chart")
+		}
+	}
 	c.Name = helmChart.Name
 	return nil
 }

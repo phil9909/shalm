@@ -15,6 +15,7 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 	"time"
 
@@ -164,7 +165,7 @@ func tarCreate(chart api.Chart, writer io.Writer) error {
 	defer tw.Close()
 	return chart.Walk(func(file string, size int64, body io.Reader, err error) error {
 		hdr := &tar.Header{
-			Name: file,
+			Name: path.Join(chart.GetName(), file),
 			Mode: 0644,
 			Size: size,
 		}
@@ -186,6 +187,8 @@ func tarExtractFromFile(tarFile string, dir string) error {
 	defer in.Close()
 	return tarExtract(in, dir)
 }
+
+var chartDirExpr = regexp.MustCompile("^[^/]*/")
 
 func tarExtract(in io.Reader, dir string) error {
 	reader := bufio.NewReader(in)
@@ -213,7 +216,7 @@ func tarExtract(in io.Reader, dir string) error {
 		if hdr.FileInfo().IsDir() {
 			continue
 		}
-		fn := path.Join(dir, hdr.Name)
+		fn := path.Join(dir, chartDirExpr.ReplaceAllString(hdr.Name, ""))
 		if err := os.MkdirAll(path.Dir(fn), 0755); err != nil {
 			return err
 		}
