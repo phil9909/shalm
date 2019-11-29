@@ -47,7 +47,7 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 			parser := kwargsParser{kwargs: kwargs}
 			k8sOptions := unpackK8sOptions(parser)
 			if err := starlark.UnpackArgs("rollout_status", args, parser.Parse(),
-				"type", &kind, "name", &name); err != nil {
+				"kind", &kind, "name", &name); err != nil {
 				return nil, err
 			}
 			return starlark.None, k.RolloutStatus(kind, name, k8sOptions)
@@ -60,7 +60,7 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 			parser := kwargsParser{kwargs: kwargs}
 			k8sOptions := unpackK8sOptions(parser)
 			if err := starlark.UnpackArgs("delete", args, parser.Parse(),
-				"type", &kind, "name?", &name); err != nil {
+				"kind", &kind, "name?", &name); err != nil {
 				return nil, err
 			}
 			if name == "" {

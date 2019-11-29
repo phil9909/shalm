@@ -8,6 +8,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var deleteChartArgs = chartArgs{}
+
 var deleteCmd = &cobra.Command{
 	Use:   "delete [chart]",
 	Short: "delete shalm chart",
@@ -18,10 +20,14 @@ var deleteCmd = &cobra.Command{
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, rootChart(), chartName, nil, nil)
+		c, err := repo.Get(thread, rootChart(), chartName, nil, deleteChartArgs.KwArgs())
 		if err != nil {
 			return err
 		}
 		return c.Delete(thread, impl.NewK8s())
 	},
+}
+
+func init() {
+	deleteChartArgs.AddFlags(deleteCmd.Flags())
 }

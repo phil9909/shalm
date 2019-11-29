@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var templateChartArgs = chartArgs{}
+
 var templateCmd = &cobra.Command{
 	Use:   "template [chart]",
 	Short: "template shalm chart",
@@ -19,7 +21,7 @@ var templateCmd = &cobra.Command{
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, rootChart(), chartName, nil, nil)
+		c, err := repo.Get(thread, rootChart(), chartName, nil, templateChartArgs.KwArgs())
 		if err != nil {
 			return err
 		}
@@ -30,4 +32,8 @@ var templateCmd = &cobra.Command{
 		fmt.Println(t)
 		return nil
 	},
+}
+
+func init() {
+	templateChartArgs.AddFlags(templateCmd.Flags())
 }

@@ -9,6 +9,8 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var applyChartArgs = chartArgs{}
+
 var applyCmd = &cobra.Command{
 	Use:   "apply [chart]",
 	Short: "apply shalm chart",
@@ -23,9 +25,13 @@ var applyCmd = &cobra.Command{
 
 func apply(repo api.Repo, parent api.Chart, chartName string, k api.K8s) error {
 	thread := &starlark.Thread{Name: "my thread"}
-	c, err := repo.Get(thread, parent, chartName, nil, nil)
+	c, err := repo.Get(thread, parent, chartName, nil, applyChartArgs.KwArgs())
 	if err != nil {
 		return err
 	}
 	return c.Apply(thread, k)
+}
+
+func init() {
+	applyChartArgs.AddFlags(applyCmd.Flags())
 }

@@ -15,7 +15,7 @@ require (
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.8.1
 	github.com/spf13/cobra v0.0.5
-	github.com/spf13/pflag v1.0.5 // indirect
+	github.com/spf13/pflag v1.0.5
 	github.com/stevvooe/resumable v0.0.0-20180830230917-22b14a53ba50 // indirect
 	go.starlark.net v0.0.0-20191021185836-28350e608555
 	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
