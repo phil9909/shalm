@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 
+	"github.com/blang/semver"
 	"github.com/kramerul/shalm/pkg/chart/api"
 	"go.starlark.net/starlark"
 )
@@ -40,11 +41,15 @@ func (c *rootChart) GetNamespace() string {
 	return c.namespace
 }
 
+func (c *rootChart) GetVersion() semver.Version {
+	return semver.Version{}
+}
+
 func (c *rootChart) GetDir() string {
 	return c.dir
 }
 
-func (c *rootChart) Walk(cb func(name string, size int64, body io.Reader, err error) error) error {
+func (c *rootChart) Package(writer io.Writer) error {
 	return nil
 }
 

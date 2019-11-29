@@ -3,6 +3,7 @@ package api
 import (
 	"io"
 
+	"github.com/blang/semver"
 	"go.starlark.net/starlark"
 )
 
@@ -26,12 +27,13 @@ type HelmChart struct {
 // Chart -
 type Chart interface {
 	GetName() string
+	GetVersion() semver.Version
 	GetNamespace() string
 	GetDir() string
-	Walk(cb func(name string, size int64, body io.Reader, err error) error) error
 	Apply(thread *starlark.Thread, k K8s) error
 	Delete(thread *starlark.Thread, k K8s) error
 	Template(thread *starlark.Thread) (string, error)
+	Package(writer io.Writer) error
 }
 
 // ChartValue -

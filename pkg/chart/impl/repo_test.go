@@ -16,7 +16,7 @@ import (
 var (
 	_, b, _, _ = runtime.Caller(0)
 	basepath   = filepath.Dir(b)
-	root       = path.Join(filepath.Dir(b), "..", "..", "..", "..")
+	root       = path.Join(filepath.Dir(b), "..", "..", "..")
 	example    = path.Join(root, "example")
 )
 
@@ -42,14 +42,14 @@ var _ = Describe("OCIRepo", func() {
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
 		It("reads chart from tar file", func() {
-			chart, err := repo.Get(thread, rootChart, "mariadb.tgz", nil, nil)
+			chart, err := repo.Get(thread, rootChart, "mariadb-6.12.2.tgz", nil, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
 		It("reads chart from http", func() {
 
 			http.HandleFunc("/mariadb.tgz", func(w http.ResponseWriter, r *http.Request) {
-				content, _ := ioutil.ReadFile(path.Join(example, "mariadb.tgz"))
+				content, _ := ioutil.ReadFile(path.Join(example, "mariadb-6.12.2.tgz"))
 				w.Write(content)
 			})
 

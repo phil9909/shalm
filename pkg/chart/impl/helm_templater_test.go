@@ -27,7 +27,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value: "test",
 			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(writer.String()).To(Equal("---\ntest: test\n"))
+			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\ntest: test\n"))
 		})
 		It("it loads helpers", func() {
 			var err error
@@ -49,7 +49,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value: "test",
 			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(writer.String()).To(Equal("---\ntest: chart-version\n"))
+			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\ntest: chart-version\n"))
 		})
 		It("renders multipe files", func() {
 			var err error
@@ -67,7 +67,7 @@ var _ = Describe("HelmTemplater", func() {
 				Value: "test",
 			}, writer, &HelmOptions{})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(writer.String()).To(Equal("---\ntest: test1\n---\ntest: test2\n"))
+			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\ntest: test1\n---\nmetadata:\n  namespace: namespace\ntest: test2\n"))
 		})
 		It("repects glob patterns", func() {
 			var err error
@@ -85,9 +85,9 @@ var _ = Describe("HelmTemplater", func() {
 				Value: "test",
 			}, writer, &HelmOptions{glob: "*[1-2].yaml"})
 			Expect(err).ToNot(HaveOccurred())
-			Expect(writer.String()).To(Equal("---\ntest: test1\n"))
+			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\ntest: test1\n"))
 		})
-		FIt("sorts by kind", func() {
+		It("sorts by kind", func() {
 			var err error
 			dir := newTestDir()
 			defer dir.Remove()

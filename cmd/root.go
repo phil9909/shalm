@@ -21,6 +21,7 @@ func init() {
 	rootCmd.AddCommand(templateCmd)
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(pushCmd)
+	rootCmd.AddCommand(packageCmd)
 }
 
 var rootCmd = &cobra.Command{

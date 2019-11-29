@@ -1,10 +1,17 @@
 package impl
 
 import (
+	"archive/tar"
+	"bufio"
+	"compress/gzip"
 	"fmt"
 	"io"
+	"log"
+	"net/http"
 	"os"
+	"path"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/blang/semver"
@@ -26,6 +33,14 @@ type chartImpl struct {
 var (
 	_ api.ChartValue = (*chartImpl)(nil)
 )
+
+// NewChartFromPackage -
+func NewChartFromPackage(thread *starlark.Thread, repo api.Repo, dir string, reader io.Reader, parent api.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+	if err := tarExtract(reader, dir); err != nil {
+		return nil, err
+	}
+	return NewChart(thread, repo, dir, parent, args, kwargs)
+}
 
 // NewChart -
 func NewChart(thread *starlark.Thread, repo api.Repo, dir string, parent api.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
@@ -69,7 +84,11 @@ func (c *chartImpl) GetDir() string {
 	return c.dir
 }
 
-func (c *chartImpl) Walk(cb func(name string, size int64, body io.Reader, err error) error) error {
+func (c *chartImpl) GetVersion() semver.Version {
+	return c.Version
+}
+
+func (c *chartImpl) walk(cb func(name string, size int64, body io.Reader, err error) error) error {
 	return filepath.Walk(c.dir, func(file string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
@@ -320,4 +339,67 @@ func unpackHelmOptions(parser kwargsParser) *HelmOptions {
 		result.glob = value.(starlark.String).GoString()
 	})
 	return result
+}
+
+func (c *chartImpl) Package(writer io.Writer) error {
+	tw := tar.NewWriter(writer)
+	defer tw.Close()
+	return c.walk(func(file string, size int64, body io.Reader, err error) error {
+		hdr := &tar.Header{
+			Name: path.Join(c.Name, file),
+			Mode: 0644,
+			Size: size,
+		}
+		if err := tw.WriteHeader(hdr); err != nil {
+			return err
+		}
+		if _, err := io.Copy(tw, body); err != nil {
+			return err
+		}
+		return nil
+	})
+}
+
+var chartDirExpr = regexp.MustCompile("^[^/]*/")
+
+func tarExtract(in io.Reader, dir string) error {
+	reader := bufio.NewReader(in)
+	testBytes, err := reader.Peek(64)
+	if err != nil {
+		return err
+	}
+	in = reader
+	contentType := http.DetectContentType(testBytes)
+	if strings.Contains(contentType, "x-gzip") {
+		in, err = gzip.NewReader(in)
+		if err != nil {
+			return err
+		}
+	}
+	tr := tar.NewReader(in)
+	for {
+		hdr, err := tr.Next()
+		if err == io.EOF {
+			break // End of archive
+		}
+		if err != nil {
+			return err
+		}
+		if hdr.FileInfo().IsDir() {
+			continue
+		}
+		fn := path.Join(dir, chartDirExpr.ReplaceAllString(hdr.Name, ""))
+		if err := os.MkdirAll(path.Dir(fn), 0755); err != nil {
+			return err
+		}
+		out, err := os.Create(fn)
+		if err != nil {
+			return err
+		}
+		if _, err := io.Copy(out, tr); err != nil {
+			log.Fatal(err)
+		}
+		out.Close()
+	}
+	return nil
 }

@@ -40,7 +40,7 @@ type MetaData struct {
 // Object -
 type Object struct {
 	MetaData   MetaData               `yaml:"metadata,omitempty"`
-	Kind       string                 `yaml:"kind"`
+	Kind       string                 `yaml:"kind,omitempty"`
 	Additional map[string]interface{} `yaml:",inline"`
 }
 
