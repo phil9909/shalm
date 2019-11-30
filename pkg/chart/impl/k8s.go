@@ -1,12 +1,15 @@
 package impl
 
 import (
+	"bytes"
 	"fmt"
 	"io"
 	"os"
 	"os/exec"
+	"strings"
 
 	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/pkg/errors"
 )
 
 // NewK8s create new instance to interact with kubernetes
@@ -43,8 +46,26 @@ func (k *k8sImpl) DeleteObject(kind string, name string, options *api.K8sOptions
 }
 
 // RolloutStatus -
-func (k *k8sImpl) RolloutStatus(typ string, name string, options *api.K8sOptions) error {
-	return k.kubectl("rollout", options, "status", typ, name).Run()
+func (k *k8sImpl) RolloutStatus(kind string, name string, options *api.K8sOptions) error {
+	return k.kubectl("rollout", options, "status", kind, name).Run()
+}
+
+// Get -
+func (k *k8sImpl) Get(kind string, name string, writer io.Writer, options *api.K8sOptions) error {
+	cmd := k.kubectl("get", options, kind, name, "-o", "yaml")
+	buffer := bytes.Buffer{}
+	cmd.Stdout = writer
+	cmd.Stderr = &buffer
+	err := cmd.Run()
+	if err != nil {
+		return errors.Wrap(err, string(buffer.Bytes()))
+	}
+	return nil
+}
+
+// IsNotExist -
+func (k *k8sImpl) IsNotExist(err error) bool {
+	return strings.Contains(err.Error(), "NotFound")
 }
 
 func (k *k8sImpl) kubectl(command string, options *api.K8sOptions, flags ...string) *exec.Cmd {
@@ -62,6 +83,16 @@ func (k *k8sImpl) kubectl(command string, options *api.K8sOptions, flags ...stri
 	return cmd
 }
 
+type writeCounter struct {
+	counter int
+	writer  io.Writer
+}
+
+func (w *writeCounter) Write(data []byte) (int, error) {
+	w.counter++
+	return w.writer.Write(data)
+}
+
 func (k *k8sImpl) run(command string, output func(io.Writer) error, options *api.K8sOptions, flags ...string) error {
 	cmd := k.kubectl(command, options, append([]string{"-f", "-"}, flags...)...)
 
@@ -73,13 +104,17 @@ func (k *k8sImpl) run(command string, output func(io.Writer) error, options *api
 	if err != nil {
 		return fmt.Errorf("error starting %s: %s", cmd.String(), err.Error())
 	}
-	err = output(writer)
+	w := &writeCounter{writer: writer}
+	err = output(w)
 	if err != nil {
 		return err
 	}
 	writer.Close()
 	err = cmd.Wait()
 	if err != nil {
+		if w.counter == 0 {
+			return nil
+		}
 		return fmt.Errorf("error running %s: %s", cmd.String(), err.Error())
 	}
 	return nil

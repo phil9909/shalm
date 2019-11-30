@@ -65,6 +65,14 @@ func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.T
 			}
 			return repo.Get(thread, c, args[0].(starlark.String).GoString(), args[1:], kwargs)
 		}),
+		"credential": starlark.NewBuiltin("credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			cred := &credential{}
+			if err := starlark.UnpackArgs("credential", args, kwargs, "name", &cred.name, "hostname?", &cred.hostname, "port?", &cred.port, "uri?", &cred.uri); err != nil {
+				return nil, err
+			}
+			c.credentials = append(c.credentials, cred)
+			return cred, nil
+		}),
 	})
 	if err != nil {
 		return err

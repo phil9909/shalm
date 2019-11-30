@@ -7,11 +7,6 @@ import (
 	"go.starlark.net/starlark"
 )
 
-// InstallOpts -
-type InstallOpts struct {
-	Namespace string
-}
-
 // HelmChart -
 type HelmChart struct {
 	APIVersion  string   `json:"apiVersion,omitempty"`
@@ -22,6 +17,17 @@ type HelmChart struct {
 	Home        string   `json:"home,omitempty"`
 	Sources     []string `json:"sources,omitempty"`
 	Icon        string   `json:"icon,omitempty"`
+}
+
+// Credentials -
+type Credential interface {
+	GetOrCreate(k K8s) error
+}
+
+// CredentialsValue -
+type CredentialValue interface {
+	starlark.HasAttrs
+	Credential
 }
 
 // Chart -

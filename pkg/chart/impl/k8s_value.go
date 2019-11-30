@@ -20,7 +20,7 @@ type k8sValueImpl struct {
 }
 
 var (
-	_ starlark.HasAttrs = (*k8sValueImpl)(nil)
+	_ api.K8sValue = (*k8sValueImpl)(nil)
 )
 
 // String -

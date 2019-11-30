@@ -236,7 +236,10 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 	writer.Write([]byte("---\n"))
 	enc := yaml.NewEncoder(writer)
 	for _, doc := range docs {
-		enc.Encode(doc)
+		err = enc.Encode(doc)
+		if err != nil {
+			return err
+		}
 	}
 	return nil
 

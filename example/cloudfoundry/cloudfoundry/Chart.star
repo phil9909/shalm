@@ -8,5 +8,3 @@ def init(self):
    self.uaa = chart("../uaa",database = self.database, logging= self.logging, ingress=self.ingress)
    self.capi = chart("../capi", database = self.database, logging= self.logging, uaa=self.uaa, blobstore=self.blobstore, ingress=self.ingress)
 
-def create_or_update_database(self,db="db",username="",password=""):
-  pass

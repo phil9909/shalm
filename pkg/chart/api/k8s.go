@@ -20,6 +20,8 @@ type K8s interface {
 	DeleteObject(kind string, name string, options *K8sOptions) error
 	Apply(output func(io.Writer) error, options *K8sOptions) error
 	Delete(output func(io.Writer) error, options *K8sOptions) error
+	Get(kind string, name string, writer io.Writer, options *K8sOptions) error
+	IsNotExist(err error) bool
 }
 
 // K8sValue -

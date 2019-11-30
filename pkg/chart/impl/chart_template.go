@@ -5,6 +5,7 @@ import (
 	"io"
 
 	"go.starlark.net/starlark"
+	"gopkg.in/yaml.v2"
 )
 
 // Release -
@@ -68,7 +69,7 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 			return toGo(value), err
 		}
 	}
-	return h.Template(struct {
+	err = h.Template(struct {
 		Values  interface{}
 		Methods map[string]interface{}
 		Chart   Chart
@@ -85,4 +86,20 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 		Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name},
 		Files:   files{dir: c.dir},
 	}, writer, options)
+	if err != nil {
+		return err
+	}
+	if len(c.credentials) == 0 {
+		return nil
+	}
+	writer.Write([]byte("---\n"))
+	enc := yaml.NewEncoder(writer)
+	for _, credential := range c.credentials {
+		err = enc.Encode(credential.secret(c.namespace))
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
 }

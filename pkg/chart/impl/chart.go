@@ -28,6 +28,7 @@ type chartImpl struct {
 	dir         string
 	initialized bool
 	namespace   string
+	credentials []*credential
 }
 
 var (
@@ -263,10 +264,17 @@ func (c *chartImpl) applyLocalFunction() starlark.Callable {
 }
 
 func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, k8sOptions *api.K8sOptions, helmOption *HelmOptions) error {
+	for _, credential := range c.credentials {
+		err := credential.GetOrCreate(k)
+		if err != nil {
+			return err
+		}
+	}
 	k8sOptions.Namespaced = false
 	return k.Apply(func(writer io.Writer) error {
 		return c.template(thread, writer, helmOption)
 	}, k8sOptions)
+	return nil
 }
 
 func (c *chartImpl) Delete(thread *starlark.Thread, k api.K8s) error {
