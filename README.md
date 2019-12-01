@@ -147,6 +147,7 @@ If no namespace is given, the namespace is inherited from the parent chart.
 |-----------|-------------|
 | url       |  The chart is loaded from the given url. The url can be relative.  In this case the chart is loaded from a path relative to the current chart location.  |
 | namespace |  If no namespace is given, the namespace is inherited from the parent chart. |
+| ...       |  Additional parametes are passed to the `init` method of the corresponding chart. |
 
 
 #### `chart.apply(k8s)`
