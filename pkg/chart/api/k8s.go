@@ -7,6 +7,8 @@ import (
 	"go.starlark.net/starlark"
 )
 
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../fakes/fake_k8s.go . K8s
+
 // K8sOptions common options for calls to k8s
 type K8sOptions struct {
 	Namespaced bool

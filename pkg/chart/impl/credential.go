@@ -51,15 +51,15 @@ func (c *credential) String() string {
 	buf.WriteByte('(')
 	buf.WriteString("name = ")
 	buf.WriteString(c.name)
-	buf.WriteString("username = ")
+	buf.WriteString(", username = ")
 	buf.WriteString(c.username)
-	buf.WriteString("password = ")
+	buf.WriteString(", password = ")
 	buf.WriteString(c.password)
-	buf.WriteString("hostname = ")
+	buf.WriteString(", hostname = ")
 	buf.WriteString(c.hostname)
-	buf.WriteString("port = ")
+	buf.WriteString(", port = ")
 	buf.WriteString(c.port)
-	buf.WriteString("uri = ")
+	buf.WriteString(", uri = ")
 	buf.WriteString(c.uri)
 
 	s := 0
@@ -157,7 +157,7 @@ func (c *credential) Attr(name string) (starlark.Value, error) {
 	switch name {
 	case "username":
 		if !c.applied {
-			return nil, errors.New("password is only available after credential is applied")
+			return nil, errors.New("username is only available after credential is applied")
 		}
 		return starlark.String(c.username), nil
 	case "password":

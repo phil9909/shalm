@@ -2,6 +2,7 @@ package impl
 
 import (
 	"bytes"
+	"errors"
 	"io"
 	"io/ioutil"
 	"os"
@@ -198,6 +199,39 @@ var _ = Describe("Chart", func() {
 			Expect(chart.String()).To(ContainSubstring("replicas = \"1\""))
 			Expect(chart.Hash()).NotTo(Equal(uint32(0)))
 			Expect(chart.Truth()).To(BeEquivalentTo(true))
+		})
+
+		It("applies a credentials ", func() {
+			thread := &starlark.Thread{Name: "my thread"}
+			dir := newTestDir()
+			defer dir.Remove()
+			repo := NewRepo()
+			dir.WriteFile("Chart.star", []byte("def init(self):\n  credential(\"test\")\n"), 0644)
+			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			Expect(err).NotTo(HaveOccurred())
+			writer := bytes.Buffer{}
+			k := &fakes.FakeK8s{
+				ApplyStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
+					i(&writer)
+					return nil
+				},
+				GetStub: func(kind string, name string, writer io.Writer, k8s *api.K8sOptions) error {
+					return errors.New("NotFound")
+				},
+				IsNotExistStub: func(err error) bool {
+					return true
+				},
+			}
+			k.ForNamespaceStub = func(s string) api.K8s {
+				return k
+			}
+			err = chart.Apply(thread, k)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(writer.String()).To(ContainSubstring("kind: Secret"))
+			Expect(writer.String()).To(ContainSubstring("type: Opaque"))
+			Expect(writer.String()).To(ContainSubstring("  name: test"))
+			Expect(writer.String()).To(ContainSubstring("  username: "))
+			Expect(writer.String()).To(ContainSubstring("  password: "))
 		})
 
 	})

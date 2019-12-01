@@ -57,6 +57,31 @@ type FakeK8s struct {
 	forNamespaceReturnsOnCall map[int]struct {
 		result1 api.K8s
 	}
+	GetStub        func(string, string, io.Writer, *api.K8sOptions) error
+	getMutex       sync.RWMutex
+	getArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 io.Writer
+		arg4 *api.K8sOptions
+	}
+	getReturns struct {
+		result1 error
+	}
+	getReturnsOnCall map[int]struct {
+		result1 error
+	}
+	IsNotExistStub        func(error) bool
+	isNotExistMutex       sync.RWMutex
+	isNotExistArgsForCall []struct {
+		arg1 error
+	}
+	isNotExistReturns struct {
+		result1 bool
+	}
+	isNotExistReturnsOnCall map[int]struct {
+		result1 bool
+	}
 	RolloutStatusStub        func(string, string, *api.K8sOptions) error
 	rolloutStatusMutex       sync.RWMutex
 	rolloutStatusArgsForCall []struct {
@@ -318,6 +343,129 @@ func (fake *FakeK8s) ForNamespaceReturnsOnCall(i int, result1 api.K8s) {
 	}{result1}
 }
 
+func (fake *FakeK8s) Get(arg1 string, arg2 string, arg3 io.Writer, arg4 *api.K8sOptions) error {
+	fake.getMutex.Lock()
+	ret, specificReturn := fake.getReturnsOnCall[len(fake.getArgsForCall)]
+	fake.getArgsForCall = append(fake.getArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 io.Writer
+		arg4 *api.K8sOptions
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("Get", []interface{}{arg1, arg2, arg3, arg4})
+	fake.getMutex.Unlock()
+	if fake.GetStub != nil {
+		return fake.GetStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.getReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeK8s) GetCallCount() int {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	return len(fake.getArgsForCall)
+}
+
+func (fake *FakeK8s) GetCalls(stub func(string, string, io.Writer, *api.K8sOptions) error) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = stub
+}
+
+func (fake *FakeK8s) GetArgsForCall(i int) (string, string, io.Writer, *api.K8sOptions) {
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	argsForCall := fake.getArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeK8s) GetReturns(result1 error) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = nil
+	fake.getReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeK8s) GetReturnsOnCall(i int, result1 error) {
+	fake.getMutex.Lock()
+	defer fake.getMutex.Unlock()
+	fake.GetStub = nil
+	if fake.getReturnsOnCall == nil {
+		fake.getReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.getReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeK8s) IsNotExist(arg1 error) bool {
+	fake.isNotExistMutex.Lock()
+	ret, specificReturn := fake.isNotExistReturnsOnCall[len(fake.isNotExistArgsForCall)]
+	fake.isNotExistArgsForCall = append(fake.isNotExistArgsForCall, struct {
+		arg1 error
+	}{arg1})
+	fake.recordInvocation("IsNotExist", []interface{}{arg1})
+	fake.isNotExistMutex.Unlock()
+	if fake.IsNotExistStub != nil {
+		return fake.IsNotExistStub(arg1)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.isNotExistReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeK8s) IsNotExistCallCount() int {
+	fake.isNotExistMutex.RLock()
+	defer fake.isNotExistMutex.RUnlock()
+	return len(fake.isNotExistArgsForCall)
+}
+
+func (fake *FakeK8s) IsNotExistCalls(stub func(error) bool) {
+	fake.isNotExistMutex.Lock()
+	defer fake.isNotExistMutex.Unlock()
+	fake.IsNotExistStub = stub
+}
+
+func (fake *FakeK8s) IsNotExistArgsForCall(i int) error {
+	fake.isNotExistMutex.RLock()
+	defer fake.isNotExistMutex.RUnlock()
+	argsForCall := fake.isNotExistArgsForCall[i]
+	return argsForCall.arg1
+}
+
+func (fake *FakeK8s) IsNotExistReturns(result1 bool) {
+	fake.isNotExistMutex.Lock()
+	defer fake.isNotExistMutex.Unlock()
+	fake.IsNotExistStub = nil
+	fake.isNotExistReturns = struct {
+		result1 bool
+	}{result1}
+}
+
+func (fake *FakeK8s) IsNotExistReturnsOnCall(i int, result1 bool) {
+	fake.isNotExistMutex.Lock()
+	defer fake.isNotExistMutex.Unlock()
+	fake.IsNotExistStub = nil
+	if fake.isNotExistReturnsOnCall == nil {
+		fake.isNotExistReturnsOnCall = make(map[int]struct {
+			result1 bool
+		})
+	}
+	fake.isNotExistReturnsOnCall[i] = struct {
+		result1 bool
+	}{result1}
+}
+
 func (fake *FakeK8s) RolloutStatus(arg1 string, arg2 string, arg3 *api.K8sOptions) error {
 	fake.rolloutStatusMutex.Lock()
 	ret, specificReturn := fake.rolloutStatusReturnsOnCall[len(fake.rolloutStatusArgsForCall)]
@@ -391,6 +539,10 @@ func (fake *FakeK8s) Invocations() map[string][][]interface{} {
 	defer fake.deleteObjectMutex.RUnlock()
 	fake.forNamespaceMutex.RLock()
 	defer fake.forNamespaceMutex.RUnlock()
+	fake.getMutex.RLock()
+	defer fake.getMutex.RUnlock()
+	fake.isNotExistMutex.RLock()
+	defer fake.isNotExistMutex.RUnlock()
 	fake.rolloutStatusMutex.RLock()
 	defer fake.rolloutStatusMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
