@@ -232,6 +232,10 @@ Returns the content of the username attribute. It is only valid after calling `c
 
 Returns the content of the password attribute. It is only valid after calling `chart.__apply(k8s)`
 
+### struct
+
+See [bazel documentation](https://docs.bazel.build/versions/master/skylark/lib/struct.html). `to_proto` and `to_json` are not yet supported.
+
 ## Difference to helm
 
 * Subcharts are not loaded automatically. They must be loaded using the `chart` command
