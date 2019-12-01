@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/kramerul/shalm/pkg/chart/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -19,7 +19,7 @@ var _ = Describe("Credential", func() {
 			username := "username1"
 			password := "password1"
 			k8s := fakes.FakeK8s{
-				GetStub: func(kind string, name string, writer io.Writer, k8s *api.K8sOptions) error {
+				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
 					writer.Write([]byte("data:\n" +
 						"  username: " + base64.StdEncoding.EncodeToString([]byte(username)) + "\n" +
 						"  password: " + base64.StdEncoding.EncodeToString([]byte(password)) + "\n"))
@@ -39,7 +39,7 @@ var _ = Describe("Credential", func() {
 
 		It("creates new random username and password if secret doesn't exist", func() {
 			k8s := fakes.FakeK8s{
-				GetStub: func(kind string, name string, writer io.Writer, k8s *api.K8sOptions) error {
+				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
 					return errors.New("NotFound")
 				},
 				IsNotExistStub: func(err error) bool {
@@ -57,7 +57,7 @@ var _ = Describe("Credential", func() {
 
 		It("fails on other errors", func() {
 			k8s := fakes.FakeK8s{
-				GetStub: func(kind string, name string, writer io.Writer, k8s *api.K8sOptions) error {
+				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
 					return errors.New("Other")
 				},
 				IsNotExistStub: func(err error) bool {

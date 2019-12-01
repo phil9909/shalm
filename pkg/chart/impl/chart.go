@@ -15,7 +15,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
 )
 
@@ -32,11 +32,11 @@ type chartImpl struct {
 }
 
 var (
-	_ api.ChartValue = (*chartImpl)(nil)
+	_ chart.ChartValue = (*chartImpl)(nil)
 )
 
 // NewChartFromPackage -
-func NewChartFromPackage(thread *starlark.Thread, repo api.Repo, dir string, reader io.Reader, parent api.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+func NewChartFromPackage(thread *starlark.Thread, repo chart.Repo, dir string, reader io.Reader, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	if err := tarExtract(reader, dir); err != nil {
 		return nil, err
 	}
@@ -44,7 +44,7 @@ func NewChartFromPackage(thread *starlark.Thread, repo api.Repo, dir string, rea
 }
 
 // NewChart -
-func NewChart(thread *starlark.Thread, repo api.Repo, dir string, parent api.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+func NewChart(thread *starlark.Thread, repo chart.Repo, dir string, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	namespace := parent.GetNamespace()
 	parser := kwargsParser{kwargs: kwargs}
 	parser.Arg("namespace", func(value starlark.Value) {
@@ -222,7 +222,7 @@ func notImplemented(_ interface{}) string {
 
 func (c *chartImpl) applyFunction() starlark.Callable {
 	return starlark.NewBuiltin("apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var k api.K8sValue
+		var k chart.K8sValue
 		if err := starlark.UnpackArgs("apply", args, kwargs, "k8s", &k); err != nil {
 			return nil, err
 		}
@@ -230,7 +230,7 @@ func (c *chartImpl) applyFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) Apply(thread *starlark.Thread, k api.K8s) error {
+func (c *chartImpl) Apply(thread *starlark.Thread, k chart.K8s) error {
 	_, err := starlark.Call(thread, c.methods["apply"], starlark.Tuple{NewK8sValue(k)}, nil)
 	if err != nil {
 		return err
@@ -239,7 +239,7 @@ func (c *chartImpl) Apply(thread *starlark.Thread, k api.K8s) error {
 
 }
 
-func (c *chartImpl) apply(thread *starlark.Thread, k api.K8sValue) error {
+func (c *chartImpl) apply(thread *starlark.Thread, k chart.K8sValue) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
 		_, err := subChart.methods["apply"].CallInternal(thread, starlark.Tuple{k}, nil)
 		return err
@@ -247,12 +247,12 @@ func (c *chartImpl) apply(thread *starlark.Thread, k api.K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.applyLocal(thread, k, &api.K8sOptions{}, &HelmOptions{})
+	return c.applyLocal(thread, k, &chart.K8sOptions{}, &HelmOptions{})
 }
 
 func (c *chartImpl) applyLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var k api.K8sValue
+		var k chart.K8sValue
 		parser := kwargsParser{kwargs: kwargs}
 		helmOptions := unpackHelmOptions(parser)
 		k8sOptions := unpackK8sOptions(parser)
@@ -263,7 +263,7 @@ func (c *chartImpl) applyLocalFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, k8sOptions *api.K8sOptions, helmOption *HelmOptions) error {
+func (c *chartImpl) applyLocal(thread *starlark.Thread, k chart.K8sValue, k8sOptions *chart.K8sOptions, helmOption *HelmOptions) error {
 	for _, credential := range c.credentials {
 		err := credential.GetOrCreate(k)
 		if err != nil {
@@ -277,7 +277,7 @@ func (c *chartImpl) applyLocal(thread *starlark.Thread, k api.K8sValue, k8sOptio
 	return nil
 }
 
-func (c *chartImpl) Delete(thread *starlark.Thread, k api.K8s) error {
+func (c *chartImpl) Delete(thread *starlark.Thread, k chart.K8s) error {
 	_, err := starlark.Call(thread, c.methods["delete"], starlark.Tuple{NewK8sValue(k)}, nil)
 	if err != nil {
 		return err
@@ -288,7 +288,7 @@ func (c *chartImpl) Delete(thread *starlark.Thread, k api.K8s) error {
 
 func (c *chartImpl) deleteFunction() starlark.Callable {
 	return starlark.NewBuiltin("delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var k api.K8sValue
+		var k chart.K8sValue
 		if err := starlark.UnpackArgs("delete", args, kwargs, "k8s", &k); err != nil {
 			return nil, err
 		}
@@ -296,7 +296,7 @@ func (c *chartImpl) deleteFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) delete(thread *starlark.Thread, k api.K8sValue) error {
+func (c *chartImpl) delete(thread *starlark.Thread, k chart.K8sValue) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
 		_, err := subChart.methods["delete"].CallInternal(thread, starlark.Tuple{k}, nil)
 		return err
@@ -304,12 +304,12 @@ func (c *chartImpl) delete(thread *starlark.Thread, k api.K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.deleteLocal(thread, k, &api.K8sOptions{}, &HelmOptions{})
+	return c.deleteLocal(thread, k, &chart.K8sOptions{}, &HelmOptions{})
 }
 
 func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-		var k api.K8sValue
+		var k chart.K8sValue
 		parser := kwargsParser{kwargs: kwargs}
 		helmOptions := unpackHelmOptions(parser)
 		k8sOptions := unpackK8sOptions(parser)
@@ -320,7 +320,7 @@ func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) deleteLocal(thread *starlark.Thread, k api.K8sValue, k8sOptions *api.K8sOptions, helmOption *HelmOptions) error {
+func (c *chartImpl) deleteLocal(thread *starlark.Thread, k chart.K8sValue, k8sOptions *chart.K8sOptions, helmOption *HelmOptions) error {
 	helmOption.uninstallOrder = true
 	k8sOptions.Namespaced = false
 	return k.Delete(func(writer io.Writer) error {

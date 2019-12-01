@@ -9,7 +9,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
 	"gopkg.in/yaml.v2"
 )
@@ -41,7 +41,7 @@ type credential struct {
 }
 
 var (
-	_ api.CredentialValue = (*credential)(nil)
+	_ chart.CredentialValue = (*credential)(nil)
 )
 
 // String -
@@ -86,9 +86,9 @@ func createRandomString(length int) string {
 	return b.String()
 }
 
-func (c *credential) GetOrCreate(k8s api.K8s) error {
+func (c *credential) GetOrCreate(k8s chart.K8s) error {
 	var buffer bytes.Buffer
-	err := k8s.Get("secret", c.name, &buffer, &api.K8sOptions{Namespaced: true})
+	err := k8s.Get("secret", c.name, &buffer, &chart.K8sOptions{Namespaced: true})
 	if err != nil {
 		if !k8s.IsNotExist(err) {
 			return err

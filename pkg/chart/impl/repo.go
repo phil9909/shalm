@@ -15,7 +15,7 @@ import (
 
 	"github.com/containerd/containerd/remotes"
 	"github.com/containerd/containerd/remotes/docker"
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
 
 	"github.com/deislabs/oras/pkg/content"
@@ -42,14 +42,14 @@ type OciRepo struct {
 	credentials func(string) (string, string, error)
 }
 
-var _ api.Repo = &OciRepo{}
+var _ chart.Repo = &OciRepo{}
 
 const (
 	customMediaType = "application/tar"
 )
 
 // NewRepo -
-func NewRepo(authOpts ...RepoOpts) api.Repo {
+func NewRepo(authOpts ...RepoOpts) chart.Repo {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
@@ -83,7 +83,7 @@ func NewRepo(authOpts ...RepoOpts) api.Repo {
 }
 
 // Push -
-func (r *OciRepo) Push(chart api.Chart, ref string) error {
+func (r *OciRepo) Push(chart chart.Chart, ref string) error {
 	// return r.testOras(ref)
 	buffer := bytes.Buffer{}
 	if err := chart.Package(&buffer); err != nil {
@@ -103,7 +103,7 @@ func (r *OciRepo) Push(chart api.Chart, ref string) error {
 }
 
 // Get -
-func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+func (r *OciRepo) Get(thread *starlark.Thread, parent chart.Chart, ref string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	var dir string
 	if filepath.IsAbs(ref) {
 		dir = ref
@@ -144,7 +144,7 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent api.Chart, ref string, arg
 	return newChartFromFile(thread, r, cacheDir, path.Join(cacheDir, "chart.tar"), parent, args, kwargs)
 }
 
-func newChartFromFile(thread *starlark.Thread, repo api.Repo, dir string, tarFile string, parent api.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (api.ChartValue, error) {
+func newChartFromFile(thread *starlark.Thread, repo chart.Repo, dir string, tarFile string, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	in, err := os.Open(tarFile)
 	if err != nil {
 		return nil, err

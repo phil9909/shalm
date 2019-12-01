@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.starlark.net/starlark"
@@ -23,9 +23,9 @@ var (
 var _ = Describe("OCIRepo", func() {
 
 	Context("push chart", func() {
-		var repo api.Repo
+		var repo chart.Repo
 		var thread *starlark.Thread
-		var rootChart api.Chart
+		var rootChart chart.Chart
 
 		BeforeEach(func() {
 			thread = &starlark.Thread{Name: "my thread"}

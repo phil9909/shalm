@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/kramerul/shalm/pkg/chart/impl"
 
 	"go.starlark.net/starlark"
@@ -23,7 +23,7 @@ var applyCmd = &cobra.Command{
 	},
 }
 
-func apply(repo api.Repo, parent api.Chart, chartName string, k api.K8s) error {
+func apply(repo chart.Repo, parent chart.Chart, chartName string, k chart.K8s) error {
 	thread := &starlark.Thread{Name: "my thread"}
 	c, err := repo.Get(thread, parent, chartName, nil, applyChartArgs.KwArgs())
 	if err != nil {

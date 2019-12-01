@@ -3,7 +3,7 @@ package cmd
 import (
 	"fmt"
 
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/kramerul/shalm/pkg/chart/impl"
 	"github.com/spf13/cobra"
 )
@@ -49,7 +49,7 @@ func repoOpts() []impl.RepoOpts {
 	return nil
 }
 
-func rootChart() api.Chart {
+func rootChart() chart.Chart {
 	chart, err := impl.NewRootChart(nameSpace)
 	if err != nil {
 		panic(err)

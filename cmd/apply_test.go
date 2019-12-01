@@ -7,7 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/kramerul/shalm/pkg/chart/fakes"
 
 	"github.com/kramerul/shalm/pkg/chart/impl"
@@ -28,12 +28,12 @@ var _ = Describe("Apply Chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
+				ApplyStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) api.K8s {
+			k.ForNamespaceStub = func(s string) chart.K8s {
 				return k
 			}
 

@@ -1,4 +1,4 @@
-package api
+package chart
 
 import (
 	"go.starlark.net/starlark"

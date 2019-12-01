@@ -8,14 +8,14 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/blang/semver"
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"gopkg.in/yaml.v2"
 
 	"go.starlark.net/starlark"
 )
 
 func (c *chartImpl) loadChartYaml() error {
-	var helmChart api.HelmChart
+	var helmChart chart.HelmChart
 
 	err := c.loadYamlFile(c.path("Chart.yaml"), &helmChart)
 	if err != nil {
@@ -48,7 +48,7 @@ func (c *chartImpl) loadValuesYaml() error {
 	return nil
 }
 
-func (c *chartImpl) init(thread *starlark.Thread, repo api.Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
+func (c *chartImpl) init(thread *starlark.Thread, repo chart.Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
 	c.methods["apply"] = c.applyFunction()
 	c.methods["delete"] = c.deleteFunction()
 	c.methods["__apply"] = c.applyLocalFunction()
@@ -114,7 +114,7 @@ func wrapNamespace(callable starlark.Callable, namespace string) starlark.Callab
 		if len(args) == 0 {
 			return nil, fmt.Errorf("Missing first argument k8s")
 		}
-		k, ok := args[0].(api.K8sValue)
+		k, ok := args[0].(chart.K8sValue)
 		if !ok {
 			return nil, fmt.Errorf("Invalid first argument to %s", callable.Name())
 		}

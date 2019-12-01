@@ -8,7 +8,7 @@ import (
 	"os"
 	"path"
 
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/kramerul/shalm/pkg/chart/fakes"
 	"go.starlark.net/starlark"
 
@@ -57,9 +57,9 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(chart.GetName()).To(Equal("mariadb"))
+			Expect(c.GetName()).To(Equal("mariadb"))
 		})
 
 		It("reads values.yaml", func() {
@@ -68,12 +68,12 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
-			attr, err := chart.Attr("replicas")
+			attr, err := c.Attr("replicas")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(attr.(starlark.String).GoString()).To(Equal("1"))
-			attr, err = chart.Attr("timeout")
+			attr, err = c.Attr("timeout")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(attr.(starlark.String).GoString()).To(Equal("30s"))
 		})
@@ -85,14 +85,14 @@ var _ = Describe("Chart", func() {
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("timeout: \"30s\"\n"), 0644)
 			dir.WriteFile("Chart.star", []byte("def init(self):\n  self.timeout = \"60s\"\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
-			attr, err := chart.Attr("timeout")
+			attr, err := c.Attr("timeout")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(attr.(starlark.String).GoString()).To(Equal("60s"))
 		})
 
-		It("templates a chart ", func() {
+		It("templates a c ", func() {
 			thread := &starlark.Thread{Name: "my thread"}
 			dir := newTestDir()
 			defer dir.Remove()
@@ -100,15 +100,15 @@ var _ = Describe("Chart", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(chart.GetName()).To(Equal("mariadb"))
-			output, err := chart.Template(thread)
+			Expect(c.GetName()).To(Equal("mariadb"))
+			output, err := c.Template(thread)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal("---\nmetadata:\n  namespace: namespace\nnamespace: namespace\n"))
 		})
 
-		It("applies a chart ", func() {
+		It("applies a c ", func() {
 			thread := &starlark.Thread{Name: "my thread"}
 			dir := newTestDir()
 			defer dir.Remove()
@@ -116,25 +116,25 @@ var _ = Describe("Chart", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(chart.GetName()).To(Equal("mariadb"))
+			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
+				ApplyStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) api.K8s {
+			k.ForNamespaceStub = func(s string) chart.K8s {
 				return k
 			}
-			err = chart.Apply(thread, k)
+			err = c.Apply(thread, k)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\nnamespace: namespace\n"))
 		})
 
-		It("deletes a chart ", func() {
+		It("deletes a c ", func() {
 			thread := &starlark.Thread{Name: "my thread"}
 			dir := newTestDir()
 			defer dir.Remove()
@@ -142,20 +142,20 @@ var _ = Describe("Chart", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(chart.GetName()).To(Equal("mariadb"))
+			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				DeleteStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
+				DeleteStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) api.K8s {
+			k.ForNamespaceStub = func(s string) chart.K8s {
 				return k
 			}
-			err = chart.Delete(thread, k)
+			err = c.Delete(thread, k)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\nnamespace: namespace\n"))
 		})
@@ -170,19 +170,19 @@ var _ = Describe("Chart", func() {
 			dir.WriteFile("chart1/Chart.star", []byte("def init(self):\n  self.chart2 = chart(\"../chart2\",namespace=\"chart2\")\n"), 0644)
 
 			dir.WriteFile("chart2/templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
-			chart, err := NewChart(thread, repo, dir.Join("chart1"), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Join("chart1"), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				DeleteStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
+				DeleteStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) api.K8s {
+			k.ForNamespaceStub = func(s string) chart.K8s {
 				return k
 			}
-			err = chart.Delete(thread, k)
+			err = c.Delete(thread, k)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k.DeleteCallCount()).To(Equal(2))
 			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: chart2\nnamespace: chart2\n"))
@@ -194,11 +194,11 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(chart.String()).To(ContainSubstring("replicas = \"1\""))
-			Expect(chart.Hash()).NotTo(Equal(uint32(0)))
-			Expect(chart.Truth()).To(BeEquivalentTo(true))
+			Expect(c.String()).To(ContainSubstring("replicas = \"1\""))
+			Expect(c.Hash()).NotTo(Equal(uint32(0)))
+			Expect(c.Truth()).To(BeEquivalentTo(true))
 		})
 
 		It("applies a credentials ", func() {
@@ -207,25 +207,25 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.star", []byte("def init(self):\n  credential(\"test\")\n"), 0644)
-			chart, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *api.K8sOptions) error {
+				ApplyStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
-				GetStub: func(kind string, name string, writer io.Writer, k8s *api.K8sOptions) error {
+				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
 					return errors.New("NotFound")
 				},
 				IsNotExistStub: func(err error) bool {
 					return true
 				},
 			}
-			k.ForNamespaceStub = func(s string) api.K8s {
+			k.ForNamespaceStub = func(s string) chart.K8s {
 				return k
 			}
-			err = chart.Apply(thread, k)
+			err = c.Apply(thread, k)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(writer.String()).To(ContainSubstring("kind: Secret"))
 			Expect(writer.String()).To(ContainSubstring("type: Opaque"))

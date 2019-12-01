@@ -5,7 +5,7 @@ import (
 	"os"
 
 	"github.com/blang/semver"
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
 )
 
@@ -15,11 +15,11 @@ type rootChart struct {
 }
 
 var (
-	_ api.Chart = (*rootChart)(nil)
+	_ chart.Chart = (*rootChart)(nil)
 )
 
 // NewRootChart -
-func NewRootChart(namespace string) (api.Chart, error) {
+func NewRootChart(namespace string) (chart.Chart, error) {
 	var err error
 	cwd, err := os.Getwd()
 	if err != nil {
@@ -29,7 +29,7 @@ func NewRootChart(namespace string) (api.Chart, error) {
 }
 
 // NewRootChartForDir -
-func NewRootChartForDir(namespace string, dir string) api.Chart {
+func NewRootChartForDir(namespace string, dir string) chart.Chart {
 	return &rootChart{dir: dir, namespace: namespace}
 }
 
@@ -53,10 +53,10 @@ func (c *rootChart) Package(writer io.Writer) error {
 	return nil
 }
 
-func (c *rootChart) Apply(thread *starlark.Thread, k api.K8s) error {
+func (c *rootChart) Apply(thread *starlark.Thread, k chart.K8s) error {
 	return nil
 }
-func (c *rootChart) Delete(thread *starlark.Thread, k api.K8s) error {
+func (c *rootChart) Delete(thread *starlark.Thread, k chart.K8s) error {
 	return nil
 }
 func (c *rootChart) Template(thread *starlark.Thread) (string, error) {

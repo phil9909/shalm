@@ -6,21 +6,21 @@ import (
 	"os"
 	"time"
 
-	"github.com/kramerul/shalm/pkg/chart/api"
+	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
 )
 
 // NewK8sValue create new instance to interact with kubernetes
-func NewK8sValue(k api.K8s) api.K8sValue {
+func NewK8sValue(k chart.K8s) chart.K8sValue {
 	return &k8sValueImpl{k}
 }
 
 type k8sValueImpl struct {
-	api.K8s
+	chart.K8s
 }
 
 var (
-	_ api.K8sValue = (*k8sValueImpl)(nil)
+	_ chart.K8sValue = (*k8sValueImpl)(nil)
 )
 
 // String -
@@ -75,8 +75,8 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 // AttrNames -
 func (k *k8sValueImpl) AttrNames() []string { return []string{"rollout_status", "delete"} }
 
-func unpackK8sOptions(parser kwargsParser) *api.K8sOptions {
-	result := &api.K8sOptions{Namespaced: true}
+func unpackK8sOptions(parser kwargsParser) *chart.K8sOptions {
+	result := &chart.K8sOptions{Namespaced: true}
 	parser.Arg("namespaced", func(value starlark.Value) {
 		result.Namespaced = bool(value.(starlark.Bool))
 	})
