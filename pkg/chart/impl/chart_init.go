@@ -12,6 +12,7 @@ import (
 	"gopkg.in/yaml.v2"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 func (c *chartImpl) loadChartYaml() error {
@@ -65,14 +66,16 @@ func (c *chartImpl) init(thread *starlark.Thread, repo chart.Repo, args starlark
 			}
 			return repo.Get(thread, c, args[0].(starlark.String).GoString(), args[1:], kwargs)
 		}),
-		"credential": starlark.NewBuiltin("credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-			cred := &credential{}
-			if err := starlark.UnpackArgs("credential", args, kwargs, "name", &cred.name, "hostname?", &cred.hostname, "port?", &cred.port, "uri?", &cred.uri); err != nil {
+		"user_credential": starlark.NewBuiltin("user_credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			s := &userCredential{}
+			s.setDefaultKeys()
+			if err := starlark.UnpackArgs("user_credential", args, kwargs, "name", &s.name, "username_key?", &s.usernameKey, "password_key?", &s.passwordKey); err != nil {
 				return nil, err
 			}
-			c.credentials = append(c.credentials, cred)
-			return cred, nil
+			c.userCredentials = append(c.userCredentials, s)
+			return s, nil
 		}),
+		"struct": starlark.NewBuiltin("struct", starlarkstruct.Make),
 	})
 	if err != nil {
 		return err

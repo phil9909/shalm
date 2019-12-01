@@ -20,15 +20,15 @@ import (
 )
 
 type chartImpl struct {
-	Name        string
-	Version     semver.Version
-	values      map[string]starlark.Value
-	methods     map[string]starlark.Callable
-	frozen      bool
-	dir         string
-	initialized bool
-	namespace   string
-	credentials []*credential
+	Name            string
+	Version         semver.Version
+	values          map[string]starlark.Value
+	methods         map[string]starlark.Callable
+	frozen          bool
+	dir             string
+	initialized     bool
+	namespace       string
+	userCredentials []*userCredential
 }
 
 var (
@@ -264,7 +264,7 @@ func (c *chartImpl) applyLocalFunction() starlark.Callable {
 }
 
 func (c *chartImpl) applyLocal(thread *starlark.Thread, k chart.K8sValue, k8sOptions *chart.K8sOptions, helmOption *HelmOptions) error {
-	for _, credential := range c.credentials {
+	for _, credential := range c.userCredentials {
 		err := credential.GetOrCreate(k)
 		if err != nil {
 			return err
@@ -274,7 +274,6 @@ func (c *chartImpl) applyLocal(thread *starlark.Thread, k chart.K8sValue, k8sOpt
 	return k.Apply(func(writer io.Writer) error {
 		return c.template(thread, writer, helmOption)
 	}, k8sOptions)
-	return nil
 }
 
 func (c *chartImpl) Delete(thread *starlark.Thread, k chart.K8s) error {

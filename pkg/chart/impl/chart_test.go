@@ -206,7 +206,7 @@ var _ = Describe("Chart", func() {
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
-			dir.WriteFile("Chart.star", []byte("def init(self):\n  credential(\"test\")\n"), 0644)
+			dir.WriteFile("Chart.star", []byte("def init(self):\n  user_credential(\"test\")\n"), 0644)
 			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}

@@ -13,6 +13,7 @@ This project brings the starlark scripting language to helm charts.
 * Share a common service like a database manager or an ingress between a set of sub charts
 * Use starlark methods in templates (replacement for `_helpers.tpl`)
 * Interact with kubernetes during installation
+* Manage user credentials
 
 ## Installation
 
@@ -88,11 +89,34 @@ def init(self):
 
 def apply(self,k8s):
   self.mariadb.apply(k8s) # Apply mariadb stuff (recursive)
-  k8s.wait???                     # Interact with kubernetes (not defined yet)
+  k8s.rollout_status("statefulset","mariadb-master")  # Interact with kubernetes
   self.uaa.apply(k8s)     # Apply uaa stuff (recursive)
   self.__apply(k8s)       # Apply everthing defined in this chart (not recursive)
 ```
 
+### Create User Credentials
+
+User credentials are used to manage username and password pairs. They are mapped to kubernets `Secrets`. 
+If the secret doesn't exist, the username and password are created with random content, otherwise the fields are
+read from the secret. The keys used to store the username and password inside the secret can be modified.
+
+The content of username and password can only be accessed after the call to `__apply`. 
+Therefore, you need to override the `apply` method.
+
+All user credentials created inside a `Chart.star` file are automatically applied to kubernetes.
+If you run `shalm template`, the content of the username and password is undefined.
+
+```python
+def init(self):
+   self.nats = chart("https://charts.bitnami.com/bitnami/nats-4.2.6.tgz")
+   self.auth = user_credential("nats-auth")
+
+def apply(self,k8s):
+  self.__apply(k8s)
+  self.nats.auth["user"] = self.auth.username
+  self.nats.auth["password"] = self.auth.password
+  self.nats.apply(k8s)
+```
 
 ## Comparison
 
@@ -105,11 +129,12 @@ def apply(self,k8s):
 | Interaction with k8s           |   +   |   -   |  -  |    -      |
 | Repository                     |   +   |   +   |  -  |    -      |
 | Mature technology              |   -   |   +   |  ?  |    +      |
+| Manage user credentials        |   +   |   -   |  -  |    -      |
 
 
 ## Reference
 
-The following section describes the avaiable methods inside `Chart.star`
+The following section describes the available methods inside `Chart.star`
 
 ### Chart
 
@@ -185,17 +210,37 @@ Wait for rollout status of one kubernetes object
 | name      |  name of k8s object   |
 | timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
 
+### user_credential
+
+
+
+#### `user_credential(name,username_key='username',password_key='password')`
+
+Creates a new user credential. All user credentials created inside a `Chart.star` file are automatically applied to kubernetes.
+
+| Parameter | Description |
+|-----------|-------------|
+| name      |  The name of the kubernetes secret used to hold the information   |
+| username_key |  The name of the key used to store the username inside the secret  |
+| password_key |  The name of the key used to store the password inside the secret  |
+
+#### `user_credential.username`
+
+Returns the content of the username attribute. It is only valid after calling `chart.__apply(k8s)`
+
+#### `user_credential.password`
+
+Returns the content of the password attribute. It is only valid after calling `chart.__apply(k8s)`
 
 ## Difference to helm
 
 * Subcharts are not loaded automatically. They must be loaded using the `chart` command
 * Global variables are not supported.
 * The `--set` command line parameters are passed to the `init` method of the corresponding chart. 
-It's not possible to set values directly. 
+It's not possible to set values (from `values.yaml`) directly. 
 If you would like to set a lot of values, it's more convenient to write a separate shalm chart.
 
 ## TODO
 
 * Allow access to kubernetes during apply or delete
-  * Read existing secrets (e.g.`load_or_create_secret()`)
   * Read ClusterIP of service

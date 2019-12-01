@@ -83,7 +83,7 @@ func toGo(v starlark.Value) interface{} {
 			d[k] = toGo(v)
 		}
 		return d
-	case *credential:
+	case *userCredential:
 		return v
 	default:
 		panic(fmt.Errorf("cannot convert %s to starlark", v.Type()))

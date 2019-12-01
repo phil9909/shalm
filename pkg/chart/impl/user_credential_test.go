@@ -26,18 +26,18 @@ var _ = Describe("Credential", func() {
 					return nil
 				},
 			}
-			credential := &credential{}
-			err := credential.GetOrCreate(&k8s)
+			user_credential := &userCredential{}
+			err := user_credential.GetOrCreate(&k8s)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(credential.username).To(Equal(username))
-			Expect(credential.password).To(Equal(password))
+			Expect(user_credential.username).To(Equal(username))
+			Expect(user_credential.password).To(Equal(password))
 
-			value, err := credential.Attr("username")
+			value, err := user_credential.Attr("username")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(value).To(Equal(starlark.String(username)))
 		})
 
-		It("creates new random username and password if secret doesn't exist", func() {
+		It("creates new random username and password if user_credential doesn't exist", func() {
 			k8s := fakes.FakeK8s{
 				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
 					return errors.New("NotFound")
@@ -46,12 +46,12 @@ var _ = Describe("Credential", func() {
 					return true
 				},
 			}
-			credential := &credential{}
-			err := credential.GetOrCreate(&k8s)
+			user_credential := &userCredential{}
+			err := user_credential.GetOrCreate(&k8s)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(credential.username).To(HaveLen(16))
-			Expect(credential.password).To(HaveLen(16))
-			_, err = credential.Attr("username")
+			Expect(user_credential.username).To(HaveLen(16))
+			Expect(user_credential.password).To(HaveLen(16))
+			_, err = user_credential.Attr("username")
 			Expect(err).NotTo(HaveOccurred())
 		})
 
@@ -64,34 +64,34 @@ var _ = Describe("Credential", func() {
 					return false
 				},
 			}
-			credential := &credential{}
-			err := credential.GetOrCreate(&k8s)
+			user_credential := &userCredential{}
+			err := user_credential.GetOrCreate(&k8s)
 			Expect(err).To(HaveOccurred())
 		})
 
 	})
 
 	It("behaves like starlark value", func() {
-		credential := &credential{name: "name", username: "username"}
-		Expect(credential.String()).To(ContainSubstring("name = name"))
-		Expect(credential.String()).To(ContainSubstring("username = username"))
-		Expect(func() { credential.Hash() }).Should(Panic())
-		Expect(credential.Truth()).To(BeEquivalentTo(false))
-		value, err := credential.Attr("name")
+		user_credential := &userCredential{name: "name", username: "username"}
+		Expect(user_credential.String()).To(ContainSubstring("name = name"))
+		Expect(user_credential.String()).To(ContainSubstring("username = username"))
+		Expect(func() { user_credential.Hash() }).Should(Panic())
+		Expect(user_credential.Truth()).To(BeEquivalentTo(false))
+		value, err := user_credential.Attr("name")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(value).To(Equal(starlark.String("name")))
-		Expect(credential.AttrNames()).To(ContainElement("name"))
+		Expect(user_credential.AttrNames()).To(ContainElement("name"))
 
-		value, err = credential.Attr("username")
+		value, err = user_credential.Attr("username")
 		Expect(err).To(HaveOccurred())
 	})
 
 	It("username and password can only be read after GetOrCreate", func() {
-		credential := &credential{name: "name", username: "username"}
+		user_credential := &userCredential{name: "name", username: "username"}
 
-		_, err := credential.Attr("username")
+		_, err := user_credential.Attr("username")
 		Expect(err).To(HaveOccurred())
-		_, err = credential.Attr("password")
+		_, err = user_credential.Attr("password")
 		Expect(err).To(HaveOccurred())
 	})
 

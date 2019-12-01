@@ -51,13 +51,13 @@ The following table lists the configurable parameters of the MariaDB chart and t
 |             Parameter                     |                     Description                     |                              Default                              |
 |-------------------------------------------|-----------------------------------------------------|-------------------------------------------------------------------|
 | `global.imageRegistry`                    | Global Docker image registry                        | `nil`                                                             |
-| `global.imagePullSecrets`                 | Global Docker registry secret names as an array     | `[]` (does not add image pull secrets to deployed pods)           |
+| `global.imagePullSecrets`                 | Global Docker registry user_credential names as an array     | `[]` (does not add image pull secrets to deployed pods)           |
 | `global.storageClass`                     | Global storage class for dynamic provisioning       | `nil`                                                             |
 | `image.registry`                          | MariaDB image registry                              | `docker.io`                                                       |
 | `image.repository`                        | MariaDB Image name                                  | `bitnami/mariadb`                                                 |
 | `image.tag`                               | MariaDB Image tag                                   | `{TAG_NAME}`                                                      |
 | `image.pullPolicy`                        | MariaDB image pull policy                           | `IfNotPresent`                                                    |
-| `image.pullSecrets`                       | Specify docker-registry secret names as an array    | `[]` (does not add image pull secrets to deployed pods)           |
+| `image.pullSecrets`                       | Specify docker-registry user_credential names as an array    | `[]` (does not add image pull secrets to deployed pods)           |
 | `image.debug`                             | Specify if debug logs should be enabled             | `false`                                                           |
 | `nameOverride`                            | String to partially override mariadb.fullname template with a string (will prepend the release name) | `nil`            |
 | `fullnameOverride`                        | String to fully override mariadb.fullname template with a string                                     | `nil`            |
@@ -78,16 +78,16 @@ The following table lists the configurable parameters of the MariaDB chart and t
 | `securityContext.enabled`                 | Enable security context                             | `true`                                                            |
 | `securityContext.fsGroup`                 | Group ID for the container                          | `1001`                                                            |
 | `securityContext.runAsUser`               | User ID for the container                           | `1001`                                                            |
-| `existingSecret`                          | Use existing secret for password details (`rootUser.password`, `db.password`, `replication.password` will be ignored and picked up from this secret). The secret has to contain the keys `mariadb-root-password`, `mariadb-replication-password` and `mariadb-password`. | `nil`                        |
-| `rootUser.password`                       | Password for the `root` user. Ignored if existing secret is provided. | _random 10 character alphanumeric string_       |
+| `existingSecret`                          | Use existing user_credential for password details (`rootUser.password`, `db.password`, `replication.password` will be ignored and picked up from this user_credential). The user_credential has to contain the keys `mariadb-root-password`, `mariadb-replication-password` and `mariadb-password`. | `nil`                        |
+| `rootUser.password`                       | Password for the `root` user. Ignored if existing user_credential is provided. | _random 10 character alphanumeric string_       |
 | `rootUser.forcePassword`                  | Force users to specify a password                   | `false`                                                           |
 | `db.user`                                 | Username of new user to create                      | `nil`                                                             |
-| `db.password`                             | Password for the new user. Ignored if existing secret is provided.    | _random 10 character alphanumeric string if `db.user` is defined_ |
+| `db.password`                             | Password for the new user. Ignored if existing user_credential is provided.    | _random 10 character alphanumeric string if `db.user` is defined_ |
 | `db.forcePassword`                        | Force users to specify a password                   | `false`                                                           |
 | `db.name`                                 | Name for new database to create                     | `my_database`                                                     |
 | `replication.enabled`                     | MariaDB replication enabled                         | `true`                                                            |
 | `replication.user`                        |MariaDB replication user                             | `replicator`                                                      |
-| `replication.password`                    | MariaDB replication user password. Ignored if existing secret is provided. | _random 10 character alphanumeric string_  |
+| `replication.password`                    | MariaDB replication user password. Ignored if existing user_credential is provided. | _random 10 character alphanumeric string_  |
 | `replication.forcePassword`               | Force users to specify a password                   | `false`                                                           |
 | `initdbScripts`                           | Dictionary of initdb scripts                        | `nil`                                                             |
 | `initdbScriptsConfigMap`                  | ConfigMap with the initdb scripts (Note: Overrides `initdbScripts`) | `nil`                                             |

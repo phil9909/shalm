@@ -102,7 +102,7 @@ securityContext:
   fsGroup: 1001
   runAsUser: 1001
 
-# # Use existing secret (ignores root, db and replication passwords)
+# # Use existing user_credential (ignores root, db and replication passwords)
 # existingSecret:
 
 rootUser:

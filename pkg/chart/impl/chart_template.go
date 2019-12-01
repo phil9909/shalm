@@ -89,12 +89,12 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 	if err != nil {
 		return err
 	}
-	if len(c.credentials) == 0 {
+	if len(c.userCredentials) == 0 {
 		return nil
 	}
 	writer.Write([]byte("---\n"))
 	enc := yaml.NewEncoder(writer)
-	for _, credential := range c.credentials {
+	for _, credential := range c.userCredentials {
 		err = enc.Encode(credential.secret(c.namespace))
 		if err != nil {
 			return err
