@@ -35,7 +35,7 @@ A set of example charts can be found in the `examples` folder.
 
 Charts can be given by path or by url. In case of an url, the chart must be packaged using `shalm package`.
 
-## Writing chars
+## Writing charts
 
 Just follow the rules of helm to write charts. Additionally, you can put a `Chart.star` file in the charts folder
 
