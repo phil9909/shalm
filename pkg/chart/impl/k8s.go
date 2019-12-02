@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/pkg/errors"
@@ -47,7 +48,22 @@ func (k *k8sImpl) DeleteObject(kind string, name string, options *chart.K8sOptio
 
 // RolloutStatus -
 func (k *k8sImpl) RolloutStatus(kind string, name string, options *chart.K8sOptions) error {
-	return k.kubectl("rollout", options, "status", kind, name).Run()
+	start := time.Now()
+	for {
+		err := k.kubectl("rollout", options, "status", kind, name).Run()
+		if err == nil {
+			return nil
+		}
+		if !k.IsNotExist(err) {
+			return err
+		}
+		if options.Timeout > 0 {
+			if time.Since(start) > options.Timeout {
+				return fmt.Errorf("Timeout during waiting for %s %s", kind, name)
+			}
+		}
+		time.Sleep(10 * time.Second)
+	}
 }
 
 // Get -

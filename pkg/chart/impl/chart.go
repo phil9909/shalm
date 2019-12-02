@@ -46,7 +46,7 @@ func NewChartFromPackage(thread *starlark.Thread, repo chart.Repo, dir string, r
 // NewChart -
 func NewChart(thread *starlark.Thread, repo chart.Repo, dir string, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	namespace := parent.GetNamespace()
-	parser := kwargsParser{kwargs: kwargs}
+	parser := &kwargsParser{kwargs: kwargs}
 	parser.Arg("namespace", func(value starlark.Value) {
 		namespace = value.(starlark.String).GoString()
 	})
@@ -253,7 +253,7 @@ func (c *chartImpl) apply(thread *starlark.Thread, k chart.K8sValue) error {
 func (c *chartImpl) applyLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var k chart.K8sValue
-		parser := kwargsParser{kwargs: kwargs}
+		parser := &kwargsParser{kwargs: kwargs}
 		helmOptions := unpackHelmOptions(parser)
 		k8sOptions := unpackK8sOptions(parser)
 		if err := starlark.UnpackArgs("__apply", args, parser.Parse(), "k8s", &k); err != nil {
@@ -309,7 +309,7 @@ func (c *chartImpl) delete(thread *starlark.Thread, k chart.K8sValue) error {
 func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var k chart.K8sValue
-		parser := kwargsParser{kwargs: kwargs}
+		parser := &kwargsParser{kwargs: kwargs}
 		helmOptions := unpackHelmOptions(parser)
 		k8sOptions := unpackK8sOptions(parser)
 		if err := starlark.UnpackArgs("__delete", args, parser.Parse(), "k8s", &k); err != nil {
@@ -340,7 +340,7 @@ func (c *chartImpl) eachSubChart(block func(subChart *chartImpl) error) error {
 	return nil
 }
 
-func unpackHelmOptions(parser kwargsParser) *HelmOptions {
+func unpackHelmOptions(parser *kwargsParser) *HelmOptions {
 	result := &HelmOptions{}
 	parser.Arg("glob", func(value starlark.Value) {
 		result.glob = value.(starlark.String).GoString()
