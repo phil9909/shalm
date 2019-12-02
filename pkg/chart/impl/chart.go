@@ -205,13 +205,13 @@ func (c *chartImpl) SetField(name string, val starlark.Value) error {
 	if c.frozen {
 		return fmt.Errorf("chart is frozen")
 	}
-	if c.initialized {
-		_, ok := c.values[name]
-		if !ok {
-			return starlark.NoSuchAttrError(
-				fmt.Sprintf("chart has no .%s attribute", name))
-		}
-	}
+	//if c.initialized {
+	//	_, ok := c.values[name]
+	//	if !ok {
+	//		return starlark.NoSuchAttrError(
+	//			fmt.Sprintf("chart has no .%s attribute", name))
+	//	}
+	//}
 	c.values[name] = val
 	return nil
 }

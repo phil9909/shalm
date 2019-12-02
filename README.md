@@ -201,6 +201,17 @@ Deletes one kubernetes object
 | timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
 | namespaced |  If true object in the current namespace are deleted. Otherwise object in cluster scope will be deleted. Default is `true`  |
 
+#### `k8s.get(kind,name,namespaced=false,timeout=0)`
+
+Get one kubernetes object. The value is returned as a `dict`.
+
+| Parameter | Description |
+|-----------|-------------|
+| kind      |  k8s kind   |
+| name      |  name of k8s object   |
+| timeout   |  Timeout passed to `kubectl get`. A timeout of zero means wait forever.  |
+| namespaced |  If true object in the current namespace are deleted. Otherwise object in cluster scope will be deleted. Default is `true`  |
+
 #### `k8s.rollout_status(kind,name,timeout=0)`
 
 Wait for rollout status of one kubernetes object

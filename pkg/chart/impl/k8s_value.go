@@ -1,10 +1,13 @@
 package impl
 
 import (
+	"bytes"
 	"errors"
 	"fmt"
 	"os"
 	"time"
+
+	"gopkg.in/yaml.v2"
 
 	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
@@ -67,6 +70,30 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 				return starlark.None, errors.New("no parameter name given")
 			}
 			return starlark.None, k.DeleteObject(kind, name, k8sOptions)
+		}), nil
+	}
+	if name == "get" {
+		return starlark.NewBuiltin("get", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			var kind string
+			var name string
+			parser := kwargsParser{kwargs: kwargs}
+			k8sOptions := unpackK8sOptions(parser)
+			if err := starlark.UnpackArgs("get", args, parser.Parse(),
+				"kind", &kind, "name", &name); err != nil {
+				return nil, err
+			}
+			if name == "" {
+				return starlark.None, errors.New("no parameter name given")
+			}
+			var buffer bytes.Buffer
+			err := k.Get(kind, name, &buffer, k8sOptions)
+			if err != nil {
+				return starlark.None, err
+			}
+			var obj map[string]interface{}
+			yaml.Unmarshal(buffer.Bytes(), &obj)
+			return toStarlark(obj), nil
+			//return starlark.String(string(buffer.Bytes())), nil
 		}), nil
 	}
 	return starlark.None, starlark.NoSuchAttrError(fmt.Sprintf("k8s has no .%s attribute", name))
