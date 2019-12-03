@@ -187,7 +187,7 @@ func (c *chartImpl) Attr(name string) (starlark.Value, error) {
 		}
 		return m, nil
 	}
-	return value, nil
+	return wrapDict(value), nil
 }
 
 // AttrNames returns a new sorted list of the struct fields.
@@ -212,7 +212,7 @@ func (c *chartImpl) SetField(name string, val starlark.Value) error {
 	//			fmt.Sprintf("chart has no .%s attribute", name))
 	//	}
 	//}
-	c.values[name] = val
+	c.values[name] = unwrapDict(val)
 	return nil
 }
 
