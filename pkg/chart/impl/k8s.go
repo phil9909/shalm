@@ -43,14 +43,14 @@ func (k *k8sImpl) Delete(output func(io.Writer) error, options *chart.K8sOptions
 
 // Delete -
 func (k *k8sImpl) DeleteObject(kind string, name string, options *chart.K8sOptions) error {
-	return k.kubectl("delete", options, kind, name, "--ignore-not-found").Run()
+	return run(k.kubectl("delete", options, kind, name, "--ignore-not-found"))
 }
 
 // RolloutStatus -
 func (k *k8sImpl) RolloutStatus(kind string, name string, options *chart.K8sOptions) error {
 	start := time.Now()
 	for {
-		err := k.kubectl("rollout", options, "status", kind, name).Run()
+		err := run(k.kubectl("rollout", options, "status", kind, name))
 		if err == nil {
 			return nil
 		}
@@ -69,19 +69,24 @@ func (k *k8sImpl) RolloutStatus(kind string, name string, options *chart.K8sOpti
 // Get -
 func (k *k8sImpl) Get(kind string, name string, writer io.Writer, options *chart.K8sOptions) error {
 	cmd := k.kubectl("get", options, kind, name, "-o", "yaml")
-	buffer := bytes.Buffer{}
 	cmd.Stdout = writer
+	return run(cmd)
+}
+
+// IsNotExist -
+func (k *k8sImpl) IsNotExist(err error) bool {
+	return strings.Contains(err.Error(), "NotFound")
+}
+
+func run(cmd *exec.Cmd) error {
+	buffer := bytes.Buffer{}
 	cmd.Stderr = &buffer
 	err := cmd.Run()
 	if err != nil {
 		return errors.Wrap(err, string(buffer.Bytes()))
 	}
 	return nil
-}
 
-// IsNotExist -
-func (k *k8sImpl) IsNotExist(err error) bool {
-	return strings.Contains(err.Error(), "NotFound")
 }
 
 func (k *k8sImpl) kubectl(command string, options *chart.K8sOptions, flags ...string) *exec.Cmd {
