@@ -1,6 +1,8 @@
 package impl
 
 import (
+	"time"
+
 	fakes "github.com/kramerul/shalm/pkg/chart/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -30,10 +32,17 @@ var _ = Describe("K8sValue", func() {
 		thread := &starlark.Thread{}
 		for _, method := range []string{"rollout_status", "delete", "get"} {
 			value, err := k8s.Attr(method)
-			_, err = starlark.Call(thread, value, starlark.Tuple{starlark.String("kind"), starlark.String("object")}, nil)
+			_, err = starlark.Call(thread, value, starlark.Tuple{starlark.String("kind"), starlark.String("object")},
+				[]starlark.Tuple{{starlark.String("timeout"), starlark.MakeInt(10)},
+					{starlark.String("namespaced"), starlark.Bool(true)}})
 			Expect(err).NotTo(HaveOccurred())
 		}
 		Expect(fake.RolloutStatusCallCount()).To(Equal(1))
+		kind, name, options := fake.RolloutStatusArgsForCall(0)
+		Expect(kind).To(Equal("kind"))
+		Expect(name).To(Equal("object"))
+		Expect(options.Timeout).To(Equal(10 * time.Second))
+		Expect(options.Namespaced).To(BeTrue())
 		Expect(fake.DeleteObjectCallCount()).To(Equal(1))
 		Expect(fake.GetCallCount()).To(Equal(1))
 	})

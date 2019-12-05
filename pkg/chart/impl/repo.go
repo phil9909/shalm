@@ -1,8 +1,6 @@
 package impl
 
 import (
-	"bytes"
-	"context"
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
@@ -13,14 +11,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/containerd/containerd/remotes"
-	"github.com/containerd/containerd/remotes/docker"
 	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
-
-	"github.com/deislabs/oras/pkg/content"
-	"github.com/deislabs/oras/pkg/oras"
-	ocispec "github.com/opencontainers/image-spec/specs-go/v1"
 )
 
 // RepoOpts -
@@ -37,7 +29,6 @@ func WithAuthCreds(credentials func(string) (string, string, error)) RepoOpts {
 type OciRepo struct {
 	baseDir     string
 	cacheDir    string
-	resolver    remotes.Resolver
 	httpClient  *http.Client
 	credentials func(string) (string, string, error)
 }
@@ -60,46 +51,11 @@ func NewRepo(authOpts ...RepoOpts) chart.Repo {
 			Timeout: time.Second * 60,
 		},
 	}
-	r.resolver = docker.NewResolver(docker.ResolverOptions{
-		Hosts: docker.ConfigureDefaultRegistries(
-			docker.WithPlainHTTP(func(repository string) (bool, error) {
-				if repository == "localhost" || strings.HasPrefix(repository, "localhost:") {
-					return true, nil
-				}
-				return false, nil
-			}),
-			docker.WithAuthorizer(docker.NewDockerAuthorizer(docker.WithAuthCreds(func(ref string) (string, string, error) {
-				if r.credentials != nil {
-					return r.credentials(ref)
-				}
-				return "", "", nil
-			}))),
-		)})
 	for _, a := range authOpts {
 		a(r)
 	}
 
 	return r
-}
-
-// Push -
-func (r *OciRepo) Push(chart chart.Chart, ref string) error {
-	// return r.testOras(ref)
-	buffer := bytes.Buffer{}
-	if err := chart.Package(&buffer); err != nil {
-		return err
-	}
-
-	ctx := context.Background()
-
-	memoryStore := content.NewMemoryStore()
-	desc := memoryStore.Add("chart.tar", customMediaType, buffer.Bytes())
-	pushContents := []ocispec.Descriptor{desc}
-	if _, err := oras.Push(ctx, r.resolver, ref, memoryStore, pushContents); err != nil {
-		return err
-	}
-
-	return nil
 }
 
 // Get -
@@ -132,16 +88,7 @@ func (r *OciRepo) Get(thread *starlark.Thread, parent chart.Chart, ref string, a
 		defer res.Body.Close()
 		return NewChartFromPackage(thread, r, cacheDir, res.Body, parent, args, kwargs)
 	}
-	// Pull file(s) from registry and save to disk
-	fileStore := content.NewFileStore(cacheDir)
-	defer fileStore.Close()
-	allowedMediaTypes := []string{customMediaType}
-	ctx := context.Background()
-	_, _, err := oras.Pull(ctx, r.resolver, ref, fileStore, oras.WithAllowedMediaTypes(allowedMediaTypes))
-	if err != nil {
-		return nil, err
-	}
-	return newChartFromFile(thread, r, cacheDir, path.Join(cacheDir, "chart.tar"), parent, args, kwargs)
+	return nil, fmt.Errorf("Chart not found for url %s", ref)
 }
 
 func newChartFromFile(thread *starlark.Thread, repo chart.Repo, dir string, tarFile string, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {

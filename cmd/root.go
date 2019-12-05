@@ -15,12 +15,9 @@ var password string
 func init() {
 
 	rootCmd.PersistentFlags().StringVarP(&nameSpace, "namespace", "n", "default", "namespace")
-	pushCmd.PersistentFlags().StringVarP(&username, "user", "u", "", "user for docker login")
-	pushCmd.PersistentFlags().StringVarP(&password, "password", "p", "", "password for docker login")
 	rootCmd.AddCommand(applyCmd)
 	rootCmd.AddCommand(templateCmd)
 	rootCmd.AddCommand(deleteCmd)
-	rootCmd.AddCommand(pushCmd)
 	rootCmd.AddCommand(packageCmd)
 }
 

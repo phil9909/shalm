@@ -29,6 +29,43 @@ var _ = Describe("HelmTemplater", func() {
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\ntest: test\n"))
 		})
+
+		It("toYaml works corret", func() {
+			var err error
+			dir := newTestDir()
+			defer dir.Remove()
+			dir.MkdirAll("templates", 0755)
+			dir.WriteFile("templates/test.yaml", []byte("test: \n{{ .Value | toYaml | indent 2}}"), 0644)
+			h, err = NewHelmTemplater(dir.Root(), "namespace")
+			Expect(err).ToNot(HaveOccurred())
+			writer := &bytes.Buffer{}
+			err = h.Template(struct {
+				Value map[string]string
+			}{
+				Value: map[string]string{"key": "value"},
+			}, writer, &HelmOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\ntest:\n  key: value\n"))
+		})
+
+		It("toJson works corret", func() {
+			var err error
+			dir := newTestDir()
+			defer dir.Remove()
+			dir.MkdirAll("templates", 0755)
+			dir.WriteFile("templates/test.yaml", []byte("test: {{ .Value | toJson | quote}}"), 0644)
+			h, err = NewHelmTemplater(dir.Root(), "namespace")
+			Expect(err).ToNot(HaveOccurred())
+			writer := &bytes.Buffer{}
+			err = h.Template(struct {
+				Value map[string]string
+			}{
+				Value: map[string]string{"key": "value"},
+			}, writer, &HelmOptions{})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\ntest: '{\"key\":\"value\"}'\n"))
+		})
+
 		It("it loads helpers", func() {
 			var err error
 			dir := newTestDir()
