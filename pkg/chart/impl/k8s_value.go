@@ -27,7 +27,7 @@ var (
 )
 
 // String -
-func (k *k8sValueImpl) String() string { return os.Getenv("KUBECONFIG") }
+func (k *k8sValueImpl) String() string { return "KUBECONFIG = " + os.Getenv("KUBECONFIG") }
 
 // Type -
 func (k *k8sValueImpl) Type() string { return "k8s" }
@@ -100,7 +100,7 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 }
 
 // AttrNames -
-func (k *k8sValueImpl) AttrNames() []string { return []string{"rollout_status", "delete"} }
+func (k *k8sValueImpl) AttrNames() []string { return []string{"rollout_status", "delete", "get"} }
 
 func unpackK8sOptions(parser *kwargsParser) *chart.K8sOptions {
 	result := &chart.K8sOptions{Namespaced: true}
