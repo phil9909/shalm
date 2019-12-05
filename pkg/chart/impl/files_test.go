@@ -18,5 +18,6 @@ var _ = Describe("files", func() {
 		Expect(content).To(HaveKeyWithValue("file2.yaml", []byte("aaaa")))
 
 		Expect(f.Get("file2.yaml")).To(Equal("aaaa"))
+		Expect(f.Get("file3.yaml")).To(ContainSubstring("no such file"))
 	})
 })

@@ -1,7 +1,10 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
+
+	"go.starlark.net/starlark"
 
 	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/kramerul/shalm/pkg/chart/impl"
@@ -52,4 +55,15 @@ func rootChart() chart.Chart {
 		panic(err)
 	}
 	return chart
+}
+
+func unwrapEvalError(err error) error {
+	if err == nil {
+		return nil
+	}
+	evalError, ok := err.(*starlark.EvalError)
+	if ok {
+		return errors.New(evalError.Backtrace())
+	}
+	return err
 }

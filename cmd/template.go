@@ -23,11 +23,11 @@ var templateCmd = &cobra.Command{
 		thread := &starlark.Thread{Name: "my thread"}
 		c, err := repo.Get(thread, rootChart(), chartName, nil, templateChartArgs.KwArgs())
 		if err != nil {
-			return err
+			return unwrapEvalError(err)
 		}
 		t, err := c.Template(thread)
 		if err != nil {
-			return err
+			return unwrapEvalError(err)
 		}
 		fmt.Println(t)
 		return nil

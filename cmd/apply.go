@@ -19,7 +19,7 @@ var applyCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 		chartName := args[0]
 		repo := impl.NewRepo(repoOpts()...)
-		return apply(repo, rootChart(), chartName, impl.NewK8s())
+		return unwrapEvalError(apply(repo, rootChart(), chartName, impl.NewK8s()))
 	},
 }
 

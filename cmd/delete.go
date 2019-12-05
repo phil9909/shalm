@@ -24,7 +24,7 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			return err
 		}
-		return c.Delete(thread, impl.NewK8s())
+		return unwrapEvalError(c.Delete(thread, impl.NewK8s()))
 	},
 }
 
