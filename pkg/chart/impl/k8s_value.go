@@ -92,8 +92,7 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 			}
 			var obj map[string]interface{}
 			yaml.Unmarshal(buffer.Bytes(), &obj)
-			return toStarlark(obj), nil
-			//return starlark.String(string(buffer.Bytes())), nil
+			return wrapDict(toStarlark(obj)), nil
 		}), nil
 	}
 	return starlark.None, starlark.NoSuchAttrError(fmt.Sprintf("k8s has no .%s attribute", name))
