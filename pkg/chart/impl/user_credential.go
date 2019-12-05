@@ -35,7 +35,6 @@ type userCredential struct {
 	usernameKey string
 	passwordKey string
 	name        string
-	applied     bool
 }
 
 var (
@@ -84,8 +83,12 @@ func (c *userCredential) GetOrCreate(k8s chart.K8s) error {
 		if !k8s.IsNotExist(err) {
 			return err
 		}
-		c.username = createRandomString(16)
-		c.password = createRandomString(16)
+		if c.username == "" {
+			c.username = createRandomString(16)
+		}
+		if c.password == "" {
+			c.password = createRandomString(16)
+		}
 	} else {
 		var secret Secret
 		dec := yaml.NewDecoder(&buffer)
@@ -93,30 +96,27 @@ func (c *userCredential) GetOrCreate(k8s chart.K8s) error {
 		if err != nil {
 			return err
 		}
-		content, err := base64.StdEncoding.DecodeString(secret.Data[c.usernameKey])
-		if err != nil {
-			return err
+		if c.username == "" {
+			content, err := base64.StdEncoding.DecodeString(secret.Data[c.usernameKey])
+			if err != nil {
+				return err
+			}
+			c.username = string(content)
 		}
-		c.username = string(content)
-		content, err = base64.StdEncoding.DecodeString(secret.Data[c.passwordKey])
-		if err != nil {
-			return err
+		if c.password == "" {
+			content, err := base64.StdEncoding.DecodeString(secret.Data[c.passwordKey])
+			if err != nil {
+				return err
+			}
+			c.password = string(content)
 		}
-		c.password = string(content)
 
 	}
-	c.applied = true
 	return nil
 }
 
 func (c *userCredential) secret(namespace string) *Secret {
 	c.setDefaultKeys()
-	username := c.username
-	password := c.password
-	if !c.applied {
-		username = "????????"
-		password = "????????"
-	}
 	return &Secret{
 		APIVersion: "v1",
 		Kind:       "Secret",
@@ -126,8 +126,8 @@ func (c *userCredential) secret(namespace string) *Secret {
 			Namespace: namespace,
 		},
 		Data: map[string]string{
-			c.usernameKey: base64.StdEncoding.EncodeToString([]byte(username)),
-			c.passwordKey: base64.StdEncoding.EncodeToString([]byte(password)),
+			c.usernameKey: base64.StdEncoding.EncodeToString([]byte(c.username)),
+			c.passwordKey: base64.StdEncoding.EncodeToString([]byte(c.password)),
 		},
 	}
 }
@@ -150,12 +150,12 @@ func (c *userCredential) Attr(name string) (starlark.Value, error) {
 	case "name":
 		return starlark.String(c.name), nil
 	case "username":
-		if !c.applied {
+		if c.username == "" {
 			return nil, errors.New("username is only available after user_credential is applied")
 		}
 		return starlark.String(c.username), nil
 	case "password":
-		if !c.applied {
+		if c.password == "" {
 			return nil, errors.New("password is only available after user_credential is applied")
 		}
 		return starlark.String(c.password), nil

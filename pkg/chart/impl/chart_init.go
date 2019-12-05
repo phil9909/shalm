@@ -69,7 +69,9 @@ func (c *chartImpl) init(thread *starlark.Thread, repo chart.Repo, args starlark
 		"user_credential": starlark.NewBuiltin("user_credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			s := &userCredential{}
 			s.setDefaultKeys()
-			if err := starlark.UnpackArgs("user_credential", args, kwargs, "name", &s.name, "username_key?", &s.usernameKey, "password_key?", &s.passwordKey); err != nil {
+			if err := starlark.UnpackArgs("user_credential", args, kwargs, "name", &s.name,
+				"username_key?", &s.usernameKey, "password_key?", &s.passwordKey,
+				"username?", &s.username, "password?", &s.password); err != nil {
 				return nil, err
 			}
 			c.userCredentials = append(c.userCredentials, s)

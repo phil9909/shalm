@@ -14,6 +14,7 @@ This project brings the starlark scripting language to helm charts.
 * Use starlark methods in templates (replacement for `_helpers.tpl`)
 * Interact with kubernetes during installation
 * Manage user credentials
+* Act as glue code between helm charts
 
 ## Installation
 
@@ -226,23 +227,25 @@ Wait for rollout status of one kubernetes object
 
 
 
-#### `user_credential(name,username_key='username',password_key='password')`
+#### `user_credential(name,username='',password='',username_key='username',password_key='password')`
 
 Creates a new user credential. All user credentials created inside a `Chart.star` file are automatically applied to kubernetes.
 
 | Parameter | Description |
 |-----------|-------------|
 | name      |  The name of the kubernetes secret used to hold the information   |
+| username  |  Username. If it's empty it's either read from the secret or created with a random content.  |
+| password  |  Password. If it's empty it's either read from the secret or created with a random content.  |
 | username_key |  The name of the key used to store the username inside the secret  |
 | password_key |  The name of the key used to store the password inside the secret  |
 
 #### `user_credential.username`
 
-Returns the content of the username attribute. It is only valid after calling `chart.__apply(k8s)`
+Returns the content of the username attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor.
 
 #### `user_credential.password`
 
-Returns the content of the password attribute. It is only valid after calling `chart.__apply(k8s)`
+Returns the content of the password attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor.
 
 ### struct
 
@@ -255,8 +258,5 @@ See [bazel documentation](https://docs.bazel.build/versions/master/skylark/lib/s
 * The `--set` command line parameters are passed to the `init` method of the corresponding chart. 
 It's not possible to set values (from `values.yaml`) directly. 
 If you would like to set a lot of values, it's more convenient to write a separate shalm chart.
+* `shalm` doesn't track installed charts on a kubernetes cluster. It works more like `kubectl apply`
 
-## TODO
-
-* Allow access to kubernetes during apply or delete
-  * Read ClusterIP of service
