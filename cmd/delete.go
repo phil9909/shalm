@@ -15,16 +15,16 @@ var deleteCmd = &cobra.Command{
 	Short: "delete shalm chart",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		repo := impl.NewRepo(repoOpts()...)
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
 		c, err := repo.Get(thread, rootChart(), chartName, nil, deleteChartArgs.KwArgs())
 		if err != nil {
-			return err
+			exit(err)
 		}
-		return unwrapEvalError(c.Delete(thread, impl.NewK8s()))
+		exit(c.Delete(thread, impl.NewK8s()))
 	},
 }
 

@@ -16,10 +16,10 @@ var applyCmd = &cobra.Command{
 	Short: "apply shalm chart",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		chartName := args[0]
 		repo := impl.NewRepo(repoOpts()...)
-		return unwrapEvalError(apply(repo, rootChart(), chartName, impl.NewK8s()))
+		exit(apply(repo, rootChart(), chartName, impl.NewK8s()))
 	},
 }
 

@@ -15,20 +15,20 @@ var packageCmd = &cobra.Command{
 	Short: "package shalm chart",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		repo := impl.NewRepo(repoOpts()...)
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
 		c, err := repo.Get(thread, rootChart(), chartName, nil, nil)
 		if err != nil {
-			return err
+			exit(err)
 		}
 		out, err := os.Create(c.GetName() + "-" + c.GetVersion().String() + ".tgz")
 		if err != nil {
-			return err
+			exit(err)
 		}
 		defer out.Close()
-		return c.Package(out)
+		exit(c.Package(out))
 	},
 }

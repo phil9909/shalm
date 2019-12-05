@@ -3,6 +3,7 @@ package cmd
 import (
 	"errors"
 	"fmt"
+	"os"
 
 	"go.starlark.net/starlark"
 
@@ -66,4 +67,12 @@ func unwrapEvalError(err error) error {
 		return errors.New(evalError.Backtrace())
 	}
 	return err
+}
+
+func exit(err error) {
+	if err != nil {
+		fmt.Println(unwrapEvalError(err).Error())
+		os.Exit(1)
+	}
+	os.Exit(0)
 }

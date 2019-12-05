@@ -16,21 +16,20 @@ var templateCmd = &cobra.Command{
 	Short: "template shalm chart",
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
-	RunE: func(cmd *cobra.Command, args []string) error {
+	Run: func(cmd *cobra.Command, args []string) {
 		repo := impl.NewRepo(repoOpts()...)
 		chartName := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
 		c, err := repo.Get(thread, rootChart(), chartName, nil, templateChartArgs.KwArgs())
 		if err != nil {
-			return unwrapEvalError(err)
+			exit(err)
 		}
 		t, err := c.Template(thread)
 		if err != nil {
-			return unwrapEvalError(err)
+			exit(err)
 		}
 		fmt.Println(t)
-		return nil
 	},
 }
 
