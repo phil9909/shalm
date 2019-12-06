@@ -26,7 +26,7 @@ var _ = Describe("OCIRepo", func() {
 		var thread *starlark.Thread
 
 		BeforeEach(func() {
-			thread = &starlark.Thread{Name: "my thread"}
+			thread = &starlark.Thread{Name: "main"}
 			repo = NewRepo()
 		})
 		It("reads chart from directory", func() {

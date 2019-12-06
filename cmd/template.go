@@ -21,7 +21,7 @@ var templateCmd = &cobra.Command{
 		repo := shalm.NewRepo()
 		url := args[0]
 
-		thread := &starlark.Thread{Name: "my thread"}
+		thread := &starlark.Thread{Name: "main"}
 		c, err := repo.Get(thread, url, rootNamespace(), nil, templateChartArgs.KwArgs())
 		if err != nil {
 			exit(err)

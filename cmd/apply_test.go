@@ -22,31 +22,30 @@ var (
 
 var _ = Describe("Apply Chart", func() {
 
-	Context("apply chart", func() {
-		It("produces the correct output", func() {
-			writer := bytes.Buffer{}
-			k := &shalm.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *shalm.K8sOptions) error {
-					i(&writer)
-					return nil
-				},
-			}
-			k.ForNamespaceStub = func(s string) shalm.K8s {
-				return k
-			}
+	It("produces the correct output", func() {
+		writer := bytes.Buffer{}
+		k := &shalm.FakeK8s{
+			ApplyStub: func(i func(io.Writer) error, options *shalm.K8sOptions) error {
+				i(&writer)
+				return nil
+			},
+		}
+		k.ForNamespaceStub = func(s string) shalm.K8s {
+			return k
+		}
 
-			err := apply(shalm.NewRepo(), path.Join(example, "cf"), "mynamespace", shalm.NewK8sValue(k))
-			Expect(err).ToNot(HaveOccurred())
-			output := writer.String()
-			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))
-			Expect(k.RolloutStatusCallCount()).To(Equal(1))
-			Expect(k.ForNamespaceCallCount()).To(Equal(3))
-			Expect(k.ForNamespaceArgsForCall(0)).To(Equal("mynamespace"))
-			Expect(k.ForNamespaceArgsForCall(1)).To(Equal("mynamespace"))
-			Expect(k.ForNamespaceArgsForCall(2)).To(Equal("uaa"))
-			kind, name, _ := k.RolloutStatusArgsForCall(0)
-			Expect(name).To(Equal("mariadb-master"))
-			Expect(kind).To(Equal("statefulset"))
-		})
+		err := apply(path.Join(example, "cf"), "mynamespace", shalm.NewK8sValue(k))
+		Expect(err).ToNot(HaveOccurred())
+		output := writer.String()
+		Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))
+		Expect(k.RolloutStatusCallCount()).To(Equal(1))
+		Expect(k.ApplyCallCount()).To(Equal(3))
+		Expect(k.ForNamespaceCallCount()).To(Equal(3))
+		Expect(k.ForNamespaceArgsForCall(0)).To(Equal("mynamespace"))
+		Expect(k.ForNamespaceArgsForCall(1)).To(Equal("mynamespace"))
+		Expect(k.ForNamespaceArgsForCall(2)).To(Equal("uaa"))
+		kind, name, _ := k.RolloutStatusArgsForCall(0)
+		Expect(name).To(Equal("mariadb-master"))
+		Expect(kind).To(Equal("statefulset"))
 	})
 })

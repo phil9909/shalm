@@ -50,7 +50,7 @@ var _ = Describe("Chart", func() {
 	Context("initialize", func() {
 
 		It("reads Chart.yaml", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -61,7 +61,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("reads values.yaml", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -77,7 +77,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("reads Chart.star", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -91,7 +91,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("templates a c ", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -107,7 +107,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("applies a c ", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -133,7 +133,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("deletes a c ", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -159,7 +159,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("applies subcharts", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -187,7 +187,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("behaves like starlark value", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
@@ -200,7 +200,7 @@ var _ = Describe("Chart", func() {
 		})
 
 		It("applies a credentials ", func() {
-			thread := &starlark.Thread{Name: "my thread"}
+			thread := &starlark.Thread{Name: "main"}
 			dir := newTestDir()
 			defer dir.Remove()
 			repo := NewRepo()

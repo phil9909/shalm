@@ -15,14 +15,13 @@ var applyCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		url := args[0]
-		repo := shalm.NewRepo()
-		exit(apply(repo, url, rootNamespace(), shalm.NewK8s()))
+		exit(apply(args[0], rootNamespace(), shalm.NewK8s()))
 	},
 }
 
-func apply(repo shalm.Repo, url string, namespace string, k shalm.K8s) error {
-	thread := &starlark.Thread{Name: "my thread"}
+func apply(url string, namespace string, k shalm.K8s) error {
+	repo := shalm.NewRepo()
+	thread := &starlark.Thread{Name: "main"}
 	c, err := repo.Get(thread, url, namespace, nil, applyChartArgs.KwArgs())
 	if err != nil {
 		return err

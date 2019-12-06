@@ -16,19 +16,22 @@ var packageCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repo := shalm.NewRepo()
-		url := args[0]
-
-		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, url, rootNamespace(), nil, nil)
-		if err != nil {
-			exit(err)
-		}
-		out, err := os.Create(c.GetName() + "-" + c.GetVersion().String() + ".tgz")
-		if err != nil {
-			exit(err)
-		}
-		defer out.Close()
-		exit(c.Package(out))
+		exit(pkg(args[0], rootNamespace()))
 	},
+}
+
+func pkg(url string, namespace string) error {
+	repo := shalm.NewRepo()
+
+	thread := &starlark.Thread{Name: "main"}
+	c, err := repo.Get(thread, url, rootNamespace(), nil, nil)
+	if err != nil {
+		return err
+	}
+	out, err := os.Create(c.GetName() + "-" + c.GetVersion().String() + ".tgz")
+	if err != nil {
+		return err
+	}
+	defer out.Close()
+	return c.Package(out)
 }

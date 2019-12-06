@@ -15,16 +15,18 @@ var deleteCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repo := shalm.NewRepo()
-		url := args[0]
-
-		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, url, rootNamespace(), nil, deleteChartArgs.KwArgs())
-		if err != nil {
-			exit(err)
-		}
-		exit(c.Delete(thread, shalm.NewK8s()))
+		exit(delete(args[0], rootNamespace(), shalm.NewK8s()))
 	},
+}
+
+func delete(url string, namespace string, k shalm.K8s) error {
+	repo := shalm.NewRepo()
+	thread := &starlark.Thread{Name: "main"}
+	c, err := repo.Get(thread, url, namespace, nil, applyChartArgs.KwArgs())
+	if err != nil {
+		return err
+	}
+	return c.Delete(thread, k)
 }
 
 func init() {
