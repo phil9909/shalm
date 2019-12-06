@@ -13,6 +13,8 @@ type release struct {
 	Namespace string
 	Service   string
 	Revision  int
+	IsUpgrade bool
+	IsInstall bool
 }
 
 type chart struct {
@@ -82,8 +84,15 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 			AppVersion: c.Version.String(),
 			Version:    c.Version.String(),
 		},
-		Release: release{Name: c.Name, Namespace: c.namespace, Service: c.Name, Revision: 1},
-		Files:   files{dir: c.dir},
+		Release: release{
+			Name:      c.Name,
+			Namespace: c.namespace,
+			Service:   c.Name,
+			Revision:  1,
+			IsInstall: false,
+			IsUpgrade: true,
+		},
+		Files: files{dir: c.dir},
 	}, writer, options)
 	if err != nil {
 		return err
