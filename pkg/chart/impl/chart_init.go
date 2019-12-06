@@ -3,6 +3,8 @@ package impl
 import (
 	"fmt"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/pkg/errors"
@@ -64,7 +66,17 @@ func (c *chartImpl) init(thread *starlark.Thread, repo chart.Repo, args starlark
 			if len(args) == 0 {
 				return nil, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
 			}
-			return repo.Get(thread, c, args[0].(starlark.String).GoString(), args[1:], kwargs)
+			url := args[0].(starlark.String).GoString()
+			if !filepath.IsAbs(url) {
+				url = path.Join(c.dir, url)
+			}
+			namespace := c.namespace
+			parser := &kwargsParser{kwargs: kwargs}
+			parser.Arg("namespace", func(value starlark.Value) {
+				namespace = value.(starlark.String).GoString()
+			})
+			kwargs = parser.Parse()
+			return repo.Get(thread, url, namespace, args[1:], kwargs)
 		}),
 		"user_credential": starlark.NewBuiltin("user_credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			s := &userCredential{}

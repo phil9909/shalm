@@ -16,11 +16,11 @@ var packageCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repo := impl.NewRepo(repoOpts()...)
-		chartName := args[0]
+		repo := impl.NewRepo()
+		url := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, rootChart(), chartName, nil, nil)
+		c, err := repo.Get(thread, url, rootNamespace(), nil, nil)
 		if err != nil {
 			exit(err)
 		}

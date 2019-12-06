@@ -37,7 +37,7 @@ var _ = Describe("Apply Chart", func() {
 				return k
 			}
 
-			err := apply(impl.NewRepo(), impl.NewRootChartForDir("mynamespace", example), "cf", impl.NewK8sValue(k))
+			err := apply(impl.NewRepo(), path.Join(example, "cf"), "mynamespace", impl.NewK8sValue(k))
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))

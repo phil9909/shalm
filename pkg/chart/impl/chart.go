@@ -35,22 +35,14 @@ var (
 	_ chart.ChartValue = (*chartImpl)(nil)
 )
 
-// NewChartFromPackage -
-func NewChartFromPackage(thread *starlark.Thread, repo chart.Repo, dir string, reader io.Reader, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
+func newChartFromPackage(thread *starlark.Thread, repo chart.Repo, dir string, reader io.Reader, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	if err := tarExtract(reader, dir); err != nil {
 		return nil, err
 	}
-	return NewChart(thread, repo, dir, parent, args, kwargs)
+	return newChart(thread, repo, dir, namespace, args, kwargs)
 }
 
-// NewChart -
-func NewChart(thread *starlark.Thread, repo chart.Repo, dir string, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
-	namespace := parent.GetNamespace()
-	parser := &kwargsParser{kwargs: kwargs}
-	parser.Arg("namespace", func(value starlark.Value) {
-		namespace = value.(starlark.String).GoString()
-	})
-	kwargs = parser.Parse()
+func newChart(thread *starlark.Thread, repo chart.Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	name := strings.Split(filepath.Base(dir), ":")[0]
 	c := &chartImpl{Name: name, dir: dir, namespace: namespace}
 	c.values = make(map[string]starlark.Value)
@@ -75,14 +67,6 @@ func NewChart(thread *starlark.Thread, repo chart.Repo, dir string, parent chart
 
 func (c *chartImpl) GetName() string {
 	return c.Name
-}
-
-func (c *chartImpl) GetNamespace() string {
-	return c.namespace
-}
-
-func (c *chartImpl) GetDir() string {
-	return c.dir
 }
 
 func (c *chartImpl) GetVersion() semver.Version {

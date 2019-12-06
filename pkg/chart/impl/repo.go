@@ -7,7 +7,6 @@ import (
 	"net/http"
 	"os"
 	"path"
-	"path/filepath"
 	"strings"
 	"time"
 
@@ -15,87 +14,63 @@ import (
 	"go.starlark.net/starlark"
 )
 
-// RepoOpts -
-type RepoOpts func(*OciRepo)
-
-// WithAuthCreds -
-func WithAuthCreds(credentials func(string) (string, string, error)) RepoOpts {
-	return func(opt *OciRepo) {
-		opt.credentials = credentials
-	}
+type repo struct {
+	cacheDir   string
+	httpClient *http.Client
 }
 
-// OciRepo -
-type OciRepo struct {
-	baseDir     string
-	cacheDir    string
-	httpClient  *http.Client
-	credentials func(string) (string, string, error)
-}
-
-var _ chart.Repo = &OciRepo{}
+var _ chart.Repo = &repo{}
 
 const (
 	customMediaType = "application/tar"
 )
 
 // NewRepo -
-func NewRepo(authOpts ...RepoOpts) chart.Repo {
+func NewRepo() chart.Repo {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
 	}
-	r := &OciRepo{
+	r := &repo{
 		cacheDir: path.Join(homedir, ".shalm", "cache"),
 		httpClient: &http.Client{
 			Timeout: time.Second * 60,
 		},
 	}
-	for _, a := range authOpts {
-		a(r)
-	}
-
 	return r
 }
 
 // Get -
-func (r *OciRepo) Get(thread *starlark.Thread, parent chart.Chart, ref string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
-	var dir string
-	if filepath.IsAbs(ref) {
-		dir = ref
-	} else {
-		dir = path.Join(parent.GetDir(), ref)
-	}
-	md5Sum := md5.Sum([]byte(ref))
+func (r *repo) Get(thread *starlark.Thread, url string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
+	md5Sum := md5.Sum([]byte(url))
 	cacheDir := path.Join(r.cacheDir, hex.EncodeToString(md5Sum[:]))
 	os.RemoveAll(cacheDir)
 
-	if stat, err := os.Stat(dir); err == nil {
-		if stat.IsDir() {
-			return NewChart(thread, r, dir, parent, args, kwargs)
-		}
-		return newChartFromFile(thread, r, cacheDir, dir, parent, args, kwargs)
-	}
-
-	if strings.HasPrefix(ref, "https:") || strings.HasPrefix(ref, "http:") {
-		res, err := r.httpClient.Get(ref)
+	if strings.HasPrefix(url, "https:") || strings.HasPrefix(url, "http:") {
+		res, err := r.httpClient.Get(url)
 		if err != nil {
-			return nil, fmt.Errorf("Error fetching %s: %v", ref, err)
+			return nil, fmt.Errorf("Error fetching %s: %v", url, err)
 		}
 		if res.StatusCode != 200 {
-			return nil, fmt.Errorf("Error fetching %s: status=%d", ref, res.StatusCode)
+			return nil, fmt.Errorf("Error fetching %s: status=%d", url, res.StatusCode)
 		}
 		defer res.Body.Close()
-		return NewChartFromPackage(thread, r, cacheDir, res.Body, parent, args, kwargs)
+		return newChartFromPackage(thread, r, cacheDir, res.Body, namespace, args, kwargs)
 	}
-	return nil, fmt.Errorf("Chart not found for url %s", ref)
+	if stat, err := os.Stat(url); err == nil {
+		if stat.IsDir() {
+			return newChart(thread, r, url, namespace, args, kwargs)
+		}
+		return newChartFromFile(thread, r, cacheDir, url, namespace, args, kwargs)
+	}
+	return nil, fmt.Errorf("Chart not found for url %s", url)
 }
 
-func newChartFromFile(thread *starlark.Thread, repo chart.Repo, dir string, tarFile string, parent chart.Chart, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
+func newChartFromFile(thread *starlark.Thread, repo chart.Repo, dir string, tarFile string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
 	in, err := os.Open(tarFile)
 	if err != nil {
 		return nil, err
 	}
 	defer in.Close()
-	return NewChartFromPackage(thread, repo, dir, in, parent, args, kwargs)
+	return newChartFromPackage(thread, repo, dir, in, namespace, args, kwargs)
 }

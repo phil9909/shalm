@@ -57,7 +57,7 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 		})
@@ -68,7 +68,7 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			attr, err := c.Attr("replicas")
 			Expect(err).NotTo(HaveOccurred())
@@ -85,7 +85,7 @@ var _ = Describe("Chart", func() {
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("timeout: \"30s\"\n"), 0644)
 			dir.WriteFile("Chart.star", []byte("def init(self):\n  self.timeout = \"60s\"\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			attr, err := c.Attr("timeout")
 			Expect(err).NotTo(HaveOccurred())
@@ -100,7 +100,7 @@ var _ = Describe("Chart", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 			output, err := c.Template(thread)
@@ -116,7 +116,7 @@ var _ = Describe("Chart", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
@@ -142,7 +142,7 @@ var _ = Describe("Chart", func() {
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
@@ -170,7 +170,7 @@ var _ = Describe("Chart", func() {
 			dir.WriteFile("chart1/Chart.star", []byte("def init(self):\n  self.chart2 = chart(\"../chart2\",namespace=\"chart2\")\n"), 0644)
 
 			dir.WriteFile("chart2/templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
-			c, err := NewChart(thread, repo, dir.Join("chart1"), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Join("chart1"), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{
@@ -194,7 +194,7 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.String()).To(ContainSubstring("replicas = \"1\""))
 			Expect(c.Hash()).NotTo(Equal(uint32(0)))
@@ -207,7 +207,7 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.star", []byte("def init(self):\n  user_credential(\"test\")\n"), 0644)
-			c, err := NewChart(thread, repo, dir.Root(), NewRootChartForDir("namespace", dir.Root()), nil, nil)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
 			k := &fakes.FakeK8s{

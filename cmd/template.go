@@ -3,9 +3,10 @@ package cmd
 import (
 	"fmt"
 
+	"github.com/kramerul/shalm/pkg/chart/impl"
+
 	"go.starlark.net/starlark"
 
-	"github.com/kramerul/shalm/pkg/chart/impl"
 	"github.com/spf13/cobra"
 )
 
@@ -17,11 +18,11 @@ var templateCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repo := impl.NewRepo(repoOpts()...)
-		chartName := args[0]
+		repo := impl.NewRepo()
+		url := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
-		c, err := repo.Get(thread, rootChart(), chartName, nil, templateChartArgs.KwArgs())
+		c, err := repo.Get(thread, url, rootNamespace(), nil, templateChartArgs.KwArgs())
 		if err != nil {
 			exit(err)
 		}

@@ -7,14 +7,10 @@ import (
 
 	"go.starlark.net/starlark"
 
-	"github.com/kramerul/shalm/pkg/chart"
-	"github.com/kramerul/shalm/pkg/chart/impl"
 	"github.com/spf13/cobra"
 )
 
 var nameSpace string = "default"
-var username string
-var password string
 
 func init() {
 
@@ -39,23 +35,8 @@ var rootCmd = &cobra.Command{
 func Execute() error {
 	return rootCmd.Execute()
 }
-
-func repoOpts() []impl.RepoOpts {
-	if username != "" {
-		return []impl.RepoOpts{impl.WithAuthCreds(func(repo string) (string, string, error) {
-			// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
-			return username, password, nil
-		})}
-	}
-	return nil
-}
-
-func rootChart() chart.Chart {
-	chart, err := impl.NewRootChart(nameSpace)
-	if err != nil {
-		panic(err)
-	}
-	return chart
+func rootNamespace() string {
+	return nameSpace
 }
 
 func unwrapEvalError(err error) error {

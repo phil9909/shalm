@@ -25,24 +25,18 @@ var _ = Describe("OCIRepo", func() {
 	Context("push chart", func() {
 		var repo chart.Repo
 		var thread *starlark.Thread
-		var rootChart chart.Chart
 
 		BeforeEach(func() {
 			thread = &starlark.Thread{Name: "my thread"}
-			repo = NewRepo(WithAuthCreds(func(repo string) (string, string, error) {
-				// return "_json_key", os.Getenv("GCR_ADMIN_CREDENTIALS"), nil
-				return "", "", nil
-			}))
-			rootChart = NewRootChartForDir("default", example)
-
+			repo = NewRepo()
 		})
 		It("reads chart from directory", func() {
-			chart, err := repo.Get(thread, rootChart, "mariadb", nil, nil)
+			chart, err := repo.Get(thread, path.Join(example, "mariadb"), "namespace", nil, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
 		It("reads chart from tar file", func() {
-			chart, err := repo.Get(thread, rootChart, "mariadb-6.12.2.tgz", nil, nil)
+			chart, err := repo.Get(thread, path.Join(example, "mariadb-6.12.2.tgz"), "namespace", nil, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
@@ -54,7 +48,7 @@ var _ = Describe("OCIRepo", func() {
 			})
 
 			go http.ListenAndServe("127.0.0.1:8675", nil)
-			chart, err := repo.Get(thread, rootChart, "http://localhost:8675/mariadb.tgz", nil, nil)
+			chart, err := repo.Get(thread, "http://localhost:8675/mariadb.tgz", "namespace", nil, nil)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})

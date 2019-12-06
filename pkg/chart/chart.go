@@ -19,12 +19,12 @@ type HelmChart struct {
 	Icon        string   `json:"icon,omitempty"`
 }
 
-// Credentials -
+// Credential -
 type Credential interface {
 	GetOrCreate(k K8s) error
 }
 
-// CredentialsValue -
+// CredentialValue -
 type CredentialValue interface {
 	starlark.HasAttrs
 	Credential
@@ -34,8 +34,6 @@ type CredentialValue interface {
 type Chart interface {
 	GetName() string
 	GetVersion() semver.Version
-	GetNamespace() string
-	GetDir() string
 	Apply(thread *starlark.Thread, k K8s) error
 	Delete(thread *starlark.Thread, k K8s) error
 	Template(thread *starlark.Thread) (string, error)
