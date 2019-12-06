@@ -1,6 +1,9 @@
 package shalm
 
 import (
+	"bytes"
+	"io"
+	"io/ioutil"
 	"time"
 
 	. "github.com/onsi/ginkgo"
@@ -25,7 +28,7 @@ var _ = Describe("K8sValue", func() {
 		Expect(k8s.AttrNames()).To(ConsistOf("rollout_status", "delete", "get"))
 	})
 
-	It("methods", func() {
+	It("methods behave well", func() {
 		fake := &FakeK8s{}
 		k8s := &k8sValueImpl{fake}
 		thread := &starlark.Thread{}
@@ -44,6 +47,31 @@ var _ = Describe("K8sValue", func() {
 		Expect(options.Namespaced).To(BeTrue())
 		Expect(fake.DeleteObjectCallCount()).To(Equal(1))
 		Expect(fake.GetCallCount()).To(Equal(1))
+	})
+
+	It("watches objects", func() {
+		fake := &FakeK8s{
+			WatchStub: func(kind string, name string, options *K8sOptions) (closer io.ReadCloser, e error) {
+				return ioutil.NopCloser(bytes.NewReader([]byte(`{ "key" : "value" }`))), nil
+			},
+		}
+		k8s := &k8sValueImpl{fake}
+		thread := &starlark.Thread{}
+		watch, err := k8s.Attr("watch")
+		value, err := starlark.Call(thread, watch, starlark.Tuple{starlark.String("kind"), starlark.String("object")},
+			[]starlark.Tuple{{starlark.String("timeout"), starlark.MakeInt(10)},
+				{starlark.String("namespaced"), starlark.Bool(true)}})
+
+		Expect(err).NotTo(HaveOccurred())
+		iterable := value.(starlark.Iterable)
+		iterator := iterable.Iterate()
+		var obj starlark.Value
+		found := iterator.Next(&obj)
+		Expect(found).To(BeTrue())
+		Expect(fake.WatchCallCount()).To(Equal(1))
+		dict := unwrapDict(obj).(*starlark.Dict)
+		val, found, err := dict.Get(starlark.String("key"))
+		Expect(val).To(Equal(starlark.String("value")))
 	})
 
 })

@@ -67,9 +67,16 @@ func (k *k8sImpl) RolloutStatus(kind string, name string, options *K8sOptions) e
 
 // Get -
 func (k *k8sImpl) Get(kind string, name string, writer io.Writer, options *K8sOptions) error {
-	cmd := k.kubectl("get", options, kind, name, "-o", "yaml")
+	cmd := k.kubectl("get", options, kind, name, "-o", "json")
 	cmd.Stdout = writer
 	return run(cmd)
+}
+
+func (k *k8sImpl) Watch(kind string, name string, options *K8sOptions) (io.ReadCloser, error) {
+	cmd := k.kubectl("get", options, kind, name, "-o", "json", "--watch")
+	reader, writer := io.Pipe()
+	cmd.Stdout = writer
+	return reader, cmd.Start()
 }
 
 // IsNotExist -

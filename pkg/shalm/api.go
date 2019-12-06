@@ -46,6 +46,7 @@ type K8sOptions struct {
 // K8s kubernetes API
 type K8s interface {
 	ForNamespace(namespace string) K8s
+	Watch(kind string, name string, options *K8sOptions) (io.ReadCloser, error)
 	RolloutStatus(kind string, name string, options *K8sOptions) error
 	DeleteObject(kind string, name string, options *K8sOptions) error
 	Apply(output func(io.Writer) error, options *K8sOptions) error

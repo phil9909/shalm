@@ -93,6 +93,21 @@ type FakeK8s struct {
 	rolloutStatusReturnsOnCall map[int]struct {
 		result1 error
 	}
+	WatchStub        func(string, string, *K8sOptions) (io.ReadCloser, error)
+	watchMutex       sync.RWMutex
+	watchArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 *K8sOptions
+	}
+	watchReturns struct {
+		result1 io.ReadCloser
+		result2 error
+	}
+	watchReturnsOnCall map[int]struct {
+		result1 io.ReadCloser
+		result2 error
+	}
 	invocations      map[string][][]interface{}
 	invocationsMutex sync.RWMutex
 }
@@ -526,6 +541,71 @@ func (fake *FakeK8s) RolloutStatusReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeK8s) Watch(arg1 string, arg2 string, arg3 *K8sOptions) (io.ReadCloser, error) {
+	fake.watchMutex.Lock()
+	ret, specificReturn := fake.watchReturnsOnCall[len(fake.watchArgsForCall)]
+	fake.watchArgsForCall = append(fake.watchArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 *K8sOptions
+	}{arg1, arg2, arg3})
+	fake.recordInvocation("Watch", []interface{}{arg1, arg2, arg3})
+	fake.watchMutex.Unlock()
+	if fake.WatchStub != nil {
+		return fake.WatchStub(arg1, arg2, arg3)
+	}
+	if specificReturn {
+		return ret.result1, ret.result2
+	}
+	fakeReturns := fake.watchReturns
+	return fakeReturns.result1, fakeReturns.result2
+}
+
+func (fake *FakeK8s) WatchCallCount() int {
+	fake.watchMutex.RLock()
+	defer fake.watchMutex.RUnlock()
+	return len(fake.watchArgsForCall)
+}
+
+func (fake *FakeK8s) WatchCalls(stub func(string, string, *K8sOptions) (io.ReadCloser, error)) {
+	fake.watchMutex.Lock()
+	defer fake.watchMutex.Unlock()
+	fake.WatchStub = stub
+}
+
+func (fake *FakeK8s) WatchArgsForCall(i int) (string, string, *K8sOptions) {
+	fake.watchMutex.RLock()
+	defer fake.watchMutex.RUnlock()
+	argsForCall := fake.watchArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3
+}
+
+func (fake *FakeK8s) WatchReturns(result1 io.ReadCloser, result2 error) {
+	fake.watchMutex.Lock()
+	defer fake.watchMutex.Unlock()
+	fake.WatchStub = nil
+	fake.watchReturns = struct {
+		result1 io.ReadCloser
+		result2 error
+	}{result1, result2}
+}
+
+func (fake *FakeK8s) WatchReturnsOnCall(i int, result1 io.ReadCloser, result2 error) {
+	fake.watchMutex.Lock()
+	defer fake.watchMutex.Unlock()
+	fake.WatchStub = nil
+	if fake.watchReturnsOnCall == nil {
+		fake.watchReturnsOnCall = make(map[int]struct {
+			result1 io.ReadCloser
+			result2 error
+		})
+	}
+	fake.watchReturnsOnCall[i] = struct {
+		result1 io.ReadCloser
+		result2 error
+	}{result1, result2}
+}
+
 func (fake *FakeK8s) Invocations() map[string][][]interface{} {
 	fake.invocationsMutex.RLock()
 	defer fake.invocationsMutex.RUnlock()
@@ -543,6 +623,8 @@ func (fake *FakeK8s) Invocations() map[string][][]interface{} {
 	defer fake.isNotExistMutex.RUnlock()
 	fake.rolloutStatusMutex.RLock()
 	defer fake.rolloutStatusMutex.RUnlock()
+	fake.watchMutex.RLock()
+	defer fake.watchMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}
 	for key, value := range fake.invocations {
 		copiedInvocations[key] = value

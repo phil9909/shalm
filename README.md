@@ -211,7 +211,18 @@ Get one kubernetes object. The value is returned as a `dict`.
 | kind      |  k8s kind   |
 | name      |  name of k8s object   |
 | timeout   |  Timeout passed to `kubectl get`. A timeout of zero means wait forever.  |
-| namespaced |  If true object in the current namespace are deleted. Otherwise object in cluster scope will be deleted. Default is `true`  |
+| namespaced |  If true object in the current namespace are listed. Otherwise object in cluster scope will be listed. Default is `true`  |
+
+#### `k8s.watch(kind,name,namespaced=false,timeout=0)`
+
+Watch one kubernetes object. The value is returned as a `iterator`.
+
+| Parameter | Description |
+|-----------|-------------|
+| kind      |  k8s kind   |
+| name      |  name of k8s object   |
+| timeout   |  Timeout passed to `kubectl watch`. A timeout of zero means wait forever.  |
+| namespaced |  If true object in the current namespace are listed. Otherwise object in cluster scope will be listed. Default is `true`  |
 
 #### `k8s.rollout_status(kind,name,timeout=0)`
 

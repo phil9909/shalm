@@ -3,6 +3,7 @@ package shalm
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
@@ -10,20 +11,19 @@ import (
 	"time"
 
 	"go.starlark.net/starlark"
-	"gopkg.in/yaml.v2"
 )
 
 type secretData struct {
-	UsernameBase64 string `yaml:"username"`
-	PasswordBase64 string `yaml:"password"`
+	UsernameBase64 string `json:"username"`
+	PasswordBase64 string `json:"password"`
 }
 
 type secret struct {
-	APIVersion string            `yaml:"apiVersion"`
-	Kind       string            `yaml:"kind"`
-	Type       string            `yaml:"type"`
-	MetaData   metaData          `yaml:"metadata"`
-	Data       map[string]string `yaml:"data,omitempty"`
+	APIVersion string            `json:"apiVersion"`
+	Kind       string            `json:"kind"`
+	Type       string            `json:"type"`
+	MetaData   metaData          `json:"metadata"`
+	Data       map[string]string `json:"data,omitempty"`
 }
 
 type userCredential struct {
@@ -88,7 +88,7 @@ func (c *userCredential) GetOrCreate(k8s K8s) error {
 		}
 	} else {
 		var secret secret
-		dec := yaml.NewDecoder(&buffer)
+		dec := json.NewDecoder(&buffer)
 		err = dec.Decode(&secret)
 		if err != nil {
 			return err

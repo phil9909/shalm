@@ -1,13 +1,14 @@
 package shalm
 
 import (
+	"bufio"
 	"bytes"
+	"encoding/json"
 	"errors"
 	"fmt"
+	"io"
 	"os"
 	"time"
-
-	"gopkg.in/yaml.v2"
 
 	"go.starlark.net/starlark"
 )
@@ -21,8 +22,22 @@ type k8sValueImpl struct {
 	K8s
 }
 
+type k8sWatcher struct {
+	k8s     K8s
+	kind    string
+	name    string
+	options *K8sOptions
+}
+
+type k8sWatcherIterator struct {
+	decoder *json.Decoder
+	closer  io.Closer
+}
+
 var (
-	_ K8sValue = (*k8sValueImpl)(nil)
+	_ starlark.Iterable = (*k8sWatcher)(nil)
+	_ starlark.Iterator = (*k8sWatcherIterator)(nil)
+	_ K8sValue          = (*k8sValueImpl)(nil)
 )
 
 // String -
@@ -90,10 +105,27 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 				return starlark.None, err
 			}
 			var obj map[string]interface{}
-			yaml.Unmarshal(buffer.Bytes(), &obj)
+			json.Unmarshal(buffer.Bytes(), &obj)
 			return wrapDict(toStarlark(obj)), nil
 		}), nil
 	}
+	if name == "watch" {
+		return starlark.NewBuiltin("watch", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			var kind string
+			var name string
+			parser := &kwargsParser{kwargs: kwargs}
+			k8sOptions := unpackK8sOptions(parser)
+			if err := starlark.UnpackArgs("get", args, parser.Parse(),
+				"kind", &kind, "name", &name); err != nil {
+				return nil, err
+			}
+			if name == "" {
+				return starlark.None, errors.New("no parameter name given")
+			}
+			return &k8sWatcher{name: name, kind: kind, options: k8sOptions, k8s: k.K8s}, nil
+		}), nil
+	}
+
 	return starlark.None, starlark.NoSuchAttrError(fmt.Sprintf("k8s has no .%s attribute", name))
 }
 
@@ -112,4 +144,34 @@ func unpackK8sOptions(parser *kwargsParser) *K8sOptions {
 		}
 	})
 	return result
+}
+
+func (w *k8sWatcher) Freeze()               {}
+func (w *k8sWatcher) String() string        { return "k8sWatcher" }
+func (w *k8sWatcher) Type() string          { return "k8sWatcher" }
+func (w *k8sWatcher) Truth() starlark.Bool  { return true }
+func (w *k8sWatcher) Hash() (uint32, error) { return 0, fmt.Errorf("k8sWatcher is unhashable") }
+func (w *k8sWatcher) Iterate() starlark.Iterator {
+	reader, err := w.k8s.Watch(w.kind, w.name, w.options)
+	if err != nil {
+		return &k8sWatcherIterator{decoder: json.NewDecoder(bufio.NewReader(bytes.NewReader([]byte{})))}
+	}
+	return &k8sWatcherIterator{decoder: json.NewDecoder(reader), closer: reader}
+}
+
+func (i *k8sWatcherIterator) Next(p *starlark.Value) bool {
+	var obj map[string]interface{}
+	err := i.decoder.Decode(&obj)
+	if err != nil {
+		fmt.Println(err.Error())
+		return false
+	}
+	*p = wrapDict(toStarlark(obj))
+	return true
+}
+
+func (i *k8sWatcherIterator) Done() {
+	if i.closer != nil {
+		i.closer.Close()
+	}
 }

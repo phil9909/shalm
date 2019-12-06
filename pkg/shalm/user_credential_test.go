@@ -18,9 +18,10 @@ var _ = Describe("Credential", func() {
 			password := "password1"
 			k8s := FakeK8s{
 				GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
-					writer.Write([]byte("data:\n" +
-						"  username: " + base64.StdEncoding.EncodeToString([]byte(username)) + "\n" +
-						"  password: " + base64.StdEncoding.EncodeToString([]byte(password)) + "\n"))
+					writer.Write([]byte("{\"data\": {" +
+						"\"username\": \"" + base64.StdEncoding.EncodeToString([]byte(username)) + "\"," +
+						"\"password\": \"" + base64.StdEncoding.EncodeToString([]byte(password)) + "\" " +
+						"} }"))
 					return nil
 				},
 			}
