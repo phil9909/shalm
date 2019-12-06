@@ -3,7 +3,7 @@ package cmd
 import (
 	"os"
 
-	"github.com/kramerul/shalm/pkg/chart/impl"
+	"github.com/kramerul/shalm/pkg/shalm"
 
 	"go.starlark.net/starlark"
 
@@ -16,7 +16,7 @@ var packageCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repo := impl.NewRepo()
+		repo := shalm.NewRepo()
 		url := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}

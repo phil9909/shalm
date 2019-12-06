@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"bytes"
@@ -9,23 +9,20 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
 	"gopkg.in/yaml.v2"
 )
 
-// SecretData -
-type SecretData struct {
+type secretData struct {
 	UsernameBase64 string `yaml:"username"`
 	PasswordBase64 string `yaml:"password"`
 }
 
-// Secret -
-type Secret struct {
+type secret struct {
 	APIVersion string            `yaml:"apiVersion"`
 	Kind       string            `yaml:"kind"`
 	Type       string            `yaml:"type"`
-	MetaData   MetaData          `yaml:"metadata"`
+	MetaData   metaData          `yaml:"metadata"`
 	Data       map[string]string `yaml:"data,omitempty"`
 }
 
@@ -38,7 +35,7 @@ type userCredential struct {
 }
 
 var (
-	_ chart.CredentialValue = (*userCredential)(nil)
+	_ CredentialValue = (*userCredential)(nil)
 )
 
 // String -
@@ -75,10 +72,10 @@ func createRandomString(length int) string {
 	return b.String()
 }
 
-func (c *userCredential) GetOrCreate(k8s chart.K8s) error {
+func (c *userCredential) GetOrCreate(k8s K8s) error {
 	c.setDefaultKeys()
 	var buffer bytes.Buffer
-	err := k8s.Get("user_credential", c.name, &buffer, &chart.K8sOptions{Namespaced: true})
+	err := k8s.Get("user_credential", c.name, &buffer, &K8sOptions{Namespaced: true})
 	if err != nil {
 		if !k8s.IsNotExist(err) {
 			return err
@@ -90,7 +87,7 @@ func (c *userCredential) GetOrCreate(k8s chart.K8s) error {
 			c.password = createRandomString(16)
 		}
 	} else {
-		var secret Secret
+		var secret secret
 		dec := yaml.NewDecoder(&buffer)
 		err = dec.Decode(&secret)
 		if err != nil {
@@ -115,13 +112,13 @@ func (c *userCredential) GetOrCreate(k8s chart.K8s) error {
 	return nil
 }
 
-func (c *userCredential) secret(namespace string) *Secret {
+func (c *userCredential) secret(namespace string) *secret {
 	c.setDefaultKeys()
-	return &Secret{
+	return &secret{
 		APIVersion: "v1",
-		Kind:       "Secret",
+		Kind:       "secret",
 		Type:       "Opaque",
-		MetaData: MetaData{
+		MetaData: metaData{
 			Name:      c.name,
 			Namespace: namespace,
 		},

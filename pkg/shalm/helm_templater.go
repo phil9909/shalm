@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"bytes"
@@ -17,34 +17,30 @@ import (
 	"github.com/Masterminds/sprig/v3"
 )
 
-// HelmTemplater -
-type HelmTemplater struct {
+type helmTemplater struct {
 	helpers   string
 	dir       string
 	namespace string
 }
 
-// HelmOptions -
-type HelmOptions struct {
+type helmOptions struct {
 	glob           string
 	uninstallOrder bool
 }
 
-// MetaData -
-type MetaData struct {
+type metaData struct {
 	Namespace  string                 `yaml:"namespace,omitempty"`
 	Name       string                 `yaml:"name,omitempty"`
 	Additional map[string]interface{} `yaml:",inline"`
 }
 
-// Object -
-type Object struct {
-	MetaData   MetaData               `yaml:"metadata,omitempty"`
+type object struct {
+	MetaData   metaData               `yaml:"metadata,omitempty"`
 	Kind       string                 `yaml:"kind,omitempty"`
 	Additional map[string]interface{} `yaml:",inline"`
 }
 
-func (o *Object) setDefaultNamespace(namespace string) {
+func (o *object) setDefaultNamespace(namespace string) {
 	switch o.Kind {
 	case "Namespace":
 		return
@@ -68,7 +64,7 @@ func (o *Object) setDefaultNamespace(namespace string) {
 	}
 }
 
-func (o *Object) kindOrdinal() int {
+func (o *object) kindOrdinal() int {
 	switch o.Kind {
 	case "Namespace":
 		return 1
@@ -82,7 +78,7 @@ func (o *Object) kindOrdinal() int {
 		return 5
 	case "PodDisruptionBudget":
 		return 6
-	case "Secret":
+	case "secret":
 		return 7
 	case "ConfigMap":
 		return 8
@@ -145,9 +141,8 @@ type files struct {
 	dir string
 }
 
-// NewHelmTemplater -
-func NewHelmTemplater(dir string, namespace string) (*HelmTemplater, error) {
-	h := &HelmTemplater{
+func newHelmTemplater(dir string, namespace string) (*helmTemplater, error) {
+	h := &helmTemplater{
 		dir:       dir,
 		namespace: namespace,
 	}
@@ -164,7 +159,7 @@ func NewHelmTemplater(dir string, namespace string) (*HelmTemplater, error) {
 }
 
 // Template -
-func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *HelmOptions) error {
+func (h *helmTemplater) Template(value interface{}, writer io.Writer, opts *helmOptions) error {
 	var filenames []string
 	glob := "*.yaml"
 	if opts.glob != "" {
@@ -196,7 +191,7 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 		return nil
 	}
 
-	var docs []Object
+	var docs []object
 	for _, filename := range filenames {
 		var buffer bytes.Buffer
 		tpl, err := h.template(filepath.Base(filename))
@@ -217,7 +212,7 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 		}
 		if buffer.Len() > 0 {
 			dec := yaml.NewDecoder(&buffer)
-			var doc Object
+			var doc object
 			for dec.Decode(&doc) == nil {
 				doc.setDefaultNamespace(h.namespace)
 				docs = append(docs, doc)
@@ -245,7 +240,7 @@ func (h *HelmTemplater) Template(value interface{}, writer io.Writer, opts *Helm
 
 }
 
-func (h *HelmTemplater) template(name string) (result *template.Template, err error) {
+func (h *helmTemplater) template(name string) (result *template.Template, err error) {
 	result = template.New(name)
 	result = result.Funcs(sprig.TxtFuncMap())
 	result = result.Funcs(map[string]interface{}{
@@ -274,7 +269,7 @@ func (h *HelmTemplater) template(name string) (result *template.Template, err er
 	return
 }
 
-func (h *HelmTemplater) tpl() func(stringTemplate string, values interface{}) interface{} {
+func (h *helmTemplater) tpl() func(stringTemplate string, values interface{}) interface{} {
 	return func(stringTemplate string, values interface{}) interface{} {
 		tpl, err := h.template("internal template")
 		if err != nil {

@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"bytes"
@@ -8,16 +8,14 @@ import (
 	"gopkg.in/yaml.v2"
 )
 
-// Release -
-type Release struct {
+type release struct {
 	Name      string
 	Namespace string
 	Service   string
 	Revision  int
 }
 
-// Chart -
-type Chart struct {
+type chart struct {
 	Name       string
 	Version    string
 	AppVersion string
@@ -38,7 +36,7 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 			return nil, err
 		}
 		var writer bytes.Buffer
-		err := c.templateRecursive(thread, &writer, &HelmOptions{})
+		err := c.templateRecursive(thread, &writer, &helmOptions{})
 		if err != nil {
 			return starlark.None, err
 		}
@@ -46,7 +44,7 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer, options *HelmOptions) error {
+func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer, options *helmOptions) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
 		return subChart.templateRecursive(thread, writer, options)
 	})
@@ -56,8 +54,8 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer,
 	return c.template(thread, writer, options)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *HelmOptions) error {
-	h, err := NewHelmTemplater(c.path(), c.namespace)
+func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *helmOptions) error {
+	h, err := newHelmTemplater(c.path(), c.namespace)
 	if err != nil {
 		return err
 	}
@@ -73,18 +71,18 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 	err = h.Template(struct {
 		Values  interface{}
 		Methods map[string]interface{}
-		Chart   Chart
-		Release Release
+		Chart   chart
+		Release release
 		Files   files
 	}{
 		Values:  values,
 		Methods: methods,
-		Chart: Chart{
+		Chart: chart{
 			Name:       c.Name,
 			AppVersion: c.Version.String(),
 			Version:    c.Version.String(),
 		},
-		Release: Release{Name: c.Name, Namespace: c.namespace, Service: c.Name, Revision: 1},
+		Release: release{Name: c.Name, Namespace: c.namespace, Service: c.Name, Revision: 1},
 		Files:   files{dir: c.dir},
 	}, writer, options)
 	if err != nil {

@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	. "github.com/onsi/ginkgo"

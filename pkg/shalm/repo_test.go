@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"io/ioutil"
@@ -7,7 +7,6 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/pkg/chart"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.starlark.net/starlark"
@@ -16,14 +15,14 @@ import (
 var (
 	_, b, _, _ = runtime.Caller(0)
 	basepath   = filepath.Dir(b)
-	root       = path.Join(filepath.Dir(b), "..", "..", "..")
+	root       = path.Join(filepath.Dir(b), "..", "..")
 	example    = path.Join(root, "example", "simple")
 )
 
 var _ = Describe("OCIRepo", func() {
 
 	Context("push chart", func() {
-		var repo chart.Repo
+		var repo Repo
 		var thread *starlark.Thread
 
 		BeforeEach(func() {

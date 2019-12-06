@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"bytes"
@@ -9,12 +9,11 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kramerul/shalm/pkg/chart"
 	"github.com/pkg/errors"
 )
 
 // NewK8s create new instance to interact with kubernetes
-func NewK8s() chart.K8s {
+func NewK8s() K8s {
 	return &k8sImpl{}
 }
 
@@ -24,30 +23,30 @@ type k8sImpl struct {
 }
 
 var (
-	_ chart.K8s = (*k8sImpl)(nil)
+	_ K8s = (*k8sImpl)(nil)
 )
 
 // Apply -
-func (k *k8sImpl) Apply(output func(io.Writer) error, options *chart.K8sOptions) error {
+func (k *k8sImpl) Apply(output func(io.Writer) error, options *K8sOptions) error {
 	return k.run("apply", output, options)
 }
-func (k *k8sImpl) ForNamespace(namespace string) chart.K8s {
+func (k *k8sImpl) ForNamespace(namespace string) K8s {
 	result := &k8sImpl{namespace: namespace}
 	return result
 }
 
 // Delete -
-func (k *k8sImpl) Delete(output func(io.Writer) error, options *chart.K8sOptions) error {
+func (k *k8sImpl) Delete(output func(io.Writer) error, options *K8sOptions) error {
 	return k.run("delete", output, options, "--ignore-not-found")
 }
 
 // Delete -
-func (k *k8sImpl) DeleteObject(kind string, name string, options *chart.K8sOptions) error {
+func (k *k8sImpl) DeleteObject(kind string, name string, options *K8sOptions) error {
 	return run(k.kubectl("delete", options, kind, name, "--ignore-not-found"))
 }
 
 // RolloutStatus -
-func (k *k8sImpl) RolloutStatus(kind string, name string, options *chart.K8sOptions) error {
+func (k *k8sImpl) RolloutStatus(kind string, name string, options *K8sOptions) error {
 	start := time.Now()
 	for {
 		err := run(k.kubectl("rollout", options, "status", kind, name))
@@ -67,7 +66,7 @@ func (k *k8sImpl) RolloutStatus(kind string, name string, options *chart.K8sOpti
 }
 
 // Get -
-func (k *k8sImpl) Get(kind string, name string, writer io.Writer, options *chart.K8sOptions) error {
+func (k *k8sImpl) Get(kind string, name string, writer io.Writer, options *K8sOptions) error {
 	cmd := k.kubectl("get", options, kind, name, "-o", "yaml")
 	cmd.Stdout = writer
 	return run(cmd)
@@ -89,7 +88,7 @@ func run(cmd *exec.Cmd) error {
 
 }
 
-func (k *k8sImpl) kubectl(command string, options *chart.K8sOptions, flags ...string) *exec.Cmd {
+func (k *k8sImpl) kubectl(command string, options *K8sOptions, flags ...string) *exec.Cmd {
 	flags = append([]string{command}, flags...)
 	if options.Namespaced {
 		flags = append(flags, "-n", k.namespace)
@@ -114,7 +113,7 @@ func (w *writeCounter) Write(data []byte) (int, error) {
 	return w.writer.Write(data)
 }
 
-func (k *k8sImpl) run(command string, output func(io.Writer) error, options *chart.K8sOptions, flags ...string) error {
+func (k *k8sImpl) run(command string, output func(io.Writer) error, options *K8sOptions, flags ...string) error {
 	cmd := k.kubectl(command, options, append([]string{"-f", "-"}, flags...)...)
 
 	writer, err := cmd.StdinPipe()

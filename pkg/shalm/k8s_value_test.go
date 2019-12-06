@@ -1,9 +1,8 @@
-package impl
+package shalm
 
 import (
 	"time"
 
-	fakes "github.com/kramerul/shalm/pkg/chart/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.starlark.net/starlark"
@@ -12,7 +11,7 @@ import (
 var _ = Describe("K8sValue", func() {
 
 	It("behaves like starlark value", func() {
-		k8s := &k8sValueImpl{&fakes.FakeK8s{}}
+		k8s := &k8sValueImpl{&FakeK8s{}}
 		Expect(k8s.String()).To(ContainSubstring("KUBECONFIG = "))
 		Expect(k8s.Type()).To(Equal("k8s"))
 		Expect(func() { k8s.Hash() }).Should(Panic())
@@ -27,7 +26,7 @@ var _ = Describe("K8sValue", func() {
 	})
 
 	It("methods", func() {
-		fake := &fakes.FakeK8s{}
+		fake := &FakeK8s{}
 		k8s := &k8sValueImpl{fake}
 		thread := &starlark.Thread{}
 		for _, method := range []string{"rollout_status", "delete", "get"} {

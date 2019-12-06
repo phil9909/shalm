@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import "go.starlark.net/starlark"
 

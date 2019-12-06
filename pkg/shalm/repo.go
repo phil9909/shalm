@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"crypto/md5"
@@ -10,28 +10,27 @@ import (
 	"strings"
 	"time"
 
-	"github.com/kramerul/shalm/pkg/chart"
 	"go.starlark.net/starlark"
 )
 
-type repo struct {
+type repoImpl struct {
 	cacheDir   string
 	httpClient *http.Client
 }
 
-var _ chart.Repo = &repo{}
+var _ Repo = &repoImpl{}
 
 const (
 	customMediaType = "application/tar"
 )
 
 // NewRepo -
-func NewRepo() chart.Repo {
+func NewRepo() Repo {
 	homedir, err := os.UserHomeDir()
 	if err != nil {
 		panic(err)
 	}
-	r := &repo{
+	r := &repoImpl{
 		cacheDir: path.Join(homedir, ".shalm", "cache"),
 		httpClient: &http.Client{
 			Timeout: time.Second * 60,
@@ -41,7 +40,7 @@ func NewRepo() chart.Repo {
 }
 
 // Get -
-func (r *repo) Get(thread *starlark.Thread, url string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
+func (r *repoImpl) Get(thread *starlark.Thread, url string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
 	md5Sum := md5.Sum([]byte(url))
 	cacheDir := path.Join(r.cacheDir, hex.EncodeToString(md5Sum[:]))
 	os.RemoveAll(cacheDir)
@@ -66,7 +65,7 @@ func (r *repo) Get(thread *starlark.Thread, url string, namespace string, args s
 	return nil, fmt.Errorf("Chart not found for url %s", url)
 }
 
-func newChartFromFile(thread *starlark.Thread, repo chart.Repo, dir string, tarFile string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (chart.ChartValue, error) {
+func newChartFromFile(thread *starlark.Thread, repo Repo, dir string, tarFile string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
 	in, err := os.Open(tarFile)
 	if err != nil {
 		return nil, err

@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"bytes"
@@ -8,8 +8,6 @@ import (
 	"os"
 	"path"
 
-	"github.com/kramerul/shalm/pkg/chart"
-	"github.com/kramerul/shalm/pkg/chart/fakes"
 	"go.starlark.net/starlark"
 
 	. "github.com/onsi/ginkgo"
@@ -120,13 +118,13 @@ var _ = Describe("Chart", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
-			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
+			k := &FakeK8s{
+				ApplyStub: func(i func(io.Writer) error, options *K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) chart.K8s {
+			k.ForNamespaceStub = func(s string) K8s {
 				return k
 			}
 			err = c.Apply(thread, k)
@@ -146,13 +144,13 @@ var _ = Describe("Chart", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
-			k := &fakes.FakeK8s{
-				DeleteStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
+			k := &FakeK8s{
+				DeleteStub: func(i func(io.Writer) error, options *K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) chart.K8s {
+			k.ForNamespaceStub = func(s string) K8s {
 				return k
 			}
 			err = c.Delete(thread, k)
@@ -173,13 +171,13 @@ var _ = Describe("Chart", func() {
 			c, err := newChart(thread, repo, dir.Join("chart1"), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
-			k := &fakes.FakeK8s{
-				DeleteStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
+			k := &FakeK8s{
+				DeleteStub: func(i func(io.Writer) error, options *K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) chart.K8s {
+			k.ForNamespaceStub = func(s string) K8s {
 				return k
 			}
 			err = c.Delete(thread, k)
@@ -210,24 +208,24 @@ var _ = Describe("Chart", func() {
 			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
-			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
+			k := &FakeK8s{
+				ApplyStub: func(i func(io.Writer) error, options *K8sOptions) error {
 					i(&writer)
 					return nil
 				},
-				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
+				GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
 					return errors.New("NotFound")
 				},
 				IsNotExistStub: func(err error) bool {
 					return true
 				},
 			}
-			k.ForNamespaceStub = func(s string) chart.K8s {
+			k.ForNamespaceStub = func(s string) K8s {
 				return k
 			}
 			err = c.Apply(thread, k)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(writer.String()).To(ContainSubstring("kind: Secret"))
+			Expect(writer.String()).To(ContainSubstring("kind: secret"))
 			Expect(writer.String()).To(ContainSubstring("type: Opaque"))
 			Expect(writer.String()).To(ContainSubstring("  name: test"))
 			Expect(writer.String()).To(ContainSubstring("  username: "))

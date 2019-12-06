@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"fmt"

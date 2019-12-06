@@ -1,12 +1,10 @@
-package impl
+package shalm
 
 import (
 	"encoding/base64"
 	"errors"
 	"io"
 
-	"github.com/kramerul/shalm/pkg/chart"
-	"github.com/kramerul/shalm/pkg/chart/fakes"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.starlark.net/starlark"
@@ -18,8 +16,8 @@ var _ = Describe("Credential", func() {
 		It("reads username and password from k8s", func() {
 			username := "username1"
 			password := "password1"
-			k8s := fakes.FakeK8s{
-				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
+			k8s := FakeK8s{
+				GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
 					writer.Write([]byte("data:\n" +
 						"  username: " + base64.StdEncoding.EncodeToString([]byte(username)) + "\n" +
 						"  password: " + base64.StdEncoding.EncodeToString([]byte(password)) + "\n"))
@@ -38,8 +36,8 @@ var _ = Describe("Credential", func() {
 		})
 
 		It("creates new random username and password if user_credential doesn't exist", func() {
-			k8s := fakes.FakeK8s{
-				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
+			k8s := FakeK8s{
+				GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
 					return errors.New("NotFound")
 				},
 				IsNotExistStub: func(err error) bool {
@@ -56,8 +54,8 @@ var _ = Describe("Credential", func() {
 		})
 
 		It("fails on other errors", func() {
-			k8s := fakes.FakeK8s{
-				GetStub: func(kind string, name string, writer io.Writer, k8s *chart.K8sOptions) error {
+			k8s := FakeK8s{
+				GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
 					return errors.New("Other")
 				},
 				IsNotExistStub: func(err error) bool {

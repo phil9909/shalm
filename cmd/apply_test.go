@@ -7,10 +7,8 @@ import (
 	"path/filepath"
 	"runtime"
 
-	"github.com/kramerul/shalm/pkg/chart"
-	"github.com/kramerul/shalm/pkg/chart/fakes"
+	"github.com/kramerul/shalm/pkg/shalm"
 
-	"github.com/kramerul/shalm/pkg/chart/impl"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -27,17 +25,17 @@ var _ = Describe("Apply Chart", func() {
 	Context("apply chart", func() {
 		It("produces the correct output", func() {
 			writer := bytes.Buffer{}
-			k := &fakes.FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *chart.K8sOptions) error {
+			k := &shalm.FakeK8s{
+				ApplyStub: func(i func(io.Writer) error, options *shalm.K8sOptions) error {
 					i(&writer)
 					return nil
 				},
 			}
-			k.ForNamespaceStub = func(s string) chart.K8s {
+			k.ForNamespaceStub = func(s string) shalm.K8s {
 				return k
 			}
 
-			err := apply(impl.NewRepo(), path.Join(example, "cf"), "mynamespace", impl.NewK8sValue(k))
+			err := apply(shalm.NewRepo(), path.Join(example, "cf"), "mynamespace", shalm.NewK8sValue(k))
 			Expect(err).ToNot(HaveOccurred())
 			output := writer.String()
 			Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))

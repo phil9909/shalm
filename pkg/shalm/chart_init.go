@@ -1,4 +1,4 @@
-package impl
+package shalm
 
 import (
 	"fmt"
@@ -10,15 +10,25 @@ import (
 	"github.com/pkg/errors"
 
 	"github.com/blang/semver"
-	"github.com/kramerul/shalm/pkg/chart"
 	"gopkg.in/yaml.v2"
 
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
 
+type helmChart struct {
+	APIVersion  string   `json:"apiVersion,omitempty"`
+	Name        string   `json:"name,omitempty"`
+	Version     string   `json:"version,omitempty"`
+	Description string   `json:"description,omitempty"`
+	Keywords    []string `json:"keywords,omitempty"`
+	Home        string   `json:"home,omitempty"`
+	Sources     []string `json:"sources,omitempty"`
+	Icon        string   `json:"icon,omitempty"`
+}
+
 func (c *chartImpl) loadChartYaml() error {
-	var helmChart chart.HelmChart
+	var helmChart helmChart
 
 	err := c.loadYamlFile(c.path("Chart.yaml"), &helmChart)
 	if err != nil {
@@ -51,7 +61,7 @@ func (c *chartImpl) loadValuesYaml() error {
 	return nil
 }
 
-func (c *chartImpl) init(thread *starlark.Thread, repo chart.Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
+func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple, kwargs []starlark.Tuple) error {
 	c.methods["apply"] = c.applyFunction()
 	c.methods["delete"] = c.deleteFunction()
 	c.methods["__apply"] = c.applyLocalFunction()
@@ -131,7 +141,7 @@ func wrapNamespace(callable starlark.Callable, namespace string) starlark.Callab
 		if len(args) == 0 {
 			return nil, fmt.Errorf("Missing first argument k8s")
 		}
-		k, ok := args[0].(chart.K8sValue)
+		k, ok := args[0].(K8sValue)
 		if !ok {
 			return nil, fmt.Errorf("Invalid first argument to %s", callable.Name())
 		}

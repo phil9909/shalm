@@ -1,7 +1,7 @@
 package cmd
 
 import (
-	"github.com/kramerul/shalm/pkg/chart/impl"
+	"github.com/kramerul/shalm/pkg/shalm"
 	"go.starlark.net/starlark"
 
 	"github.com/spf13/cobra"
@@ -15,7 +15,7 @@ var deleteCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repo := impl.NewRepo()
+		repo := shalm.NewRepo()
 		url := args[0]
 
 		thread := &starlark.Thread{Name: "my thread"}
@@ -23,7 +23,7 @@ var deleteCmd = &cobra.Command{
 		if err != nil {
 			exit(err)
 		}
-		exit(c.Delete(thread, impl.NewK8s()))
+		exit(c.Delete(thread, shalm.NewK8s()))
 	},
 }
 
