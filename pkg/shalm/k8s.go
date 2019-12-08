@@ -6,6 +6,7 @@ import (
 	"io"
 	"os"
 	"os/exec"
+	"path"
 	"strings"
 	"time"
 
@@ -14,24 +15,37 @@ import (
 
 // NewK8s create new instance to interact with kubernetes
 func NewK8s() K8s {
-	return &k8sImpl{}
+	kubeconfig, ok := os.LookupEnv("KUBECONFIG")
+	if !ok {
+		home, err := os.UserHomeDir()
+		if err != nil {
+			panic(err)
+		}
+		kubeconfig = path.Join(home, ".kube", "config")
+	}
+	return &k8sImpl{kubeconfig: kubeconfig}
 }
 
 // k8sImpl -
 type k8sImpl struct {
-	namespace string
+	namespace  string
+	kubeconfig string
 }
 
 var (
 	_ K8s = (*k8sImpl)(nil)
 )
 
+func (k *k8sImpl) Inspect() string {
+	return "kubeconfig = " + k.kubeconfig + " namespace = " + k.namespace
+}
+
 // Apply -
 func (k *k8sImpl) Apply(output func(io.Writer) error, options *K8sOptions) error {
 	return k.run("apply", output, options)
 }
 func (k *k8sImpl) ForNamespace(namespace string) K8s {
-	result := &k8sImpl{namespace: namespace}
+	result := &k8sImpl{namespace: namespace, kubeconfig: k.kubeconfig}
 	return result
 }
 
@@ -96,7 +110,7 @@ func run(cmd *exec.Cmd) error {
 }
 
 func (k *k8sImpl) kubectl(command string, options *K8sOptions, flags ...string) *exec.Cmd {
-	flags = append([]string{command}, flags...)
+	flags = append([]string{command, "--kubeconfig", k.kubeconfig}, flags...)
 	if options.Namespaced {
 		flags = append(flags, "-n", k.namespace)
 	}

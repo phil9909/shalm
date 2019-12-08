@@ -100,6 +100,13 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 			return s, nil
 		}),
 		"struct": starlark.NewBuiltin("struct", starlarkstruct.Make),
+		"k8s": starlark.NewBuiltin("k8s", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			var kubeconfig string
+			if err := starlark.UnpackArgs("k8s", args, kwargs, "kubeconfig", kubeconfig); err != nil {
+				return nil, err
+			}
+			return &k8sValueImpl{&k8sImpl{kubeconfig: kubeconfig, namespace: c.namespace}}, nil
+		}),
 	})
 	if err != nil {
 		return err

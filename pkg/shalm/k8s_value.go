@@ -7,7 +7,6 @@ import (
 	"errors"
 	"fmt"
 	"io"
-	"os"
 	"time"
 
 	"go.starlark.net/starlark"
@@ -41,7 +40,7 @@ var (
 )
 
 // String -
-func (k *k8sValueImpl) String() string { return "KUBECONFIG = " + os.Getenv("KUBECONFIG") }
+func (k *k8sValueImpl) String() string { return k.Inspect() }
 
 // Type -
 func (k *k8sValueImpl) Type() string { return "k8s" }

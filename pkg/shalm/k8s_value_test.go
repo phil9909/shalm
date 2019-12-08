@@ -14,8 +14,12 @@ import (
 var _ = Describe("K8sValue", func() {
 
 	It("behaves like starlark value", func() {
-		k8s := &k8sValueImpl{&FakeK8s{}}
-		Expect(k8s.String()).To(ContainSubstring("KUBECONFIG = "))
+		k8s := &k8sValueImpl{&FakeK8s{
+			InspectStub: func() string {
+				return "kubeconfig = "
+			},
+		}}
+		Expect(k8s.String()).To(ContainSubstring("kubeconfig = "))
 		Expect(k8s.Type()).To(Equal("k8s"))
 		Expect(func() { k8s.Hash() }).Should(Panic())
 		Expect(k8s.Truth()).To(BeEquivalentTo(false))

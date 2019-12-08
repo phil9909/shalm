@@ -4,6 +4,7 @@ package shalm
 import (
 	"io"
 	"sync"
+
 )
 
 type FakeK8s struct {
@@ -68,6 +69,16 @@ type FakeK8s struct {
 	}
 	getReturnsOnCall map[int]struct {
 		result1 error
+	}
+	InspectStub        func() string
+	inspectMutex       sync.RWMutex
+	inspectArgsForCall []struct {
+	}
+	inspectReturns struct {
+		result1 string
+	}
+	inspectReturnsOnCall map[int]struct {
+		result1 string
 	}
 	IsNotExistStub        func(error) bool
 	isNotExistMutex       sync.RWMutex
@@ -419,6 +430,58 @@ func (fake *FakeK8s) GetReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeK8s) Inspect() string {
+	fake.inspectMutex.Lock()
+	ret, specificReturn := fake.inspectReturnsOnCall[len(fake.inspectArgsForCall)]
+	fake.inspectArgsForCall = append(fake.inspectArgsForCall, struct {
+	}{})
+	fake.recordInvocation("Inspect", []interface{}{})
+	fake.inspectMutex.Unlock()
+	if fake.InspectStub != nil {
+		return fake.InspectStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.inspectReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeK8s) InspectCallCount() int {
+	fake.inspectMutex.RLock()
+	defer fake.inspectMutex.RUnlock()
+	return len(fake.inspectArgsForCall)
+}
+
+func (fake *FakeK8s) InspectCalls(stub func() string) {
+	fake.inspectMutex.Lock()
+	defer fake.inspectMutex.Unlock()
+	fake.InspectStub = stub
+}
+
+func (fake *FakeK8s) InspectReturns(result1 string) {
+	fake.inspectMutex.Lock()
+	defer fake.inspectMutex.Unlock()
+	fake.InspectStub = nil
+	fake.inspectReturns = struct {
+		result1 string
+	}{result1}
+}
+
+func (fake *FakeK8s) InspectReturnsOnCall(i int, result1 string) {
+	fake.inspectMutex.Lock()
+	defer fake.inspectMutex.Unlock()
+	fake.InspectStub = nil
+	if fake.inspectReturnsOnCall == nil {
+		fake.inspectReturnsOnCall = make(map[int]struct {
+			result1 string
+		})
+	}
+	fake.inspectReturnsOnCall[i] = struct {
+		result1 string
+	}{result1}
+}
+
 func (fake *FakeK8s) IsNotExist(arg1 error) bool {
 	fake.isNotExistMutex.Lock()
 	ret, specificReturn := fake.isNotExistReturnsOnCall[len(fake.isNotExistArgsForCall)]
@@ -619,6 +682,8 @@ func (fake *FakeK8s) Invocations() map[string][][]interface{} {
 	defer fake.forNamespaceMutex.RUnlock()
 	fake.getMutex.RLock()
 	defer fake.getMutex.RUnlock()
+	fake.inspectMutex.RLock()
+	defer fake.inspectMutex.RUnlock()
 	fake.isNotExistMutex.RLock()
 	defer fake.isNotExistMutex.RUnlock()
 	fake.rolloutStatusMutex.RLock()
