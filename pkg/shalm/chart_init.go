@@ -74,7 +74,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 	globals, err := starlark.ExecFile(thread, file, nil, starlark.StringDict{
 		"chart": starlark.NewBuiltin("chart", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			if len(args) == 0 {
-				return nil, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
+				return starlark.None, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
 			}
 			url := args[0].(starlark.String).GoString()
 			if !filepath.IsAbs(url) {
@@ -94,7 +94,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 			if err := starlark.UnpackArgs("user_credential", args, kwargs, "name", &s.name,
 				"username_key?", &s.usernameKey, "password_key?", &s.passwordKey,
 				"username?", &s.username, "password?", &s.password); err != nil {
-				return nil, err
+				return starlark.None, err
 			}
 			c.userCredentials = append(c.userCredentials, s)
 			return s, nil
@@ -103,7 +103,11 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 		"k8s": starlark.NewBuiltin("k8s", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var kubeconfig string
 			if err := starlark.UnpackArgs("k8s", args, kwargs, "kubeconfig", kubeconfig); err != nil {
-				return nil, err
+				return starlark.None, err
+			}
+			kubeconfig, err := kubeConfigFromContent(kubeconfig)
+			if err != nil {
+				return starlark.None, err
 			}
 			return &k8sValueImpl{&k8sImpl{kubeconfig: kubeconfig, namespace: c.namespace}}, nil
 		}),
