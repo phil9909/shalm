@@ -7,7 +7,8 @@ def apply(self,garden_k8s):
   self.__apply(garden_k8s)
   for shoot in garden_k8s.watch("shoot",self.shootname):
     lastOp = shoot.status.lastOperation
-    if lastOp.type == "Create" and lastOp.progress == 100:
+    print(lastOp.type,lastOp.progress)
+    if ( lastOp.type == "Create" or lastOp.type == "Reconcile" ) and lastOp.progress == 100:
       break
   kubeconfig = garden_k8s.get("secret",self.shootname + ".kubeconfig").data.kubeconfig
   shoot_k8s = k8s(kubeconfig)
