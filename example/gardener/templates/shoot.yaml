@@ -1,0 +1,72 @@
+apiVersion: garden.sapcloud.io/v1beta1
+kind: Shoot
+metadata:
+  annotations:
+    garden.sapcloud.io/purpose: evaluation
+  name: {{ .Values.shootname }}
+  namespace: {{ .Release.Namespace }}
+spec:
+  addons:
+    kubernetes-dashboard:
+      authenticationMode: basic
+      enabled: true
+    nginx-ingress:
+      enabled: true
+  cloud:
+    gcp:
+      machineImage:
+        name: coreos
+        version: 2135.6.0
+      networks:
+        nodes: 10.250.0.0/19
+        pods: 100.96.0.0/11
+        services: 100.64.0.0/13
+        workers:
+          - 10.250.0.0/19
+      workers:
+        - autoScalerMax: 4
+          autoScalerMin: 2
+          machineImage:
+            name: coreos
+            version: 2135.6.0
+          machineType: n1-standard-2
+          maxSurge: 1
+          maxUnavailable: 0
+          name: worker-qc69x
+          volumeSize: 50Gi
+          volumeType: pd-standard
+      zones:
+        - europe-west1-d
+    profile: gcp
+    region: europe-west1
+    secretBindingRef:
+      name: gardener
+    seed: gcp-eu1
+  dns:
+    domain: {{ .Values.domain }}
+  hibernation:
+    enabled: true
+    schedules:
+      - location: Europe/Berlin
+        start: 00 19 * * 1,2,3,4,5
+  kubernetes:
+    allowPrivilegedContainers: true
+    kubeAPIServer:
+      enableBasicAuthentication: true
+    kubeControllerManager:
+      nodeCIDRMaskSize: 24
+    kubeProxy:
+      mode: IPTables
+    version: 1.16.3
+  maintenance:
+    autoUpdate:
+      kubernetesVersion: true
+      machineImageVersion: true
+    timeWindow:
+      begin: 210000+0000
+      end: 220000+0000
+  networking:
+    nodes: 10.250.0.0/19
+    pods: 100.96.0.0/11
+    services: 100.64.0.0/13
+    type: calico

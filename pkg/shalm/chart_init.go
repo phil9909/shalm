@@ -77,7 +77,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 				return starlark.None, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
 			}
 			url := args[0].(starlark.String).GoString()
-			if !filepath.IsAbs(url) {
+			if !(filepath.IsAbs(url) || strings.HasPrefix(url, "http")) {
 				url = path.Join(c.dir, url)
 			}
 			namespace := c.namespace
@@ -102,7 +102,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 		"struct": starlark.NewBuiltin("struct", starlarkstruct.Make),
 		"k8s": starlark.NewBuiltin("k8s", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var kubeconfig string
-			if err := starlark.UnpackArgs("k8s", args, kwargs, "kubeconfig", kubeconfig); err != nil {
+			if err := starlark.UnpackArgs("k8s", args, kwargs, "kubeconfig", &kubeconfig); err != nil {
 				return starlark.None, err
 			}
 			kubeconfig, err := kubeConfigFromContent(kubeconfig)
