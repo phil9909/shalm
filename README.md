@@ -121,17 +121,20 @@ def apply(self,k8s):
 
 ## Comparison
 
-|                                | shalm | helm  | ytt | kustomize |
-|--------------------------------|-------|-------|-----|-----------|
-| Scripting                      |   +   | (3.1) |  +  |    -      |
-| API definition                 |   +   |   -   |  -  |    -      |
-| Reuse of existing charts       |   +   |   +   |  -  |    ?      |
-| Only simple logic in templates |   +   |   +   |  -  |    +      |
-| Interaction with k8s           |   +   |   -   |  -  |    -      |
-| Repository                     |   +   |   +   |  -  |    -      |
-| Mature technology              |   -   |   +   |  ?  |    +      |
-| Manage user credentials        |   +   |   -   |  -  |    -      |
+|                                | shalm | helm  | ytt/kapp | kustomize |
+|--------------------------------|-------|-------|----------|-----------|
+| Scripting                      |   +   | (3.1) |  +       |    -      |
+| API definition                 |   +   |   -   |  -       |    -      |
+| Reuse of existing charts       |   +   |   +   |  -       |    ?      |
+| Only simple logic in templates |   +   |   +   |  -       |    +      |
+| Interaction with k8s           |   +   |   -   |  -       |    -      |
+| Repository                     |   +   |   +   |  -       |    -      |
+| Mature technology              |   -   |   +   |  +       |    +      |
+| Manage user credentials        |   +   |   -   |  -       |    -      |
+| Remove outdated objects        | +<sup>(1)</sup> |   +   |  +       |    -      |
+| Migrate existing objects       | +<sup>(1)</sup> |   -   |  -       |    -      |
 
+<sup>(1)</sup>: Must be implemented inside `apply` method
 
 ## Reference
 
@@ -190,6 +193,14 @@ Deletes the chart from k8s without recursion. This should only be used within `d
 | glob      |  Pattern used to find the templates. Default is "*.yaml"  |
 
 ### K8s
+
+#### `k8s(kube_config_content)`
+
+Create a new k8s object 
+
+| Parameter | Description |
+|-----------|-------------|
+| kube_config_content  |  Content of kube config   |
 
 #### `k8s.delete(kind,name,namespaced=false,timeout=0)`
 

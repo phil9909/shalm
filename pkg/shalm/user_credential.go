@@ -13,11 +13,6 @@ import (
 	"go.starlark.net/starlark"
 )
 
-type secretData struct {
-	UsernameBase64 string `json:"username"`
-	PasswordBase64 string `json:"password"`
-}
-
 type secret struct {
 	APIVersion string            `json:"apiVersion"`
 	Kind       string            `json:"kind"`
