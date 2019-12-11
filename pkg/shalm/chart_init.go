@@ -12,6 +12,7 @@ import (
 	"github.com/blang/semver"
 	"gopkg.in/yaml.v2"
 
+	"github.com/qri-io/starlib/encoding/base64"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -71,7 +72,8 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 	if _, err := os.Stat(file); os.IsNotExist(err) {
 		return nil
 	}
-	globals, err := starlark.ExecFile(thread, file, nil, starlark.StringDict{
+
+	internal := starlark.StringDict{
 		"chart": starlark.NewBuiltin("chart", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			if len(args) == 0 {
 				return starlark.None, fmt.Errorf("%s: got %d arguments, want at most %d", "chart", 0, 1)
@@ -111,7 +113,12 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 			}
 			return &k8sValueImpl{&k8sImpl{kubeconfig: kubeconfig, namespace: c.namespace}}, nil
 		}),
-	})
+	}
+	module, _ := base64.LoadModule()
+	for k, v := range module {
+		internal[k] = v
+	}
+	globals, err := starlark.ExecFile(thread, file, nil, internal)
 	if err != nil {
 		return err
 	}

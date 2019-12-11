@@ -225,7 +225,8 @@ var _ = Describe("Chart", func() {
 			}
 			err = c.Apply(thread, k)
 			Expect(err).NotTo(HaveOccurred())
-			Expect(writer.String()).To(ContainSubstring("kind: secret"))
+			Expect(writer.String()).To(ContainSubstring("apiVersion: v1"))
+			Expect(writer.String()).To(ContainSubstring("kind: Secret"))
 			Expect(writer.String()).To(ContainSubstring("type: Opaque"))
 			Expect(writer.String()).To(ContainSubstring("  name: test"))
 			Expect(writer.String()).To(ContainSubstring("  username: "))

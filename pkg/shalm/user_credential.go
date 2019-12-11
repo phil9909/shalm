@@ -14,11 +14,11 @@ import (
 )
 
 type secret struct {
-	APIVersion string            `json:"apiVersion"`
-	Kind       string            `json:"kind"`
-	Type       string            `json:"type"`
-	MetaData   metaData          `json:"metadata"`
-	Data       map[string]string `json:"data,omitempty"`
+	APIVersion string            `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string            `json:"kind" yaml:"kind"`
+	Type       string            `json:"type" yaml:"type"`
+	MetaData   metaData          `json:"metadata" yaml:"metadata"`
+	Data       map[string]string `json:"data,omitempty" yaml:"data,omitempty"`
 }
 
 type userCredential struct {
@@ -70,7 +70,7 @@ func createRandomString(length int) string {
 func (c *userCredential) GetOrCreate(k8s K8s) error {
 	c.setDefaultKeys()
 	var buffer bytes.Buffer
-	err := k8s.Get("user_credential", c.name, &buffer, &K8sOptions{Namespaced: true})
+	err := k8s.Get("secret", c.name, &buffer, &K8sOptions{Namespaced: true})
 	if err != nil {
 		if !k8s.IsNotExist(err) {
 			return err
@@ -109,18 +109,22 @@ func (c *userCredential) GetOrCreate(k8s K8s) error {
 
 func (c *userCredential) secret(namespace string) *secret {
 	c.setDefaultKeys()
+	data := map[string]string{}
+	if c.username != "" {
+		data[c.usernameKey] = base64.StdEncoding.EncodeToString([]byte(c.username))
+	}
+	if c.password != "" {
+		data[c.passwordKey] = base64.StdEncoding.EncodeToString([]byte(c.password))
+	}
 	return &secret{
 		APIVersion: "v1",
-		Kind:       "secret",
+		Kind:       "Secret",
 		Type:       "Opaque",
 		MetaData: metaData{
 			Name:      c.name,
 			Namespace: namespace,
 		},
-		Data: map[string]string{
-			c.usernameKey: base64.StdEncoding.EncodeToString([]byte(c.username)),
-			c.passwordKey: base64.StdEncoding.EncodeToString([]byte(c.password)),
-		},
+		Data: data,
 	}
 }
 
