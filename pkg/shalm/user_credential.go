@@ -13,12 +13,64 @@ import (
 	"go.starlark.net/starlark"
 )
 
+type dataMap map[string][]byte
+
+func (d *dataMap) UnmarshalJSON(b []byte) (err error) {
+	var m map[string]string
+	if err = json.Unmarshal(b, &m); err != nil {
+		return
+	}
+	result := dataMap{}
+	for k, v := range m {
+		result[k], err = base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return
+		}
+	}
+
+	*d = result
+	return
+}
+
+func (d dataMap) MarshalJSON() ([]byte, error) {
+	m := make(map[string]string)
+	for k, v := range d {
+		m[k] = base64.StdEncoding.EncodeToString(v)
+	}
+	return json.Marshal(m)
+}
+
+func (d *dataMap) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
+	panic("test")
+	var m map[string]string
+	if err = unmarshal(&m); err != nil {
+		return
+	}
+	result := dataMap{}
+	for k, v := range m {
+		result[k], err = base64.StdEncoding.DecodeString(v)
+		if err != nil {
+			return
+		}
+	}
+	*d = result
+	return
+}
+
+func (d dataMap) MarshalYAML() (interface{}, error) {
+	m := make(map[string]string)
+	for k, v := range d {
+		m[k] = base64.StdEncoding.EncodeToString(v)
+	}
+	return m, nil
+}
+
 type secret struct {
-	APIVersion string            `json:"apiVersion" yaml:"apiVersion"`
-	Kind       string            `json:"kind" yaml:"kind"`
-	Type       string            `json:"type" yaml:"type"`
-	MetaData   metaData          `json:"metadata" yaml:"metadata"`
-	Data       map[string]string `json:"data,omitempty" yaml:"data,omitempty"`
+	APIVersion string   `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string   `json:"kind" yaml:"kind"`
+	Type       string   `json:"type" yaml:"type"`
+	MetaData   metaData `json:"metadata" yaml:"metadata"`
+	Data       dataMap  `json:"data,omitempty" yaml:"data,omitempty"`
 }
 
 type userCredential struct {
@@ -89,18 +141,10 @@ func (c *userCredential) GetOrCreate(k8s K8s) error {
 			return err
 		}
 		if c.username == "" {
-			content, err := base64.StdEncoding.DecodeString(secret.Data[c.usernameKey])
-			if err != nil {
-				return err
-			}
-			c.username = string(content)
+			c.username = string(secret.Data[c.usernameKey])
 		}
 		if c.password == "" {
-			content, err := base64.StdEncoding.DecodeString(secret.Data[c.passwordKey])
-			if err != nil {
-				return err
-			}
-			c.password = string(content)
+			c.password = string(secret.Data[c.passwordKey])
 		}
 
 	}
@@ -109,12 +153,12 @@ func (c *userCredential) GetOrCreate(k8s K8s) error {
 
 func (c *userCredential) secret(namespace string) *secret {
 	c.setDefaultKeys()
-	data := map[string]string{}
+	data := dataMap{}
 	if c.username != "" {
-		data[c.usernameKey] = base64.StdEncoding.EncodeToString([]byte(c.username))
+		data[c.usernameKey] = []byte(c.username)
 	}
 	if c.password != "" {
-		data[c.passwordKey] = base64.StdEncoding.EncodeToString([]byte(c.password))
+		data[c.passwordKey] = []byte(c.password)
 	}
 	return &secret{
 		APIVersion: "v1",

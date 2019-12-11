@@ -33,7 +33,12 @@ var _ = Describe("K8sValue", func() {
 	})
 
 	It("methods behave well", func() {
-		fake := &FakeK8s{}
+		fake := &FakeK8s{
+			GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
+				writer.Write([]byte("{}"))
+				return nil
+			},
+		}
 		k8s := &k8sValueImpl{fake}
 		thread := &starlark.Thread{}
 		for _, method := range []string{"rollout_status", "delete", "get"} {

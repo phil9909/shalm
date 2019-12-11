@@ -104,7 +104,18 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 				return starlark.None, err
 			}
 			var obj map[string]interface{}
-			json.Unmarshal(buffer.Bytes(), &obj)
+			err = json.Unmarshal(buffer.Bytes(), &obj)
+			if err != nil {
+				return starlark.None, err
+			}
+			if obj["kind"] == "Secret" {
+				var s secret
+				err = json.Unmarshal(buffer.Bytes(), &s)
+				if err != nil {
+					return starlark.None, err
+				}
+				return wrapDict(toStarlark(map[string]interface{}{"data": s.Data})), nil
+			}
 			return wrapDict(toStarlark(obj)), nil
 		}), nil
 	}

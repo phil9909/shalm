@@ -230,6 +230,7 @@ var _ = Describe("Chart", func() {
 			Expect(writer.String()).To(ContainSubstring("type: Opaque"))
 			Expect(writer.String()).To(ContainSubstring("  name: test"))
 			Expect(writer.String()).To(ContainSubstring("  username: "))
+			Expect(writer.String()).To(ContainSubstring("=="))
 			Expect(writer.String()).To(ContainSubstring("  password: "))
 		})
 

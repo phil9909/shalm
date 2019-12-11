@@ -23,6 +23,9 @@ func toStarlark(vi interface{}) starlark.Value {
 	case reflect.Float64:
 		return starlark.Float(v.Float())
 	case reflect.Slice:
+		if b, ok := vi.([]byte); ok {
+			return starlark.String(string(b))
+		}
 		a := make([]starlark.Value, 0)
 		for i := 0; i < v.Len(); i++ {
 			a = append(a, toStarlark(v.Index(i).Interface()))

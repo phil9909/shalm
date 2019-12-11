@@ -10,6 +10,7 @@ var _ = Describe("Converter", func() {
 	It("converts from go to starlark and back", func() {
 		data := make(map[string]interface{})
 		data["String"] = "test"
+		data["ByteArray"] = []byte("test")
 		data["Array"] = []string{"test1", "test2"}
 		data["Bool"] = true
 		data["Float"] = 0.1
@@ -17,6 +18,7 @@ var _ = Describe("Converter", func() {
 		starlarkValue := toStarlark(data)
 		goValue := toGo(starlarkValue).(map[string]interface{})
 		Expect(goValue["String"]).To(Equal("test"))
+		Expect(goValue["ByteArray"]).To(Equal("test"))
 		Expect(goValue["Array"]).To(ConsistOf("test1", "test2"))
 		Expect(goValue["Bool"]).To(BeEquivalentTo(true))
 		Expect(goValue["Float"]).To(BeEquivalentTo(0.1))
