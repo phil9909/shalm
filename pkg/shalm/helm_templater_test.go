@@ -94,7 +94,7 @@ var _ = Describe("helmTemplater", func() {
 			defer dir.Remove()
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/test1.yaml", []byte("test: test1"), 0644)
-			dir.WriteFile("templates/test2.yaml", []byte("test: test2"), 0644)
+			dir.WriteFile("templates/test2.yml", []byte("test: test2"), 0644)
 			h, err = newHelmTemplater(dir.Root(), "namespace")
 			Expect(err).ToNot(HaveOccurred())
 			writer := &bytes.Buffer{}

@@ -161,7 +161,7 @@ func newHelmTemplater(dir string, namespace string) (*helmTemplater, error) {
 // Template -
 func (h *helmTemplater) Template(value interface{}, writer io.Writer, opts *helmOptions) error {
 	var filenames []string
-	glob := "*.yaml"
+	glob := "*.y*ml"
 	if opts.glob != "" {
 		glob = opts.glob
 	}
