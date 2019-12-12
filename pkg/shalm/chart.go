@@ -15,6 +15,7 @@ import (
 	"strings"
 
 	"github.com/blang/semver"
+	"github.com/kramerul/shalm/pkg/shalm/renderer"
 	"go.starlark.net/starlark"
 )
 
@@ -199,10 +200,6 @@ func (c *chartImpl) SetField(name string, val starlark.Value) error {
 	return nil
 }
 
-func notImplemented(_ interface{}) string {
-	panic("not implemented")
-}
-
 func (c *chartImpl) applyFunction() starlark.Callable {
 	return starlark.NewBuiltin("apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var k K8sValue
@@ -230,23 +227,23 @@ func (c *chartImpl) apply(thread *starlark.Thread, k K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.applyLocal(thread, k, &K8sOptions{}, &helmOptions{})
+	return c.applyLocal(thread, k, &K8sOptions{}, &renderer.Options{})
 }
 
 func (c *chartImpl) applyLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__apply", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var k K8sValue
 		parser := &kwargsParser{kwargs: kwargs}
-		helmOptions := unpackHelmOptions(parser)
+		rendererOptionss := unpackRendererOptions(parser)
 		k8sOptions := unpackK8sOptions(parser)
 		if err := starlark.UnpackArgs("__apply", args, parser.Parse(), "k8s", &k); err != nil {
 			return nil, err
 		}
-		return starlark.None, c.applyLocal(thread, k, k8sOptions, helmOptions)
+		return starlark.None, c.applyLocal(thread, k, k8sOptions, rendererOptionss)
 	})
 }
 
-func (c *chartImpl) applyLocal(thread *starlark.Thread, k K8sValue, k8sOptions *K8sOptions, helmOption *helmOptions) error {
+func (c *chartImpl) applyLocal(thread *starlark.Thread, k K8sValue, k8sOptions *K8sOptions, rendererOptions *renderer.Options) error {
 	for _, credential := range c.userCredentials {
 		err := credential.GetOrCreate(k)
 		if err != nil {
@@ -255,7 +252,7 @@ func (c *chartImpl) applyLocal(thread *starlark.Thread, k K8sValue, k8sOptions *
 	}
 	k8sOptions.Namespaced = false
 	return k.Apply(func(writer io.Writer) error {
-		return c.template(thread, writer, helmOption)
+		return c.template(thread, writer, rendererOptions)
 	}, k8sOptions)
 }
 
@@ -286,27 +283,27 @@ func (c *chartImpl) delete(thread *starlark.Thread, k K8sValue) error {
 	if err != nil {
 		return err
 	}
-	return c.deleteLocal(thread, k, &K8sOptions{}, &helmOptions{})
+	return c.deleteLocal(thread, k, &K8sOptions{}, &renderer.Options{})
 }
 
 func (c *chartImpl) deleteLocalFunction() starlark.Callable {
 	return starlark.NewBuiltin("__delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 		var k K8sValue
 		parser := &kwargsParser{kwargs: kwargs}
-		helmOptions := unpackHelmOptions(parser)
+		rendererOptionss := unpackRendererOptions(parser)
 		k8sOptions := unpackK8sOptions(parser)
 		if err := starlark.UnpackArgs("__delete", args, parser.Parse(), "k8s", &k); err != nil {
 			return nil, err
 		}
-		return starlark.None, c.deleteLocal(thread, k, k8sOptions, helmOptions)
+		return starlark.None, c.deleteLocal(thread, k, k8sOptions, rendererOptionss)
 	})
 }
 
-func (c *chartImpl) deleteLocal(thread *starlark.Thread, k K8sValue, k8sOptions *K8sOptions, helmOption *helmOptions) error {
-	helmOption.uninstallOrder = true
+func (c *chartImpl) deleteLocal(thread *starlark.Thread, k K8sValue, k8sOptions *K8sOptions, rendererOptions *renderer.Options) error {
+	rendererOptions.UninstallOrder = true
 	k8sOptions.Namespaced = false
 	return k.Delete(func(writer io.Writer) error {
-		return c.template(thread, writer, helmOption)
+		return c.template(thread, writer, rendererOptions)
 	}, k8sOptions)
 }
 
@@ -323,10 +320,10 @@ func (c *chartImpl) eachSubChart(block func(subChart *chartImpl) error) error {
 	return nil
 }
 
-func unpackHelmOptions(parser *kwargsParser) *helmOptions {
-	result := &helmOptions{}
+func unpackRendererOptions(parser *kwargsParser) *renderer.Options {
+	result := &renderer.Options{}
 	parser.Arg("glob", func(value starlark.Value) {
-		result.glob = value.(starlark.String).GoString()
+		result.Glob = value.(starlark.String).GoString()
 	})
 	return result
 }

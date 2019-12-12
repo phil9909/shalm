@@ -15,6 +15,7 @@ This project brings the starlark scripting language to helm charts.
 * Interact with kubernetes during installation
 * Manage user credentials
 * Act as glue code between helm charts
+* Rendering of [ytt templates](https://get-ytt.io/)
 
 ## Installation
 
@@ -46,6 +47,20 @@ Just follow the rules of helm to write charts. Additionally, you can put a `Char
 ├── values.yaml
 ├── Chart.star
 └── templates/
+└── ytt/
+```
+
+### Using ytt yaml templates
+
+You can use ytt yaml templates to render kubernetes artifacts. You simpy put them in the `ytt` folder inside a chart.
+There is currently no support for `data`, `star` or `text` files. The only value supplied to the templates is `self`, 
+which is the current chart. You can access all values and methods within your chart.
+
+```yaml
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: #@ self.namespace
 ```
 
 ## Examples

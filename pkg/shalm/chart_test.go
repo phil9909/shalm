@@ -4,46 +4,13 @@ import (
 	"bytes"
 	"errors"
 	"io"
-	"io/ioutil"
-	"os"
-	"path"
 
 	"go.starlark.net/starlark"
 
+	. "github.com/kramerul/shalm/pkg/shalm/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
-
-type testDir string
-
-func newTestDir() testDir {
-	dir, err := ioutil.TempDir("", "shalm")
-	if err != nil {
-		panic(err)
-	}
-	return testDir(dir)
-}
-
-func (t testDir) Remove() error {
-	return os.RemoveAll(string(t))
-}
-
-func (t testDir) Join(parts ...string) string {
-	parts = append([]string{t.Root()}, parts...)
-	return path.Join(parts...)
-}
-
-func (t testDir) Root() string {
-	return string(t)
-}
-
-func (t testDir) MkdirAll(path string, mode os.FileMode) error {
-	return os.MkdirAll(t.Join(path), mode)
-}
-
-func (t testDir) WriteFile(path string, content []byte, mode os.FileMode) error {
-	return ioutil.WriteFile(t.Join(path), content, mode)
-}
 
 var _ = Describe("Chart", func() {
 
@@ -51,7 +18,7 @@ var _ = Describe("Chart", func() {
 
 		It("reads Chart.yaml", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
@@ -62,7 +29,7 @@ var _ = Describe("Chart", func() {
 
 		It("reads values.yaml", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
@@ -78,7 +45,7 @@ var _ = Describe("Chart", func() {
 
 		It("reads Chart.star", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("timeout: \"30s\"\n"), 0644)
@@ -92,7 +59,7 @@ var _ = Describe("Chart", func() {
 
 		It("templates a c ", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.MkdirAll("templates", 0755)
@@ -108,7 +75,7 @@ var _ = Describe("Chart", func() {
 
 		It("applies a c ", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.MkdirAll("templates", 0755)
@@ -134,7 +101,7 @@ var _ = Describe("Chart", func() {
 
 		It("deletes a c ", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.MkdirAll("templates", 0755)
@@ -160,7 +127,7 @@ var _ = Describe("Chart", func() {
 
 		It("applies subcharts", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.MkdirAll("chart1/templates", 0755)
@@ -188,7 +155,7 @@ var _ = Describe("Chart", func() {
 
 		It("behaves like starlark value", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
@@ -201,7 +168,7 @@ var _ = Describe("Chart", func() {
 
 		It("applies a credentials ", func() {
 			thread := &starlark.Thread{Name: "main"}
-			dir := newTestDir()
+			dir := NewTestDir()
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.star", []byte("def init(self):\n  user_credential(\"test\")\n"), 0644)

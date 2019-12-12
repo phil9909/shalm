@@ -15,6 +15,8 @@ require (
 	github.com/golangci/gosec v0.0.0-20180901114220-8afd9cbb6cfb // indirect
 	github.com/golangci/lint-1 v0.0.0-20181222135242-d2cdd8c08219 // indirect
 	github.com/gorilla/mux v1.7.3 // indirect
+	github.com/k14s/ytt v0.22.0
+	github.com/k14s/ytt/pkg/yamlmeta/internal/yaml.v2 v0.0.0-20191211135110-6f8b8fe40a62 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2
 	github.com/onsi/ginkgo v1.10.2

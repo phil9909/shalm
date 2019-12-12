@@ -2,7 +2,9 @@ package shalm
 
 import (
 	"bytes"
+	"github.com/kramerul/shalm/pkg/shalm/renderer"
 	"io"
+	"path"
 
 	"go.starlark.net/starlark"
 	"gopkg.in/yaml.v2"
@@ -38,7 +40,7 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 			return nil, err
 		}
 		var writer bytes.Buffer
-		err := c.templateRecursive(thread, &writer, &helmOptions{})
+		err := c.templateRecursive(thread, &writer, &renderer.Options{})
 		if err != nil {
 			return starlark.None, err
 		}
@@ -46,7 +48,7 @@ func (c *chartImpl) templateFunction() starlark.Callable {
 	})
 }
 
-func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer, options *helmOptions) error {
+func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer, options *renderer.Options) error {
 	err := c.eachSubChart(func(subChart *chartImpl) error {
 		return subChart.templateRecursive(thread, writer, options)
 	})
@@ -56,11 +58,7 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer,
 	return c.template(thread, writer, options)
 }
 
-func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *helmOptions) error {
-	h, err := newHelmTemplater(c.path(), c.namespace)
-	if err != nil {
-		return err
-	}
+func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *renderer.Options) error {
 	values := toGo(c).(map[string]interface{})
 	methods := make(map[string]interface{})
 	for k, f := range c.methods {
@@ -70,12 +68,12 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 			return toGo(value), err
 		}
 	}
-	err = h.Template(struct {
+	helmFileRenderer, err := renderer.HelmFileRenderer(c.path(), struct {
 		Values  interface{}
 		Methods map[string]interface{}
 		Chart   chart
 		Release release
-		Files   files
+		Files   renderer.Files
 	}{
 		Values:  values,
 		Methods: methods,
@@ -92,8 +90,22 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 			IsInstall: false,
 			IsUpgrade: true,
 		},
-		Files: files{dir: c.dir},
-	}, writer, options)
+		Files: renderer.Files{Dir: c.dir},
+	})
+	if err != nil {
+		return err
+	}
+
+	err = renderer.DirRender(c.namespace, writer, options,
+		renderer.DirSpec{
+			Dir:          path.Join(c.dir, "templates"),
+			FileRenderer: helmFileRenderer,
+		},
+		renderer.DirSpec{
+			Dir:          path.Join(c.dir, "ytt"),
+			FileRenderer: renderer.YttFileRenderer(c),
+		})
+
 	if err != nil {
 		return err
 	}

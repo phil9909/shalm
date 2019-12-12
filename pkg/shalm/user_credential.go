@@ -10,6 +10,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/kramerul/shalm/pkg/shalm/renderer"
 	"go.starlark.net/starlark"
 )
 
@@ -66,11 +67,11 @@ func (d dataMap) MarshalYAML() (interface{}, error) {
 }
 
 type secret struct {
-	APIVersion string   `json:"apiVersion" yaml:"apiVersion"`
-	Kind       string   `json:"kind" yaml:"kind"`
-	Type       string   `json:"type" yaml:"type"`
-	MetaData   metaData `json:"metadata" yaml:"metadata"`
-	Data       dataMap  `json:"data,omitempty" yaml:"data,omitempty"`
+	APIVersion string            `json:"apiVersion" yaml:"apiVersion"`
+	Kind       string            `json:"kind" yaml:"kind"`
+	Type       string            `json:"type" yaml:"type"`
+	MetaData   renderer.MetaData `json:"metadata" yaml:"metadata"`
+	Data       dataMap           `json:"data,omitempty" yaml:"data,omitempty"`
 }
 
 type userCredential struct {
@@ -164,7 +165,7 @@ func (c *userCredential) secret(namespace string) *secret {
 		APIVersion: "v1",
 		Kind:       "Secret",
 		Type:       "Opaque",
-		MetaData: metaData{
+		MetaData: renderer.MetaData{
 			Name:      c.name,
 			Namespace: namespace,
 		},
