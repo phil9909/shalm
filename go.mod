@@ -21,7 +21,6 @@ require (
 	github.com/onsi/gomega v1.7.1
 	github.com/opencontainers/image-spec v1.0.1
 	github.com/pkg/errors v0.8.1
-	github.com/qri-io/starlib v0.4.1
 	github.com/spf13/cobra v0.0.5
 	github.com/spf13/pflag v1.0.5
 	github.com/stevvooe/resumable v0.0.0-20180830230917-22b14a53ba50 // indirect
@@ -33,17 +32,3 @@ require (
 	rsc.io/letsencrypt v0.0.3 // indirect
 
 )
-
-replace github.com/go-critic/go-critic => github.com/go-critic/go-critic v0.3.4
-
-replace github.com/golangci/errcheck => github.com/golangci/errcheck v0.0.0-20181223084120-ef45e06d44b6
-
-replace github.com/golangci/go-tools => github.com/golangci/go-tools v0.0.0-20190124090046-35a9f45a5db0
-
-replace github.com/golangci/gofmt => github.com/golangci/gofmt v0.0.0-20190930125516-244bba706f1a
-
-replace github.com/golangci/gosec => github.com/golangci/gosec v0.0.0-20180901114220-8afd9cbb6cfb
-
-replace github.com/golangci/lint-1 => github.com/golangci/lint-1 v0.0.0-20181222135242-d2cdd8c08219
-
-replace mvdan.cc/unparam => mvdan.cc/unparam v0.0.0-20191111180625-960b1ec0f2c2

@@ -12,7 +12,6 @@ import (
 	"github.com/blang/semver"
 	"gopkg.in/yaml.v2"
 
-	"github.com/qri-io/starlib/encoding/base64"
 	"go.starlark.net/starlark"
 	"go.starlark.net/starlarkstruct"
 )
@@ -113,10 +112,6 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 			}
 			return &k8sValueImpl{&k8sImpl{kubeconfig: kubeconfig, namespace: c.namespace}}, nil
 		}),
-	}
-	module, _ := base64.LoadModule()
-	for k, v := range module {
-		internal[k] = v
 	}
 	globals, err := starlark.ExecFile(thread, file, nil, internal)
 	if err != nil {
