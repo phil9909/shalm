@@ -22,6 +22,57 @@ var _ = Describe("DirRender", func() {
 		_, err = io.Copy(writer, f)
 		return err
 	}
+	It("doesn't set default namespace non namepspaced objects", func() {
+		for _, kind := range []string{"Namespace", "ResourceQuota", "CustomResourceDefinition", "ClusterRole",
+			"ClusterRoleList", "ClusterRoleBinding", "ClusterRoleBindingList", "APIService"} {
+			obj := object{Kind: kind}
+			obj.setDefaultNamespace("test")
+			Expect(obj.MetaData.Namespace).To(Equal(""))
+		}
+	})
+
+	It("Sorts in correct order", func() {
+		ordinal := 0
+		for _, kind := range []string{"Namespace",
+			"NetworkPolicy",
+			"ResourceQuota",
+			"LimitRange",
+			"PodSecurityPolicy",
+			"PodDisruptionBudget",
+			"Secret",
+			"ConfigMap",
+			"StorageClass",
+			"PersistentVolume",
+			"PersistentVolumeClaim",
+			"ServiceAccount",
+			"CustomResourceDefinition",
+			"ClusterRole",
+			"ClusterRoleList",
+			"ClusterRoleBinding",
+			"ClusterRoleBindingList",
+			"Role",
+			"RoleList",
+			"RoleBinding",
+			"RoleBindingList",
+			"Service",
+			"DaemonSet",
+			"Pod",
+			"ReplicationController",
+			"ReplicaSet",
+			"Deployment",
+			"HorizontalPodAutoscaler",
+			"StatefulSet",
+			"Job",
+			"CronJob",
+			"Ingress",
+			"APIService"} {
+			obj := object{Kind: kind}
+			ord := obj.kindOrdinal()
+			Expect(ord).To(BeNumerically(">", ordinal))
+			ordinal = ord
+		}
+	})
+
 	Context("renders chart", func() {
 		It("renders multipe files", func() {
 			var err error

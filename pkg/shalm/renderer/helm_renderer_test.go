@@ -30,7 +30,7 @@ var _ = Describe("helmRenderer", func() {
 			Expect(writer.String()).To(Equal("test: test"))
 		})
 
-		It("toYaml works corret", func() {
+		It("toYaml works correct", func() {
 			var err error
 			dir := NewTestDir()
 			defer dir.Remove()
@@ -47,7 +47,7 @@ var _ = Describe("helmRenderer", func() {
 			Expect(writer.String()).To(Equal("test:\n  key: value"))
 		})
 
-		It("toJson works corret", func() {
+		It("toJson works correct", func() {
 			var err error
 			dir := NewTestDir()
 			defer dir.Remove()
@@ -62,6 +62,44 @@ var _ = Describe("helmRenderer", func() {
 			err = helmFileRenderer(dir.Join("test.yaml"), writer)
 			Expect(err).ToNot(HaveOccurred())
 			Expect(writer.String()).To(Equal("test: {\"key\":\"value\"}"))
+		})
+		It("tpl works correct", func() {
+			var err error
+			dir := NewTestDir()
+			defer dir.Remove()
+			dir.WriteFile("test.yaml", []byte("test: {{ tpl .Template . }}"), 0644)
+			helmFileRenderer, err := HelmFileRenderer(dir.Root(), struct {
+				Value    string
+				Template string
+			}{
+				Value:    "value",
+				Template: "{{ .Value }}",
+			})
+			Expect(err).ToNot(HaveOccurred())
+			writer := &bytes.Buffer{}
+			err = helmFileRenderer(dir.Join("test.yaml"), writer)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(writer.String()).To(Equal("test: value"))
+		})
+		It("include works correct", func() {
+			var err error
+			dir := NewTestDir()
+			defer dir.Remove()
+			dir.WriteFile("test.yaml", []byte(`
+			{{- define "xxxx" -}}
+			{{- .Value -}}
+			{{- end -}}
+			test: {{ include "xxxx" . }}`), 0644)
+			helmFileRenderer, err := HelmFileRenderer(dir.Root(), struct {
+				Value string
+			}{
+				Value: "value",
+			})
+			Expect(err).ToNot(HaveOccurred())
+			writer := &bytes.Buffer{}
+			err = helmFileRenderer(dir.Join("test.yaml"), writer)
+			Expect(err).ToNot(HaveOccurred())
+			Expect(writer.String()).To(Equal("test: value"))
 		})
 
 		It("it loads helpers", func() {

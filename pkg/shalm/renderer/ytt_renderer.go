@@ -13,16 +13,7 @@ import (
 	"go.starlark.net/starlark"
 )
 
-type templateLoader struct {
-	compiledTemplate *template.CompiledTemplate
-	self             starlark.Value
-	template.NoopCompiledTemplateLoader
-}
-
-func (l templateLoader) FindCompiledTemplate(_ string) (*template.CompiledTemplate, error) {
-	return l.compiledTemplate, nil
-}
-
+// YttFileRenderer -
 func YttFileRenderer(value starlark.Value) func(filename string, writer io.Writer) error {
 	return func(filename string, writer io.Writer) error {
 		return yttRenderFile(value, filename, writer)
@@ -53,7 +44,6 @@ func yttRender(value starlark.Value, reader io.Reader, associatedName string, wr
 		return err
 	}
 
-	loader := templateLoader{compiledTemplate: compiledTemplate}
 	thread := &starlark.Thread{Name: "test", Load: func(thread *starlark.Thread, module string) (starlark.StringDict, error) {
 		if module == "self" {
 			return starlark.StringDict{
@@ -63,7 +53,7 @@ func yttRender(value starlark.Value, reader io.Reader, associatedName string, wr
 		return nil, fmt.Errorf("Unknown module '%s'", module)
 	}}
 
-	_, newVal, err := compiledTemplate.Eval(thread, loader)
+	_, newVal, err := compiledTemplate.Eval(thread, template.NoopCompiledTemplateLoader{})
 	if err != nil {
 		return err
 	}

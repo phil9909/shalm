@@ -68,7 +68,7 @@ func (o *object) kindOrdinal() int {
 		return 5
 	case "PodDisruptionBudget":
 		return 6
-	case "secret":
+	case "Secret":
 		return 7
 	case "ConfigMap":
 		return 8

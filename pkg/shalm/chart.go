@@ -24,7 +24,6 @@ type chartImpl struct {
 	Version         semver.Version
 	values          map[string]starlark.Value
 	methods         map[string]starlark.Callable
-	frozen          bool
 	dir             string
 	initialized     bool
 	namespace       string
@@ -140,13 +139,6 @@ func (c *chartImpl) Hash() (uint32, error) {
 
 // Freeze -
 func (c *chartImpl) Freeze() {
-	if c.frozen {
-		return
-	}
-	c.frozen = true
-	for _, e := range c.values {
-		e.Freeze()
-	}
 }
 
 // Attr returns the value of the specified field.
@@ -186,16 +178,6 @@ func (c *chartImpl) AttrNames() []string {
 
 // SetField -
 func (c *chartImpl) SetField(name string, val starlark.Value) error {
-	if c.frozen {
-		return fmt.Errorf("chart is frozen")
-	}
-	//if c.initialized {
-	//	_, ok := c.values[name]
-	//	if !ok {
-	//		return starlark.NoSuchAttrError(
-	//			fmt.Sprintf("chart has no .%s attribute", name))
-	//	}
-	//}
 	c.values[name] = unwrapDict(val)
 	return nil
 }

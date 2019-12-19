@@ -56,33 +56,36 @@ var _ = Describe("Chart", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(attr.(starlark.String).GoString()).To(Equal("60s"))
 		})
+	})
+	Context("methods", func() {
+		var dir TestDir
+		var c ChartValue
+		thread := &starlark.Thread{Name: "main"}
 
-		It("templates a c ", func() {
-			thread := &starlark.Thread{Name: "main"}
-			dir := NewTestDir()
-			defer dir.Remove()
-			repo := NewRepo()
+		BeforeEach(func() {
+			dir = NewTestDir()
 			dir.MkdirAll("templates", 0755)
 			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			repo := NewRepo()
+			var err error
+			c, err = newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(c.GetName()).To(Equal("mariadb"))
+
+		})
+		AfterEach(func() {
+			dir.Remove()
+		})
+		It("templates a chart", func() {
+			defer dir.Remove()
 			Expect(c.GetName()).To(Equal("mariadb"))
 			output, err := c.Template(thread)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(output).To(Equal("---\nmetadata:\n  namespace: namespace\nnamespace: namespace\n"))
 		})
 
-		It("applies a c ", func() {
-			thread := &starlark.Thread{Name: "main"}
-			dir := NewTestDir()
-			defer dir.Remove()
-			repo := NewRepo()
-			dir.MkdirAll("templates", 0755)
-			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
-			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
-			Expect(err).NotTo(HaveOccurred())
+		It("applies a chart", func() {
 			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
 			k := &FakeK8s{
@@ -94,21 +97,12 @@ var _ = Describe("Chart", func() {
 			k.ForNamespaceStub = func(s string) K8s {
 				return k
 			}
-			err = c.Apply(thread, k)
+			err := c.Apply(thread, k)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\nnamespace: namespace\n"))
 		})
 
-		It("deletes a c ", func() {
-			thread := &starlark.Thread{Name: "main"}
-			dir := NewTestDir()
-			defer dir.Remove()
-			repo := NewRepo()
-			dir.MkdirAll("templates", 0755)
-			dir.WriteFile("templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
-			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
-			Expect(err).NotTo(HaveOccurred())
+		It("deletes a chart", func() {
 			Expect(c.GetName()).To(Equal("mariadb"))
 			writer := bytes.Buffer{}
 			k := &FakeK8s{
@@ -120,9 +114,15 @@ var _ = Describe("Chart", func() {
 			k.ForNamespaceStub = func(s string) K8s {
 				return k
 			}
-			err = c.Delete(thread, k)
+			err := c.Delete(thread, k)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: namespace\nnamespace: namespace\n"))
+		})
+
+		It("packages a chart", func() {
+			writer := &bytes.Buffer{}
+			err := c.Package(writer)
+			Expect(err).NotTo(HaveOccurred())
 		})
 
 		It("applies subcharts", func() {
@@ -153,53 +153,53 @@ var _ = Describe("Chart", func() {
 			Expect(writer.String()).To(Equal("---\nmetadata:\n  namespace: chart2\nnamespace: chart2\n"))
 		})
 
-		It("behaves like starlark value", func() {
-			thread := &starlark.Thread{Name: "main"}
-			dir := NewTestDir()
-			defer dir.Remove()
-			repo := NewRepo()
-			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(c.String()).To(ContainSubstring("replicas = \"1\""))
-			Expect(c.Hash()).NotTo(Equal(uint32(0)))
-			Expect(c.Truth()).To(BeEquivalentTo(true))
-		})
-
-		It("applies a credentials ", func() {
-			thread := &starlark.Thread{Name: "main"}
-			dir := NewTestDir()
-			defer dir.Remove()
-			repo := NewRepo()
-			dir.WriteFile("Chart.star", []byte("def init(self):\n  user_credential(\"test\")\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
-			Expect(err).NotTo(HaveOccurred())
-			writer := bytes.Buffer{}
-			k := &FakeK8s{
-				ApplyStub: func(i func(io.Writer) error, options *K8sOptions) error {
-					i(&writer)
-					return nil
-				},
-				GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
-					return errors.New("NotFound")
-				},
-				IsNotExistStub: func(err error) bool {
-					return true
-				},
-			}
-			k.ForNamespaceStub = func(s string) K8s {
-				return k
-			}
-			err = c.Apply(thread, k)
-			Expect(err).NotTo(HaveOccurred())
-			Expect(writer.String()).To(ContainSubstring("apiVersion: v1"))
-			Expect(writer.String()).To(ContainSubstring("kind: Secret"))
-			Expect(writer.String()).To(ContainSubstring("type: Opaque"))
-			Expect(writer.String()).To(ContainSubstring("  name: test"))
-			Expect(writer.String()).To(ContainSubstring("  username: "))
-			Expect(writer.String()).To(ContainSubstring("=="))
-			Expect(writer.String()).To(ContainSubstring("  password: "))
-		})
-
 	})
+	It("behaves like starlark value", func() {
+		thread := &starlark.Thread{Name: "main"}
+		dir := NewTestDir()
+		defer dir.Remove()
+		repo := NewRepo()
+		dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
+		c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(c.String()).To(ContainSubstring("replicas = \"1\""))
+		Expect(c.Hash()).NotTo(Equal(uint32(0)))
+		Expect(c.Truth()).To(BeEquivalentTo(true))
+	})
+
+	It("applies a credentials ", func() {
+		thread := &starlark.Thread{Name: "main"}
+		dir := NewTestDir()
+		defer dir.Remove()
+		repo := NewRepo()
+		dir.WriteFile("Chart.star", []byte("def init(self):\n  user_credential(\"test\")\n"), 0644)
+		c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		writer := bytes.Buffer{}
+		k := &FakeK8s{
+			ApplyStub: func(i func(io.Writer) error, options *K8sOptions) error {
+				i(&writer)
+				return nil
+			},
+			GetStub: func(kind string, name string, writer io.Writer, k8s *K8sOptions) error {
+				return errors.New("NotFound")
+			},
+			IsNotExistStub: func(err error) bool {
+				return true
+			},
+		}
+		k.ForNamespaceStub = func(s string) K8s {
+			return k
+		}
+		err = c.Apply(thread, k)
+		Expect(err).NotTo(HaveOccurred())
+		Expect(writer.String()).To(ContainSubstring("apiVersion: v1"))
+		Expect(writer.String()).To(ContainSubstring("kind: Secret"))
+		Expect(writer.String()).To(ContainSubstring("type: Opaque"))
+		Expect(writer.String()).To(ContainSubstring("  name: test"))
+		Expect(writer.String()).To(ContainSubstring("  username: "))
+		Expect(writer.String()).To(ContainSubstring("=="))
+		Expect(writer.String()).To(ContainSubstring("  password: "))
+	})
+
 })

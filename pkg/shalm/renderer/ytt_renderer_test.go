@@ -16,7 +16,8 @@ var _ = Describe("ytt", func() {
 		defer dir.Remove()
 		dir.WriteFile("ytt.yaml", []byte("test: #@ self\n"), 0644)
 		out := &bytes.Buffer{}
-		err := yttRenderFile(starlark.String("hello"), dir.Join("ytt.yaml"), out)
+		renderer := YttFileRenderer(starlark.String("hello"))
+		err := renderer(dir.Join("ytt.yaml"), out)
 		Expect(err).NotTo(HaveOccurred())
 		Expect(string(out.Bytes())).To(Equal("test: hello\n"))
 	})
