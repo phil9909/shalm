@@ -2,12 +2,14 @@ package shalm
 
 import (
 	"encoding/base64"
+	"encoding/json"
 	"errors"
 	"io"
 
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.starlark.net/starlark"
+	"gopkg.in/yaml.v2"
 )
 
 var _ = Describe("Credential", func() {
@@ -75,6 +77,7 @@ var _ = Describe("Credential", func() {
 		Expect(userCred.String()).To(ContainSubstring("name = name"))
 		Expect(userCred.String()).To(ContainSubstring("username = username"))
 		Expect(func() { userCred.Hash() }).Should(Panic())
+		Expect(userCred.Type()).To(Equal("user_credential"))
 		Expect(userCred.Truth()).To(BeEquivalentTo(false))
 		value, err := userCred.Attr("name")
 		Expect(err).NotTo(HaveOccurred())
@@ -95,4 +98,36 @@ var _ = Describe("Credential", func() {
 		Expect(err).To(HaveOccurred())
 	})
 
+	Context("dataMap", func() {
+		Context("JSON", func() {
+			It("Marshal correct", func() {
+				d := dataMap{"key": []byte("value")}
+				b, err := json.Marshal(d)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(b).To(Equal([]byte(`{"key":"dmFsdWU="}`)))
+			})
+			It("Unmarshal correct", func() {
+				d := dataMap{}
+				err := json.Unmarshal([]byte(`{"key":"dmFsdWU="}`), &d)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(d).To(HaveKeyWithValue("key", []byte("value")))
+			})
+
+		})
+		Context("YAML", func() {
+			It("Marshal correct", func() {
+				d := dataMap{"key": []byte("value")}
+				b, err := yaml.Marshal(d)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(string(b)).To(Equal("key: dmFsdWU=\n"))
+			})
+			It("Unmarshal correct", func() {
+				d := dataMap{}
+				err := yaml.Unmarshal([]byte("key: dmFsdWU=\n"), &d)
+				Expect(err).NotTo(HaveOccurred())
+				Expect(d).To(HaveKeyWithValue("key", []byte("value")))
+			})
+
+		})
+	})
 })

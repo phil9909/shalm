@@ -4,7 +4,6 @@ package shalm
 import (
 	"io"
 	"sync"
-
 )
 
 type FakeK8s struct {

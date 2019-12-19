@@ -8,7 +8,8 @@ import (
 	"go.starlark.net/starlark"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o fake_k8s.go . K8s
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../../cmd/fake_k8s_test.go . K8s
+//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o fake_k8s_test.go . K8s
 
 // Credential -
 type Credential interface {

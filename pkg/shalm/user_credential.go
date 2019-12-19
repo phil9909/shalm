@@ -42,7 +42,6 @@ func (d dataMap) MarshalJSON() ([]byte, error) {
 }
 
 func (d *dataMap) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
-	panic("test")
 	var m map[string]string
 	if err = unmarshal(&m); err != nil {
 		return

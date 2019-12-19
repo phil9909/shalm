@@ -24,7 +24,7 @@ var _ = Describe("Apply Chart", func() {
 
 	It("produces the correct output", func() {
 		writer := bytes.Buffer{}
-		k := &shalm.FakeK8s{
+		k := &FakeK8s{
 			ApplyStub: func(i func(io.Writer) error, options *shalm.K8sOptions) error {
 				i(&writer)
 				return nil

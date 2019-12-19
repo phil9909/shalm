@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"fmt"
+	"io"
+	"os"
 
 	"github.com/kramerul/shalm/pkg/shalm"
 
@@ -18,20 +19,24 @@ var templateCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		repo := shalm.NewRepo()
-		url := args[0]
-
-		thread := &starlark.Thread{Name: "main"}
-		c, err := repo.Get(thread, url, rootNamespace(), nil, templateChartArgs.KwArgs())
-		if err != nil {
-			exit(err)
-		}
-		t, err := c.Template(thread)
-		if err != nil {
-			exit(err)
-		}
-		fmt.Println(t)
+		exit(template(args[0], rootNamespace(), os.Stdout))
 	},
+}
+
+func template(url string, namespace string, writer io.Writer) error {
+
+	thread := &starlark.Thread{Name: "main"}
+	repo := shalm.NewRepo()
+	c, err := repo.Get(thread, url, namespace, nil, templateChartArgs.KwArgs())
+	if err != nil {
+		return err
+	}
+	t, err := c.Template(thread)
+	if err != nil {
+		return err
+	}
+	_, err = writer.Write([]byte(t))
+	return err
 }
 
 func init() {

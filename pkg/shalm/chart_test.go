@@ -7,6 +7,7 @@ import (
 
 	"go.starlark.net/starlark"
 
+	"github.com/blang/semver"
 	. "github.com/kramerul/shalm/pkg/shalm/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
@@ -26,6 +27,17 @@ var _ = Describe("Chart", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 		})
+		It("reads Chart.yaml 'v' prefix in version", func() {
+			thread := &starlark.Thread{Name: "main"}
+			dir := NewTestDir()
+			defer dir.Remove()
+			repo := NewRepo()
+			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: v6.12.2\n"), 0644)
+			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(c.GetName()).To(Equal("mariadb"))
+			Expect(c.GetVersion()).To(Equal(semver.Version{Major: 6, Minor: 12, Patch: 2}))
+		})
 
 		It("reads values.yaml", func() {
 			thread := &starlark.Thread{Name: "main"}
@@ -43,18 +55,67 @@ var _ = Describe("Chart", func() {
 			Expect(attr.(starlark.String).GoString()).To(Equal("30s"))
 		})
 
-		It("reads Chart.star", func() {
-			thread := &starlark.Thread{Name: "main"}
-			dir := NewTestDir()
-			defer dir.Remove()
+	})
+	Context("Chart.start", func() {
+		var dir TestDir
+		var c ChartValue
+		thread := &starlark.Thread{Name: "main"}
+		BeforeEach(func() {
+			dir = NewTestDir()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("timeout: \"30s\"\n"), 0644)
-			dir.WriteFile("Chart.star", []byte("def init(self):\n  self.timeout = \"60s\"\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			dir.WriteFile("Chart.star", []byte(`
+def init(self):
+	self.timeout = "60s"
+	k8s('test')
+def method(self):
+	return self.namespace
+def apply(self,k8s):
+	return self.__apply(k8s)
+def delete(self,k8s):
+	return self.__delete(k8s)
+`),
+				0644)
+			var err error
+			c, err = newChart(thread, repo, dir.Root(), "namespace", nil, nil)
 			Expect(err).NotTo(HaveOccurred())
+
+		})
+		AfterEach(func() {
+			dir.Remove()
+		})
+		It("evalutes constructor", func() {
 			attr, err := c.Attr("timeout")
 			Expect(err).NotTo(HaveOccurred())
 			Expect(attr.(starlark.String).GoString()).To(Equal("60s"))
+		})
+		It("binds method to self", func() {
+			attr, err := c.Attr("method")
+			Expect(err).NotTo(HaveOccurred())
+			value, err := starlark.Call(thread, attr.(starlark.Callable), nil, nil)
+			Expect(value.(starlark.String).GoString()).To(Equal("namespace"))
+		})
+		It("overrides apply", func() {
+			attr, err := c.Attr("apply")
+			Expect(err).NotTo(HaveOccurred())
+			k := &FakeK8s{}
+			k.ForNamespaceStub = func(s string) K8s {
+				return k
+			}
+			_, err = starlark.Call(thread, attr.(starlark.Callable), starlark.Tuple{NewK8sValue(k)}, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k.ApplyCallCount()).To(Equal(1))
+		})
+		It("overrides delete", func() {
+			attr, err := c.Attr("delete")
+			Expect(err).NotTo(HaveOccurred())
+			k := &FakeK8s{}
+			k.ForNamespaceStub = func(s string) K8s {
+				return k
+			}
+			_, err = starlark.Call(thread, attr.(starlark.Callable), starlark.Tuple{NewK8sValue(k)}, nil)
+			Expect(err).NotTo(HaveOccurred())
+			Expect(k.DeleteCallCount()).To(Equal(1))
 		})
 	})
 	Context("methods", func() {
@@ -165,6 +226,18 @@ var _ = Describe("Chart", func() {
 		Expect(c.String()).To(ContainSubstring("replicas = \"1\""))
 		Expect(c.Hash()).NotTo(Equal(uint32(0)))
 		Expect(c.Truth()).To(BeEquivalentTo(true))
+		Expect(c.Type()).To(Equal("chart"))
+		value, err := c.Attr("name")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(value.(starlark.String).GoString()).To(ContainSubstring("shalm"))
+		value, err = c.Attr("namespace")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(value.(starlark.String).GoString()).To(Equal("namespace"))
+		value, err = c.Attr("apply")
+		Expect(err).NotTo(HaveOccurred())
+		Expect(value.(starlark.Callable).Name()).To(Equal("apply"))
+		value, err = c.Attr("unknown")
+		Expect(err).To(HaveOccurred())
 	})
 
 	It("applies a credentials ", func() {

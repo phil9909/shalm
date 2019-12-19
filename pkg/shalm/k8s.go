@@ -23,13 +23,14 @@ func NewK8s() K8s {
 		}
 		kubeconfig = path.Join(home, ".kube", "config")
 	}
-	return &k8sImpl{kubeconfig: kubeconfig}
+	return &k8sImpl{kubeconfig: kubeconfig, cmd: "kubectl"}
 }
 
 // k8sImpl -
 type k8sImpl struct {
 	namespace  string
 	kubeconfig string
+	cmd        string
 }
 
 var (
@@ -117,7 +118,7 @@ func (k *k8sImpl) kubectl(command string, options *K8sOptions, flags ...string) 
 	if options.Timeout > 0 {
 		flags = append(flags, "--timeout", fmt.Sprintf("%.0fs", options.Timeout.Seconds()))
 	}
-	cmd := exec.Command("kubectl", flags...)
+	cmd := exec.Command(k.cmd, flags...)
 	fmt.Println(cmd.String())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

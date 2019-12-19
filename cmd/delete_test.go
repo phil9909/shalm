@@ -15,7 +15,7 @@ var _ = Describe("Delete Chart", func() {
 
 	It("produces the correct output", func() {
 		writer := bytes.Buffer{}
-		k := &shalm.FakeK8s{
+		k := &FakeK8s{
 			DeleteStub: func(i func(io.Writer) error, options *shalm.K8sOptions) error {
 				i(&writer)
 				return nil
