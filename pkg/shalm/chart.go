@@ -25,7 +25,6 @@ type chartImpl struct {
 	values          map[string]starlark.Value
 	methods         map[string]starlark.Callable
 	dir             string
-	initialized     bool
 	namespace       string
 	userCredentials []*userCredential
 }
@@ -59,7 +58,6 @@ func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, 
 	if err := c.init(thread, repo, args, kwargs); err != nil {
 		return nil, err
 	}
-	c.initialized = true
 	return c, nil
 
 }
@@ -198,7 +196,6 @@ func (c *chartImpl) Apply(thread *starlark.Thread, k K8s) error {
 		return err
 	}
 	return nil
-
 }
 
 func (c *chartImpl) apply(thread *starlark.Thread, k K8sValue) error {

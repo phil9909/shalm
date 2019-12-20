@@ -14,7 +14,6 @@ require (
 	github.com/golangci/gofmt v0.0.0-20190930125516-244bba706f1a // indirect
 	github.com/golangci/gosec v0.0.0-20180901114220-8afd9cbb6cfb // indirect
 	github.com/golangci/lint-1 v0.0.0-20181222135242-d2cdd8c08219 // indirect
-	github.com/gorilla/mux v1.7.3 // indirect
 	github.com/k14s/ytt v0.22.0
 	github.com/k14s/ytt/pkg/yamlmeta/internal/yaml.v2 v0.0.0-20191211135110-6f8b8fe40a62 // indirect
 	github.com/konsorten/go-windows-terminal-sequences v1.0.2 // indirect
@@ -27,10 +26,13 @@ require (
 	github.com/spf13/pflag v1.0.5
 	github.com/stevvooe/resumable v0.0.0-20180830230917-22b14a53ba50 // indirect
 	go.starlark.net v0.0.0-20191021185836-28350e608555
-	golang.org/x/net v0.0.0-20190813141303-74dc4d7220e7 // indirect
 	golang.org/x/sys v0.0.0-20191010194322-b09406accb47 // indirect
 	gopkg.in/yaml.v2 v2.2.4
+	istio.io/pkg v0.0.0-20191218040524-1474f181aa76
+	k8s.io/api v0.17.0
+	k8s.io/apimachinery v0.17.0
 	mvdan.cc/unparam v0.0.0-20191111180625-960b1ec0f2c2 // indirect
 	rsc.io/letsencrypt v0.0.3 // indirect
+	sigs.k8s.io/controller-runtime v0.4.0
 
 )
