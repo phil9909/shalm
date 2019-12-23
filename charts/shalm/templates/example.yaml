@@ -1,0 +1,11 @@
+apiVersion: "kramerul.github.com/v1alpha1"
+kind: ShalmChart
+metadata:
+  name: my-shalm-chart
+spec:
+  values: 
+    test: 1234
+  kubeconfig: kubeconfig
+  kwargs: 
+    namespace: default
+  url: https://test.org/abc.tgz

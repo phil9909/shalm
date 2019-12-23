@@ -1,0 +1,10 @@
+apiVersion: v1
+name: shaml
+version: 0.0.1
+description: 
+sources:
+- https://github.com/kramerul/shalm
+maintainers:
+- name: Ulrich Kramer
+  email: u.kramer@sap.com
+engine: gotpl
