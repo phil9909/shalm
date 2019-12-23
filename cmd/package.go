@@ -24,7 +24,7 @@ func pkg(url string, namespace string) error {
 	repo := shalm.NewRepo()
 
 	thread := &starlark.Thread{Name: "main"}
-	c, err := repo.Get(thread, url, rootNamespace(), nil, nil)
+	c, err := repo.Get(thread, url, rootNamespace(), false, nil, nil)
 	if err != nil {
 		return err
 	}

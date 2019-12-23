@@ -69,6 +69,20 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 			return starlark.None, k.RolloutStatus(kind, name, k8sOptions)
 		}), nil
 	}
+	if name == "wait" {
+		return starlark.NewBuiltin("wait", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+			var kind string
+			var name string
+			var condition string
+			parser := &kwargsParser{kwargs: kwargs}
+			k8sOptions := unpackK8sOptions(parser)
+			if err := starlark.UnpackArgs("wait", args, parser.Parse(),
+				"kind", &kind, "name", &name, "condition", &condition); err != nil {
+				return nil, err
+			}
+			return starlark.None, k.Wait(kind, name, condition, k8sOptions)
+		}), nil
+	}
 	if name == "delete" {
 		return starlark.NewBuiltin("delete", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			var kind string

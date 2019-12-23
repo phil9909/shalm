@@ -4,6 +4,7 @@ import (
 	"crypto/md5"
 	"encoding/hex"
 	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path"
@@ -40,10 +41,22 @@ func NewRepo() Repo {
 }
 
 // Get -
-func (r *repoImpl) Get(thread *starlark.Thread, url string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
+func (r *repoImpl) Get(thread *starlark.Thread, url string, namespace string, proxy bool, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
 	md5Sum := md5.Sum([]byte(url))
 	cacheDir := path.Join(r.cacheDir, hex.EncodeToString(md5Sum[:]))
 	os.RemoveAll(cacheDir)
+
+	proxyFunc := func(chart ChartValue, err error) (ChartValue, error) {
+		return chart, err
+	}
+	if proxy {
+		proxyFunc = func(chart ChartValue, err error) (ChartValue, error) {
+			if err != nil {
+				return nil, err
+			}
+			return newChartProxy(chart, url, args, kwargs)
+		}
+	}
 
 	if strings.HasPrefix(url, "https:") || strings.HasPrefix(url, "http:") {
 		res, err := r.httpClient.Get(url)
@@ -54,15 +67,22 @@ func (r *repoImpl) Get(thread *starlark.Thread, url string, namespace string, ar
 			return nil, fmt.Errorf("Error fetching %s: status=%d", url, res.StatusCode)
 		}
 		defer res.Body.Close()
-		return newChartFromPackage(thread, r, cacheDir, res.Body, namespace, args, kwargs)
+		return proxyFunc(newChartFromReader(thread, r, cacheDir, res.Body, namespace, args, kwargs))
 	}
 	if stat, err := os.Stat(url); err == nil {
 		if stat.IsDir() {
-			return newChart(thread, r, url, namespace, args, kwargs)
+			return proxyFunc(newChart(thread, r, url, namespace, args, kwargs))
 		}
-		return newChartFromFile(thread, r, cacheDir, url, namespace, args, kwargs)
+		return proxyFunc(newChartFromFile(thread, r, cacheDir, url, namespace, args, kwargs))
 	}
 	return nil, fmt.Errorf("Chart not found for url %s", url)
+}
+
+func newChartFromReader(thread *starlark.Thread, repo Repo, dir string, reader io.Reader, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
+	if err := tarExtract(reader, dir); err != nil {
+		return nil, err
+	}
+	return newChart(thread, repo, dir, namespace, args, kwargs)
 }
 
 func newChartFromFile(thread *starlark.Thread, repo Repo, dir string, tarFile string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
@@ -71,5 +91,5 @@ func newChartFromFile(thread *starlark.Thread, repo Repo, dir string, tarFile st
 		return nil, err
 	}
 	defer in.Close()
-	return newChartFromPackage(thread, repo, dir, in, namespace, args, kwargs)
+	return newChartFromReader(thread, repo, dir, in, namespace, args, kwargs)
 }

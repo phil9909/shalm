@@ -157,7 +157,7 @@ The following section describes the available methods inside `Chart.star`
 
 ### Chart
 
-#### `chart("<url>",namespace=namespace,...)`
+#### `chart("<url>",namespace=namespace,proxy=false,...)`
 
 An new chart is created.  
 If no namespace is given, the namespace is inherited from the parent chart.
@@ -166,7 +166,8 @@ If no namespace is given, the namespace is inherited from the parent chart.
 |-----------|-------------|
 | url       |  The chart is loaded from the given url. The url can be relative.  In this case the chart is loaded from a path relative to the current chart location.  |
 | namespace |  If no namespace is given, the namespace is inherited from the parent chart. |
-| ...       |  Additional parametes are passed to the `init` method of the corresponding chart. |
+| proxy     |  If true, a proxy for the chart is returned. Applying or deleting a proxy chart is done using a `CustomerResource`. The installation process is performed by the `shalm-controller` |
+| ...       |  Additional parameters are passed to the `init` method of the corresponding chart. |
 
 
 #### `chart.apply(k8s)`
@@ -258,6 +259,17 @@ Wait for rollout status of one kubernetes object
 |-----------|-------------|
 | kind      |  k8s kind   |
 | name      |  name of k8s object   |
+| timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
+
+#### `k8s.wait(kind,name,condition, timeout=0)`
+
+Wait for condition of one kubernetes object
+
+| Parameter | Description |
+|-----------|-------------|
+| kind      |  k8s kind   |
+| name      |  name of k8s object   |
+| condition  |  condition   |
 | timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
 
 ### user_credential

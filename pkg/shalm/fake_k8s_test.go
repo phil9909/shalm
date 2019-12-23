@@ -103,6 +103,20 @@ type FakeK8s struct {
 	rolloutStatusReturnsOnCall map[int]struct {
 		result1 error
 	}
+	WaitStub        func(string, string, string, *K8sOptions) error
+	waitMutex       sync.RWMutex
+	waitArgsForCall []struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 *K8sOptions
+	}
+	waitReturns struct {
+		result1 error
+	}
+	waitReturnsOnCall map[int]struct {
+		result1 error
+	}
 	WatchStub        func(string, string, *K8sOptions) (io.ReadCloser, error)
 	watchMutex       sync.RWMutex
 	watchArgsForCall []struct {
@@ -603,6 +617,69 @@ func (fake *FakeK8s) RolloutStatusReturnsOnCall(i int, result1 error) {
 	}{result1}
 }
 
+func (fake *FakeK8s) Wait(arg1 string, arg2 string, arg3 string, arg4 *K8sOptions) error {
+	fake.waitMutex.Lock()
+	ret, specificReturn := fake.waitReturnsOnCall[len(fake.waitArgsForCall)]
+	fake.waitArgsForCall = append(fake.waitArgsForCall, struct {
+		arg1 string
+		arg2 string
+		arg3 string
+		arg4 *K8sOptions
+	}{arg1, arg2, arg3, arg4})
+	fake.recordInvocation("Wait", []interface{}{arg1, arg2, arg3, arg4})
+	fake.waitMutex.Unlock()
+	if fake.WaitStub != nil {
+		return fake.WaitStub(arg1, arg2, arg3, arg4)
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.waitReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeK8s) WaitCallCount() int {
+	fake.waitMutex.RLock()
+	defer fake.waitMutex.RUnlock()
+	return len(fake.waitArgsForCall)
+}
+
+func (fake *FakeK8s) WaitCalls(stub func(string, string, string, *K8sOptions) error) {
+	fake.waitMutex.Lock()
+	defer fake.waitMutex.Unlock()
+	fake.WaitStub = stub
+}
+
+func (fake *FakeK8s) WaitArgsForCall(i int) (string, string, string, *K8sOptions) {
+	fake.waitMutex.RLock()
+	defer fake.waitMutex.RUnlock()
+	argsForCall := fake.waitArgsForCall[i]
+	return argsForCall.arg1, argsForCall.arg2, argsForCall.arg3, argsForCall.arg4
+}
+
+func (fake *FakeK8s) WaitReturns(result1 error) {
+	fake.waitMutex.Lock()
+	defer fake.waitMutex.Unlock()
+	fake.WaitStub = nil
+	fake.waitReturns = struct {
+		result1 error
+	}{result1}
+}
+
+func (fake *FakeK8s) WaitReturnsOnCall(i int, result1 error) {
+	fake.waitMutex.Lock()
+	defer fake.waitMutex.Unlock()
+	fake.WaitStub = nil
+	if fake.waitReturnsOnCall == nil {
+		fake.waitReturnsOnCall = make(map[int]struct {
+			result1 error
+		})
+	}
+	fake.waitReturnsOnCall[i] = struct {
+		result1 error
+	}{result1}
+}
+
 func (fake *FakeK8s) Watch(arg1 string, arg2 string, arg3 *K8sOptions) (io.ReadCloser, error) {
 	fake.watchMutex.Lock()
 	ret, specificReturn := fake.watchReturnsOnCall[len(fake.watchArgsForCall)]
@@ -687,6 +764,8 @@ func (fake *FakeK8s) Invocations() map[string][][]interface{} {
 	defer fake.isNotExistMutex.RUnlock()
 	fake.rolloutStatusMutex.RLock()
 	defer fake.rolloutStatusMutex.RUnlock()
+	fake.waitMutex.RLock()
+	defer fake.waitMutex.RUnlock()
 	fake.watchMutex.RLock()
 	defer fake.watchMutex.RUnlock()
 	copiedInvocations := map[string][][]interface{}{}

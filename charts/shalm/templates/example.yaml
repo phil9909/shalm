@@ -6,6 +6,9 @@ spec:
   values: 
     test: 1234
   kubeconfig: kubeconfig
-  kwargs: 
-    namespace: default
+  kwargs:
+    key: value
+  args:
+    - hello
+  namespace: default
   url: https://test.org/abc.tgz

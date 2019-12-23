@@ -82,12 +82,16 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 				url = path.Join(c.dir, url)
 			}
 			namespace := c.namespace
+			proxy := false
 			parser := &kwargsParser{kwargs: kwargs}
 			parser.Arg("namespace", func(value starlark.Value) {
 				namespace = value.(starlark.String).GoString()
 			})
+			parser.Arg("proxy", func(value starlark.Value) {
+				proxy = bool(value.(starlark.Bool))
+			})
 			kwargs = parser.Parse()
-			return repo.Get(thread, url, namespace, args[1:], kwargs)
+			return repo.Get(thread, url, namespace, proxy, args[1:], kwargs)
 		}),
 		"user_credential": starlark.NewBuiltin("user_credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			s := &userCredential{}

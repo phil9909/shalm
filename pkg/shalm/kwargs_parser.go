@@ -31,3 +31,16 @@ func (k *kwargsParser) Parse() []starlark.Tuple {
 	}
 	return result
 }
+
+func kwargsToGo(kwargs []starlark.Tuple) map[string]interface{} {
+	result := make(map[string]interface{})
+	for _, arg := range kwargs {
+		if arg.Len() == 2 {
+			key, keyOK := arg.Index(0).(starlark.String)
+			if keyOK {
+				result[key.GoString()] = toGo(arg.Index(1))
+			}
+		}
+	}
+	return result
+}

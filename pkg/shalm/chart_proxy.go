@@ -3,24 +3,34 @@ package shalm
 import (
 	"io"
 
+	corev1 "k8s.io/api/core/v1"
+
+	v1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+
+	shalmv1a1 "github.com/kramerul/shalm/api/v1alpha1"
+
 	"go.starlark.net/starlark"
 )
 
 type chartProxy struct {
 	*chartImpl
+	args   []interface{}
+	kwargs map[string]interface{}
+	url    string
 }
 
 var (
 	_ ChartValue = (*chartProxy)(nil)
 )
 
-func newChartProxy(thread *starlark.Thread, repo Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
-	delegate, err := newChart(thread, repo, dir, namespace, args, kwargs)
-	if err != nil {
-		return nil, err
-	}
+func newChartProxy(delegate ChartValue, url string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
 	return &chartProxy{
 		chartImpl: delegate.(*chartImpl),
+		args:      toGo(args).([]interface{}),
+		kwargs:    kwargsToGo(kwargs),
+		url:       url,
 	}, nil
 }
 
@@ -41,11 +51,51 @@ func (c *chartProxy) applyFunction() starlark.Callable {
 		if err := starlark.UnpackArgs("apply", args, kwargs, "k8s", &k); err != nil {
 			return nil, err
 		}
+		namespace := &corev1.Namespace{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "Namespace",
+				APIVersion: corev1.SchemeGroupVersion.String(),
+			},
+			ObjectMeta: v1.ObjectMeta{
+				Name: c.namespace,
+			},
+		}
+		shalmChart := &shalmv1a1.ShalmChart{
+			TypeMeta: v1.TypeMeta{
+				Kind:       "ShalmChart",
+				APIVersion: shalmv1a1.GroupVersion.String(),
+			},
+			ObjectMeta: v1.ObjectMeta{
+				Name:      c.Name,
+				Namespace: c.namespace,
+			},
+			Spec: shalmv1a1.ShalmChartSpec{
+				Values:     shalmv1a1.ClonableMap(c.chartImpl.templateValues()),
+				Args:       shalmv1a1.ClonableArray(c.args),
+				KwArgs:     shalmv1a1.ClonableMap(c.kwargs),
+				KubeConfig: "",
+				Namespace:  c.namespace,
+				URL:        c.url,
+			},
+		}
+		encoder := json.NewSerializerWithOptions(json.DefaultMetaFactory, nil, nil, json.SerializerOptions{})
 
 		return starlark.None, k.Apply(func(writer io.Writer) error {
-			return nil
+			err := encoder.Encode(namespace, writer)
+			if err != nil {
+				return err
+			}
+			return encoder.Encode(shalmChart, writer)
 		}, &K8sOptions{})
 	})
+}
+
+func (c *chartProxy) Apply(thread *starlark.Thread, k K8s) error {
+	_, err := starlark.Call(thread, c.applyFunction(), starlark.Tuple{NewK8sValue(k)}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
 }
 
 func (c *chartProxy) deleteFunction() starlark.Callable {
@@ -57,4 +107,13 @@ func (c *chartProxy) deleteFunction() starlark.Callable {
 
 		return starlark.None, k.DeleteObject("ShalmChart", c.Name, &K8sOptions{})
 	})
+}
+
+func (c *chartProxy) Delete(thread *starlark.Thread, k K8s) error {
+	_, err := starlark.Call(thread, c.deleteFunction(), starlark.Tuple{NewK8sValue(k)}, nil)
+	if err != nil {
+		return err
+	}
+	return nil
+
 }

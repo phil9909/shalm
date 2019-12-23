@@ -22,7 +22,7 @@ var deleteCmd = &cobra.Command{
 func delete(url string, namespace string, k shalm.K8s) error {
 	repo := shalm.NewRepo()
 	thread := &starlark.Thread{Name: "main"}
-	c, err := repo.Get(thread, url, namespace, nil, applyChartArgs.KwArgs())
+	c, err := repo.Get(thread, url, namespace, deleteChartArgs.proxy, nil, deleteChartArgs.KwArgs())
 	if err != nil {
 		return err
 	}

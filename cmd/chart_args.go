@@ -8,11 +8,13 @@ import (
 )
 
 type chartArgs struct {
-	args []string
+	args  []string
+	proxy bool
 }
 
 func (v *chartArgs) AddFlags(flagsSet *pflag.FlagSet) {
 	flagsSet.StringArrayVar(&v.args, "set", nil, "Set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
+	flagsSet.BoolVar(&v.proxy, "proxy", false, "Install helm chart using a combination of CR and operator")
 }
 
 func (v *chartArgs) KwArgs() []starlark.Tuple {

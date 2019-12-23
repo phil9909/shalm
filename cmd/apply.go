@@ -22,7 +22,7 @@ var applyCmd = &cobra.Command{
 func apply(url string, namespace string, k shalm.K8s) error {
 	repo := shalm.NewRepo()
 	thread := &starlark.Thread{Name: "main"}
-	c, err := repo.Get(thread, url, namespace, nil, applyChartArgs.KwArgs())
+	c, err := repo.Get(thread, url, namespace, applyChartArgs.proxy, nil, applyChartArgs.KwArgs())
 	if err != nil {
 		return err
 	}

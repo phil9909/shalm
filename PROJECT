@@ -1,0 +1,7 @@
+domain: kramerul.github.com
+repo: github.com/kramerul/shalm
+resources:
+- group: shalm
+  kind: ShalmChart
+  version: v1alpha1
+version: "2"

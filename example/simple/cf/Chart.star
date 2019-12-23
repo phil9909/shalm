@@ -1,9 +1,10 @@
 
-def init(self):
+def init(self,dummy="test"):
   self.mariadb = chart("../mariadb")
   self.mariadb.slave['replicas'] = 2
   self.uaa = chart("../uaa",database=self.mariadb,namespace="uaa")
   self.name = "my-first-chart"
+  self.password = "test-pass"
   return self
 
 

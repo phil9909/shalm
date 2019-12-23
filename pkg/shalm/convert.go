@@ -74,18 +74,16 @@ func toGo(v starlark.Value) interface{} {
 		for _, t := range v.Items() {
 			key, ok := t.Index(0).(starlark.String)
 			if ok {
-				d[key.GoString()] = toGo(t.Index(1))
+				value := toGo(t.Index(1))
+				if value != nil {
+					d[key.GoString()] = value
+				}
 			}
 		}
 		return d
 
 	case *chartImpl:
-		d := make(map[string]interface{})
-
-		for k, v := range v.values {
-			d[k] = toGo(v)
-		}
-		return d
+		return nil
 	case *userCredential:
 		return v
 	default:

@@ -2,9 +2,10 @@ package shalm
 
 import (
 	"bytes"
-	"github.com/kramerul/shalm/pkg/shalm/renderer"
 	"io"
 	"path"
+
+	"github.com/kramerul/shalm/pkg/shalm/renderer"
 
 	"go.starlark.net/starlark"
 	"gopkg.in/yaml.v2"
@@ -58,8 +59,20 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer,
 	return c.template(thread, writer, options)
 }
 
+func (c *chartImpl) templateValues() map[string]interface{} {
+	d := make(map[string]interface{})
+
+	for k, v := range c.values {
+		value := toGo(v)
+		if value != nil {
+			d[k] = value
+		}
+	}
+	return d
+}
+
 func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *renderer.Options) error {
-	values := toGo(c).(map[string]interface{})
+	values := c.templateValues()
 	methods := make(map[string]interface{})
 	for k, f := range c.methods {
 		method := f

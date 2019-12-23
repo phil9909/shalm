@@ -23,7 +23,7 @@ func NewK8s() K8s {
 		}
 		kubeconfig = path.Join(home, ".kube", "config")
 	}
-	return &k8sImpl{kubeconfig: kubeconfig, cmd: "kubectl"}
+	return &k8sImpl{kubeconfig: kubeconfig}
 }
 
 // k8sImpl -
@@ -80,6 +80,10 @@ func (k *k8sImpl) RolloutStatus(kind string, name string, options *K8sOptions) e
 	}
 }
 
+func (k *k8sImpl) Wait(kind string, name string, condition string, options *K8sOptions) error {
+	return run(k.kubectl("wait", options, kind, name, "--for", condition))
+}
+
 // Get -
 func (k *k8sImpl) Get(kind string, name string, writer io.Writer, options *K8sOptions) error {
 	cmd := k.kubectl("get", options, kind, name, "-o", "json")
@@ -118,7 +122,11 @@ func (k *k8sImpl) kubectl(command string, options *K8sOptions, flags ...string) 
 	if options.Timeout > 0 {
 		flags = append(flags, "--timeout", fmt.Sprintf("%.0fs", options.Timeout.Seconds()))
 	}
-	cmd := exec.Command(k.cmd, flags...)
+	kubectl := k.cmd
+	if kubectl == "" {
+		kubectl = "kubectl"
+	}
+	cmd := exec.Command(kubectl, flags...)
 	fmt.Println(cmd.String())
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr

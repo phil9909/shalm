@@ -48,12 +48,20 @@ var _ = Describe("K8sValue", func() {
 					{starlark.String("namespaced"), starlark.Bool(true)}})
 			Expect(err).NotTo(HaveOccurred())
 		}
+		{
+			value, err := k8s.Attr("wait")
+			_, err = starlark.Call(thread, value, starlark.Tuple{starlark.String("kind"), starlark.String("object"), starlark.String("condition")},
+				[]starlark.Tuple{{starlark.String("timeout"), starlark.MakeInt(10)},
+					{starlark.String("namespaced"), starlark.Bool(true)}})
+			Expect(err).NotTo(HaveOccurred())
+		}
 		Expect(fake.RolloutStatusCallCount()).To(Equal(1))
 		kind, name, options := fake.RolloutStatusArgsForCall(0)
 		Expect(kind).To(Equal("kind"))
 		Expect(name).To(Equal("object"))
 		Expect(options.Timeout).To(Equal(10 * time.Second))
 		Expect(options.Namespaced).To(BeTrue())
+		Expect(fake.WaitCallCount()).To(Equal(1))
 		Expect(fake.DeleteObjectCallCount()).To(Equal(1))
 		Expect(fake.GetCallCount()).To(Equal(1))
 	})

@@ -50,6 +50,7 @@ type K8s interface {
 	Inspect() string
 	Watch(kind string, name string, options *K8sOptions) (io.ReadCloser, error)
 	RolloutStatus(kind string, name string, options *K8sOptions) error
+	Wait(kind string, name string, condition string, options *K8sOptions) error
 	DeleteObject(kind string, name string, options *K8sOptions) error
 	Apply(output func(io.Writer) error, options *K8sOptions) error
 	Delete(output func(io.Writer) error, options *K8sOptions) error
@@ -66,5 +67,5 @@ type K8sValue interface {
 // Repo -
 type Repo interface {
 	// Get -
-	Get(thread *starlark.Thread, url string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error)
+	Get(thread *starlark.Thread, url string, namespace string, proxy bool, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error)
 }

@@ -27,7 +27,7 @@ func template(url string, namespace string, writer io.Writer) error {
 
 	thread := &starlark.Thread{Name: "main"}
 	repo := shalm.NewRepo()
-	c, err := repo.Get(thread, url, namespace, nil, templateChartArgs.KwArgs())
+	c, err := repo.Get(thread, url, namespace, false, nil, templateChartArgs.KwArgs())
 	if err != nil {
 		return err
 	}

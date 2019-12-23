@@ -33,13 +33,6 @@ var (
 	_ ChartValue = (*chartImpl)(nil)
 )
 
-func newChartFromPackage(thread *starlark.Thread, repo Repo, dir string, reader io.Reader, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
-	if err := tarExtract(reader, dir); err != nil {
-		return nil, err
-	}
-	return newChart(thread, repo, dir, namespace, args, kwargs)
-}
-
 func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
 	name := strings.Split(filepath.Base(dir), ":")[0]
 	c := &chartImpl{Name: name, dir: dir, namespace: namespace}
