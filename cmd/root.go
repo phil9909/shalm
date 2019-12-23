@@ -19,6 +19,7 @@ func init() {
 	rootCmd.AddCommand(templateCmd)
 	rootCmd.AddCommand(deleteCmd)
 	rootCmd.AddCommand(packageCmd)
+	rootCmd.AddCommand(controllerCmd)
 }
 
 var rootCmd = &cobra.Command{

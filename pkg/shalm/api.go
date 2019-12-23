@@ -8,7 +8,6 @@ import (
 	"go.starlark.net/starlark"
 )
 
-//go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o ../../cmd/fake_k8s_test.go . K8s
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o fake_k8s_test.go . K8s
 
 // Credential -
@@ -68,4 +67,6 @@ type K8sValue interface {
 type Repo interface {
 	// Get -
 	Get(thread *starlark.Thread, url string, namespace string, proxy bool, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error)
+	// GetFromGo -
+	GetFromGo(thread *starlark.Thread, url string, namespace string, proxy bool, args []interface{}, kwargs map[string]interface{}) (ChartValue, error)
 }

@@ -18,12 +18,15 @@ package controllers
 import (
 	"context"
 
+	"github.com/kramerul/shalm/pkg/shalm"
+	"go.starlark.net/starlark"
+
 	"github.com/go-logr/logr"
 	"k8s.io/apimachinery/pkg/runtime"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client"
 
-	shalmv1alpha1 "github.com/kramerul/shalm/api/v1alpha1"
+	shalmv1a1 "github.com/kramerul/shalm/api/v1alpha1"
 )
 
 // ShalmChartReconciler reconciles a ShalmChart object
@@ -31,6 +34,8 @@ type ShalmChartReconciler struct {
 	client.Client
 	Log    logr.Logger
 	Scheme *runtime.Scheme
+	Repo   shalm.Repo
+	K8s    func(kubeconfig string) shalm.K8s
 }
 
 // +kubebuilder:rbac:groups=shalm.kramerul.github.com,resources=shalmcharts,verbs=get;list;watch;create;update;patch;delete
@@ -38,17 +43,29 @@ type ShalmChartReconciler struct {
 
 // Reconcile -
 func (r *ShalmChartReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) {
-	_ = context.Background()
+	result := ctrl.Result{}
+	ctx := context.Background()
 	_ = r.Log.WithValues("shalmchart", req.NamespacedName)
 
-	// your logic here
+	var shalmChart shalmv1a1.ShalmChart
+	err := r.Client.Get(ctx, client.ObjectKey{Name: req.Name, Namespace: req.Namespace}, &shalmChart)
+	if err != nil {
+		return result, err
+	}
+	thread := &starlark.Thread{Name: "main"}
+	spec := &shalmChart.Spec
+	chart, err := r.Repo.GetFromGo(thread, spec.URL, spec.Namespace, false, spec.Args, spec.KwArgs)
+	if err != nil {
+		return result, err
+	}
+	err = chart.Apply(thread, r.K8s(spec.KubeConfig))
 
-	return ctrl.Result{}, nil
+	return result, nil
 }
 
 // SetupWithManager -
 func (r *ShalmChartReconciler) SetupWithManager(mgr ctrl.Manager) error {
 	return ctrl.NewControllerManagedBy(mgr).
-		For(&shalmv1alpha1.ShalmChart{}).
+		For(&shalmv1a1.ShalmChart{}).
 		Complete(r)
 }

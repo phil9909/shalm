@@ -78,6 +78,10 @@ func (r *repoImpl) Get(thread *starlark.Thread, url string, namespace string, pr
 	return nil, fmt.Errorf("Chart not found for url %s", url)
 }
 
+func (r *repoImpl) GetFromGo(thread *starlark.Thread, url string, namespace string, proxy bool, args []interface{}, kwargs map[string]interface{}) (ChartValue, error) {
+	return r.Get(thread, url, namespace, proxy, toStarlark(args).(starlark.Tuple), kwargsToStarlark(kwargs))
+}
+
 func newChartFromReader(thread *starlark.Thread, repo Repo, dir string, reader io.Reader, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
 	if err := tarExtract(reader, dir); err != nil {
 		return nil, err

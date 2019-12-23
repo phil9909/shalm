@@ -30,7 +30,7 @@ func toStarlark(vi interface{}) starlark.Value {
 		for i := 0; i < v.Len(); i++ {
 			a = append(a, toStarlark(v.Index(i).Interface()))
 		}
-		return starlark.NewList(a)
+		return starlark.Tuple(a)
 	case reflect.Ptr:
 		return toStarlark(v.Elem())
 	case reflect.Map:

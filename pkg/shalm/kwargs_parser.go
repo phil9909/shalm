@@ -44,3 +44,11 @@ func kwargsToGo(kwargs []starlark.Tuple) map[string]interface{} {
 	}
 	return result
 }
+
+func kwargsToStarlark(kwargs map[string]interface{}) []starlark.Tuple {
+	var result []starlark.Tuple
+	for k, v := range kwargs {
+		result = append(result, starlark.Tuple{starlark.String(k), toStarlark(v)})
+	}
+	return result
+}
