@@ -184,6 +184,7 @@ def delete(self,k8s):
 			writer := &bytes.Buffer{}
 			err := c.Package(writer)
 			Expect(err).NotTo(HaveOccurred())
+			Expect(bytes.HasPrefix(writer.Bytes(), []byte{0x1F, 0x8B, 0x08})).To(BeTrue())
 		})
 
 		It("applies subcharts", func() {
@@ -273,6 +274,19 @@ def delete(self,k8s):
 		Expect(writer.String()).To(ContainSubstring("  username: "))
 		Expect(writer.String()).To(ContainSubstring("=="))
 		Expect(writer.String()).To(ContainSubstring("  password: "))
+	})
+
+	It("merges values ", func() {
+		thread := &starlark.Thread{Name: "main"}
+		dir := NewTestDir()
+		defer dir.Remove()
+		repo := NewRepo()
+		dir.WriteFile("Chart.star", []byte("def init(self):\n  self.timeout=50\n"), 0644)
+		c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+		Expect(err).NotTo(HaveOccurred())
+		c.mergeValues(map[string]interface{}{"timeout": 60, "string": "test"})
+		Expect(c.values["timeout"]).To(Equal(starlark.MakeInt(60)))
+		Expect(c.values["string"]).To(Equal(starlark.String("test")))
 	})
 
 })

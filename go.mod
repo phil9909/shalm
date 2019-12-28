@@ -6,6 +6,7 @@ require (
 	github.com/Masterminds/sprig/v3 v3.0.0
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/go-logr/logr v0.1.0
+	github.com/imdario/mergo v0.3.7
 	github.com/k14s/ytt v0.22.0
 	github.com/k14s/ytt/pkg/yamlmeta/internal/yaml.v2 v0.0.0-20191211135110-6f8b8fe40a62 // indirect
 	github.com/maxbrunsfeld/counterfeiter/v6 v6.2.2

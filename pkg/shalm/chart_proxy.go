@@ -1,6 +1,7 @@
 package shalm
 
 import (
+	"bytes"
 	"io"
 
 	corev1 "k8s.io/api/core/v1"
@@ -25,9 +26,9 @@ var (
 	_ ChartValue = (*chartProxy)(nil)
 )
 
-func newChartProxy(delegate ChartValue, url string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
+func newChartProxy(delegate *chartImpl, url string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
 	return &chartProxy{
-		chartImpl: delegate.(*chartImpl),
+		chartImpl: delegate,
 		args:      toGo(args).([]interface{}),
 		kwargs:    kwargsToGo(kwargs),
 		url:       url,
@@ -60,6 +61,18 @@ func (c *chartProxy) applyFunction() starlark.Callable {
 				Name: c.namespace,
 			},
 		}
+		shalmSpec := shalmv1a1.ShalmChartSpec{
+			Values:     shalmv1a1.ClonableMap(c.chartImpl.templateValues()),
+			Args:       shalmv1a1.ClonableArray(c.args),
+			KwArgs:     shalmv1a1.ClonableMap(c.kwargs),
+			KubeConfig: "",
+			Namespace:  c.namespace,
+		}
+		buffer := &bytes.Buffer{}
+		if err := c.chartImpl.Package(buffer); err != nil {
+			return nil, err
+		}
+		shalmSpec.ChartTgz = buffer.Bytes()
 		shalmChart := &shalmv1a1.ShalmChart{
 			TypeMeta: v1.TypeMeta{
 				Kind:       "ShalmChart",
@@ -69,15 +82,9 @@ func (c *chartProxy) applyFunction() starlark.Callable {
 				Name:      c.Name,
 				Namespace: c.namespace,
 			},
-			Spec: shalmv1a1.ShalmChartSpec{
-				Values:     shalmv1a1.ClonableMap(c.chartImpl.templateValues()),
-				Args:       shalmv1a1.ClonableArray(c.args),
-				KwArgs:     shalmv1a1.ClonableMap(c.kwargs),
-				KubeConfig: "",
-				Namespace:  c.namespace,
-				URL:        c.url,
-			},
+			Spec: shalmSpec,
 		}
+
 		encoder := json.NewSerializerWithOptions(json.DefaultMetaFactory, nil, nil, json.SerializerOptions{})
 
 		return starlark.None, k.Apply(func(writer io.Writer) error {

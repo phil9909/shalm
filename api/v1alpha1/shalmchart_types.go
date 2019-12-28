@@ -28,6 +28,11 @@ import (
 // ClonableMap -
 type ClonableMap map[string]interface{}
 
+func init() {
+	gob.Register(map[string]interface{}{})
+	gob.Register([]interface{}{})
+}
+
 // DeepCopy -
 func (v *ClonableMap) DeepCopy() *ClonableMap {
 	var buf bytes.Buffer
@@ -76,8 +81,8 @@ type ShalmChartSpec struct {
 	Args       ClonableArray `json:"args,omitempty"`
 	KwArgs     ClonableMap   `json:"kwargs,omitempty"`
 	KubeConfig string        `json:"kubeconfig,omitempty"`
-	Namespace  string        `json:"namespace,omitempty"`
-	URL        string        `json:"url"`
+	Namespace  string        `json:"namespace"`
+	ChartTgz   []byte        `json:"chart_tgz,omitempty"`
 }
 
 // ShalmChartStatus defines the observed state of ShalmChart

@@ -17,7 +17,21 @@ func toStarlark(vi interface{}) starlark.Value {
 	case reflect.Bool:
 		return starlark.Bool(v.Bool())
 	case reflect.Int:
+		fallthrough
+	case reflect.Int32:
+		fallthrough
+	case reflect.Int64:
+		fallthrough
+	case reflect.Int16:
 		return starlark.MakeInt64(v.Int())
+	case reflect.Uint:
+		fallthrough
+	case reflect.Uint32:
+		fallthrough
+	case reflect.Uint64:
+		fallthrough
+	case reflect.Uint16:
+		return starlark.MakeUint64(v.Uint())
 	case reflect.Float32:
 		return starlark.Float(v.Float())
 	case reflect.Float64:
@@ -89,4 +103,73 @@ func toGo(v starlark.Value) interface{} {
 	default:
 		panic(fmt.Errorf("cannot convert %s to starlark", v.Type()))
 	}
+}
+
+func merge(value starlark.Value, override starlark.Value) starlark.Value {
+	if override == nil {
+		return value
+	}
+	switch override := override.(type) {
+	case starlark.NoneType:
+		return value
+	case starlark.Bool:
+		return override
+	case starlark.Int:
+		return override
+	case starlark.Float:
+		return override
+	case starlark.String:
+		return override
+	case starlark.Indexable:
+		var result []starlark.Value
+		v := value.(starlark.Indexable)
+		for i := 0; i < maxInt(override.Len(), v.Len()); i++ {
+			if i >= override.Len() {
+				result = append(result, v.Index(i))
+			} else if i >= v.Len() {
+				result = append(result, override.Index(i))
+			} else {
+				result = append(result, merge(v.Index(i), override.Index(i)))
+			}
+		}
+		_, ok := override.(starlark.Tuple)
+		if ok {
+			return starlark.Tuple(result)
+		}
+		return starlark.NewList(result)
+	case starlark.IterableMapping:
+		v := value.(starlark.IterableMapping)
+		d := starlark.NewDict(starlark.Len(override))
+		for _, t := range override.Items() {
+			d.SetKey(t.Index(0), t.Index(1))
+		}
+
+		for _, t := range v.Items() {
+			key := t.Index(0)
+			o, found, err := d.Get(key)
+			if found && err == nil {
+				value := merge(t.Index(1), o)
+				if value != nil && value != starlark.None {
+					d.SetKey(key, value)
+				}
+			} else {
+				d.SetKey(key, t.Index(1))
+			}
+		}
+		return d
+
+	case *chartImpl:
+		return nil
+	case *userCredential:
+		return override
+	default:
+		panic(fmt.Errorf("cannot merge %s", override.Type()))
+	}
+}
+
+func maxInt(i1, i2 int) int {
+	if i1 > i2 {
+		return i1
+	}
+	return i2
 }

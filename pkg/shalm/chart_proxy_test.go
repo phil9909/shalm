@@ -49,7 +49,7 @@ var _ = Describe("Chart Proxy", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k.ApplyCallCount()).To(Equal(1))
 			Expect(buffer.String()).To(ContainSubstring(`{"kind":"Namespace","apiVersion":"v1","metadata":{"name":"namespace","creationTimestamp":null},"spec":{},"status":{}}`))
-			Expect(buffer.String()).To(ContainSubstring(`"spec":{"values":{"replicas":"1","timeout":"30s"},"args":["hello"],"kwargs":{"key":"value"},"namespace":"namespace","url":"http://test.com"}`))
+			Expect(buffer.String()).To(ContainSubstring(`"spec":{"values":{"replicas":"1","timeout":"30s"},"args":["hello"],"kwargs":{"key":"value"},"namespace":"namespace","chart_tgz":"H4sI`))
 			Expect(buffer.String()).To(ContainSubstring(`"name":"mariadb","namespace":"namespace"`))
 		})
 		It("deletes a ShalmChart from k8s", func() {

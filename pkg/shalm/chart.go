@@ -33,7 +33,7 @@ var (
 	_ ChartValue = (*chartImpl)(nil)
 )
 
-func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
+func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (*chartImpl, error) {
 	name := strings.Split(filepath.Base(dir), ":")[0]
 	c := &chartImpl{Name: name, dir: dir, namespace: namespace}
 	c.values = make(map[string]starlark.Value)
@@ -292,6 +292,12 @@ func (c *chartImpl) eachSubChart(block func(subChart *chartImpl) error) error {
 	return nil
 }
 
+func (c *chartImpl) mergeValues(values map[string]interface{}) {
+	for k, v := range values {
+		c.values[k] = merge(c.values[k], toStarlark(v))
+	}
+}
+
 func unpackRendererOptions(parser *kwargsParser) *renderer.Options {
 	result := &renderer.Options{}
 	parser.Arg("glob", func(value starlark.Value) {
@@ -301,8 +307,10 @@ func unpackRendererOptions(parser *kwargsParser) *renderer.Options {
 }
 
 func (c *chartImpl) Package(writer io.Writer) error {
-	tw := tar.NewWriter(writer)
+	gz := gzip.NewWriter(writer)
+	tw := tar.NewWriter(gz)
 	defer tw.Close()
+	defer gz.Close()
 	return c.walk(func(file string, size int64, body io.Reader, err error) error {
 		hdr := &tar.Header{
 			Name: path.Join(c.Name, file),

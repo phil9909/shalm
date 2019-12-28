@@ -8,7 +8,6 @@ import (
 	"context"
 	"io"
 	"io/ioutil"
-	"net/http"
 	"path"
 	"path/filepath"
 	goruntime "runtime"
@@ -39,20 +38,7 @@ var (
 
 var _ = Describe("ShalmChartReconciler", func() {
 
-	var server http.Server
-	http.HandleFunc("/mariadb.tgz", func(w http.ResponseWriter, r *http.Request) {
-		content, _ := ioutil.ReadFile(path.Join(example, "mariadb-6.12.2.tgz"))
-		w.Write(content)
-	})
-
-	BeforeEach(func() {
-		server = http.Server{Addr: "127.0.0.1:8675", Handler: nil}
-		go server.ListenAndServe()
-	})
-
-	AfterEach(func() {
-		server.Shutdown(context.Background())
-	})
+	chartTgz, _ := ioutil.ReadFile(path.Join(example, "mariadb-6.12.2.tgz"))
 
 	It("applies shalm chart correct", func() {
 
@@ -72,7 +58,7 @@ var _ = Describe("ShalmChartReconciler", func() {
 				KwArgs:     nil,
 				KubeConfig: "",
 				Namespace:  "",
-				URL:        "http://localhost:8675/mariadb.tgz",
+				ChartTgz:   chartTgz,
 			},
 		}
 
@@ -132,7 +118,7 @@ var _ = Describe("ShalmChartReconciler", func() {
 				KwArgs:     nil,
 				KubeConfig: "",
 				Namespace:  "",
-				URL:        "http://localhost:8675/mariadb.tgz",
+				ChartTgz:   chartTgz,
 			},
 		}
 

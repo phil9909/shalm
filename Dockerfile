@@ -1,7 +1,11 @@
 # Build the manager binary
-FROM golang:1.13 as builder
+FROM golang:1.13-alpine as builder
 
 WORKDIR /workspace
+
+ADD https://storage.googleapis.com/kubernetes-release/release/v1.6.4/bin/linux/amd64/kubectl /workspace/kubectl
+RUN chmod +x /workspace/kubectl
+
 # Copy the Go Modules manifests
 COPY go.mod go.mod
 COPY go.sum go.sum
@@ -22,8 +26,11 @@ RUN CGO_ENABLED=0 GOOS=linux GOARCH=amd64 GO111MODULE=on go build -a -o shalm ma
 # Use distroless as minimal base image to package the manager binary
 # Refer to https://github.com/GoogleContainerTools/distroless for more details
 FROM gcr.io/distroless/static:nonroot
-WORKDIR /
+
+WORKDIR /app
+ENV HOME=/app
 COPY --from=builder /workspace/shalm .
+COPY --from=builder /workspace/kubectl /usr/bin/kubectl
 USER nonroot:nonroot
 
-ENTRYPOINT ["/shalm","controller"]
+ENTRYPOINT ["/app/shalm","controller"]

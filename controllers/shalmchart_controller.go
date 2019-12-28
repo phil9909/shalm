@@ -85,7 +85,7 @@ func (r *ShalmChartReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 func (r *ShalmChartReconciler) apply(spec *shalmv1a1.ShalmChartSpec) error {
 	thread := &starlark.Thread{Name: "main"}
-	chart, err := r.Repo.GetFromGo(thread, spec.URL, spec.Namespace, false, spec.Args, spec.KwArgs)
+	chart, err := r.Repo.GetFromSpec(thread, spec)
 	if err != nil {
 		return err
 	}
@@ -94,7 +94,7 @@ func (r *ShalmChartReconciler) apply(spec *shalmv1a1.ShalmChartSpec) error {
 
 func (r *ShalmChartReconciler) delete(spec *shalmv1a1.ShalmChartSpec) error {
 	thread := &starlark.Thread{Name: "main"}
-	chart, err := r.Repo.GetFromGo(thread, spec.URL, spec.Namespace, false, spec.Args, spec.KwArgs)
+	chart, err := r.Repo.GetFromSpec(thread, spec)
 	if err != nil {
 		return err
 	}

@@ -6,6 +6,8 @@ import (
 
 	"github.com/blang/semver"
 	"go.starlark.net/starlark"
+
+	shalmv1a1 "github.com/kramerul/shalm/api/v1alpha1"
 )
 
 //go:generate go run github.com/maxbrunsfeld/counterfeiter/v6 -o fake_k8s_test.go . K8s
@@ -67,6 +69,6 @@ type K8sValue interface {
 type Repo interface {
 	// Get -
 	Get(thread *starlark.Thread, url string, namespace string, proxy bool, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error)
-	// GetFromGo -
-	GetFromGo(thread *starlark.Thread, url string, namespace string, proxy bool, args []interface{}, kwargs map[string]interface{}) (ChartValue, error)
+	// GetFromSpec -
+	GetFromSpec(thread *starlark.Thread, spec *shalmv1a1.ShalmChartSpec) (ChartValue, error)
 }
