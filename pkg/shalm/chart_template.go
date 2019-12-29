@@ -8,7 +8,6 @@ import (
 	"github.com/kramerul/shalm/pkg/shalm/renderer"
 
 	"go.starlark.net/starlark"
-	"gopkg.in/yaml.v2"
 )
 
 type release struct {
@@ -126,9 +125,8 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 		return nil
 	}
 	writer.Write([]byte("---\n"))
-	enc := yaml.NewEncoder(writer)
 	for _, credential := range c.userCredentials {
-		err = enc.Encode(credential.secret(c.namespace))
+		err = serializer.Encode(credential.secret(c.namespace), writer)
 		if err != nil {
 			return err
 		}

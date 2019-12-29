@@ -10,6 +10,7 @@ import (
 	"time"
 
 	"go.starlark.net/starlark"
+	corev1 "k8s.io/api/core/v1"
 )
 
 // NewK8sValue create new instance to interact with kubernetes
@@ -123,8 +124,8 @@ func (k *k8sValueImpl) Attr(name string) (starlark.Value, error) {
 				return starlark.None, err
 			}
 			if obj["kind"] == "Secret" {
-				var s secret
-				err = json.Unmarshal(buffer.Bytes(), &s)
+				var s corev1.Secret
+				_, _, err = serializer.Decode(buffer.Bytes(), nil, &s)
 				if err != nil {
 					return starlark.None, err
 				}

@@ -2,76 +2,22 @@ package shalm
 
 import (
 	"bytes"
-	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
 	"strings"
 	"time"
 
-	"github.com/kramerul/shalm/pkg/shalm/renderer"
 	"go.starlark.net/starlark"
+	corev1 "k8s.io/api/core/v1"
+	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
+	"k8s.io/apimachinery/pkg/runtime/serializer/json"
+	"k8s.io/client-go/kubernetes/scheme"
 )
 
-type dataMap map[string][]byte
-
-func (d *dataMap) UnmarshalJSON(b []byte) (err error) {
-	var m map[string]string
-	if err = json.Unmarshal(b, &m); err != nil {
-		return
-	}
-	result := dataMap{}
-	for k, v := range m {
-		result[k], err = base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return
-		}
-	}
-
-	*d = result
-	return
-}
-
-func (d dataMap) MarshalJSON() ([]byte, error) {
-	m := make(map[string]string)
-	for k, v := range d {
-		m[k] = base64.StdEncoding.EncodeToString(v)
-	}
-	return json.Marshal(m)
-}
-
-func (d *dataMap) UnmarshalYAML(unmarshal func(interface{}) error) (err error) {
-	var m map[string]string
-	if err = unmarshal(&m); err != nil {
-		return
-	}
-	result := dataMap{}
-	for k, v := range m {
-		result[k], err = base64.StdEncoding.DecodeString(v)
-		if err != nil {
-			return
-		}
-	}
-	*d = result
-	return
-}
-
-func (d dataMap) MarshalYAML() (interface{}, error) {
-	m := make(map[string]string)
-	for k, v := range d {
-		m[k] = base64.StdEncoding.EncodeToString(v)
-	}
-	return m, nil
-}
-
-type secret struct {
-	APIVersion string            `json:"apiVersion" yaml:"apiVersion"`
-	Kind       string            `json:"kind" yaml:"kind"`
-	Type       string            `json:"type" yaml:"type"`
-	MetaData   renderer.MetaData `json:"metadata" yaml:"metadata"`
-	Data       dataMap           `json:"data,omitempty" yaml:"data,omitempty"`
-}
+var (
+	serializer = json.NewYAMLSerializer(json.DefaultMetaFactory, scheme.Scheme, scheme.Scheme)
+)
 
 type userCredential struct {
 	username    string
@@ -134,9 +80,9 @@ func (c *userCredential) GetOrCreate(k8s K8s) error {
 			c.password = createRandomString(16)
 		}
 	} else {
-		var secret secret
-		dec := json.NewDecoder(&buffer)
-		err = dec.Decode(&secret)
+		var secret corev1.Secret
+
+		_, _, err = serializer.Decode(buffer.Bytes(), nil, &secret)
 		if err != nil {
 			return err
 		}
@@ -151,23 +97,25 @@ func (c *userCredential) GetOrCreate(k8s K8s) error {
 	return nil
 }
 
-func (c *userCredential) secret(namespace string) *secret {
+func (c *userCredential) secret(namespace string) *corev1.Secret {
 	c.setDefaultKeys()
-	data := dataMap{}
+	data := map[string][]byte{}
 	if c.username != "" {
 		data[c.usernameKey] = []byte(c.username)
 	}
 	if c.password != "" {
 		data[c.passwordKey] = []byte(c.password)
 	}
-	return &secret{
-		APIVersion: "v1",
-		Kind:       "Secret",
-		Type:       "Opaque",
-		MetaData: renderer.MetaData{
+	return &corev1.Secret{
+		TypeMeta: metav1.TypeMeta{
+			APIVersion: corev1.SchemeGroupVersion.String(),
+			Kind:       "Secret",
+		},
+		ObjectMeta: metav1.ObjectMeta{
 			Name:      c.name,
 			Namespace: namespace,
 		},
+		Type: "Opaque",
 		Data: data,
 	}
 }
