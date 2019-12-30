@@ -22,7 +22,7 @@ import (
 type chartImpl struct {
 	Name            string
 	Version         semver.Version
-	values          map[string]starlark.Value
+	values          starlark.StringDict
 	methods         map[string]starlark.Callable
 	dir             string
 	namespace       string

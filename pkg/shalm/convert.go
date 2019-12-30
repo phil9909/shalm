@@ -5,6 +5,7 @@ import (
 	"reflect"
 
 	"go.starlark.net/starlark"
+	"go.starlark.net/starlarkstruct"
 )
 
 func toStarlark(vi interface{}) starlark.Value {
@@ -97,12 +98,49 @@ func toGo(v starlark.Value) interface{} {
 		return d
 
 	case *chartImpl:
-		return nil
+		return stringDictToGo(v.values)
 	case *userCredential:
-		return v
+		// userCredentials can't be used for templating
+		return nil
+	case *starlarkstruct.Struct:
+		d := starlark.StringDict{}
+		v.ToStringDict(d)
+		return stringDictToGo(d)
 	default:
 		panic(fmt.Errorf("cannot convert %s to starlark", v.Type()))
 	}
+}
+
+func stringDictToGo(stringDict starlark.StringDict) map[string]interface{} {
+	d := make(map[string]interface{})
+
+	for k, v := range stringDict {
+		value := toGo(v)
+		if value != nil {
+			d[k] = value
+		}
+	}
+	return d
+}
+
+func mergeStringDict(value starlark.StringDict, override starlark.IterableMapping) starlark.StringDict {
+	d := starlark.StringDict{}
+	for _, t := range override.Items() {
+		d[t.Index(0).(starlark.String).GoString()] = t.Index(1)
+	}
+
+	for k, v := range value {
+		o, found := d[k]
+		if found {
+			value := merge(v, o)
+			if value != nil && value != starlark.None {
+				d[k] = value
+			}
+		} else {
+			d[k] = v
+		}
+	}
+	return d
 }
 
 func merge(value starlark.Value, override starlark.Value) starlark.Value {
@@ -138,30 +176,36 @@ func merge(value starlark.Value, override starlark.Value) starlark.Value {
 		}
 		return starlark.NewList(result)
 	case starlark.IterableMapping:
-		v := value.(starlark.IterableMapping)
-		d := starlark.NewDict(starlark.Len(override))
-		for _, t := range override.Items() {
-			d.SetKey(t.Index(0), t.Index(1))
-		}
-
-		for _, t := range v.Items() {
-			key := t.Index(0)
-			o, found, err := d.Get(key)
-			if found && err == nil {
-				value := merge(t.Index(1), o)
-				if value != nil && value != starlark.None {
-					d.SetKey(key, value)
-				}
-			} else {
-				d.SetKey(key, t.Index(1))
+		switch value := value.(type) {
+		case starlark.IterableMapping:
+			d := starlark.NewDict(starlark.Len(override))
+			for _, t := range override.Items() {
+				d.SetKey(t.Index(0), t.Index(1))
 			}
-		}
-		return d
 
-	case *chartImpl:
-		return nil
-	case *userCredential:
-		return override
+			for _, t := range value.Items() {
+				key := t.Index(0)
+				o, found, err := d.Get(key)
+				if found && err == nil {
+					value := merge(t.Index(1), o)
+					if value != nil && value != starlark.None {
+						d.SetKey(key, value)
+					}
+				} else {
+					d.SetKey(key, t.Index(1))
+				}
+			}
+			return d
+		case *chartImpl:
+			value.values = mergeStringDict(value.values, override)
+			return value
+		case *starlarkstruct.Struct:
+			d := starlark.StringDict{}
+			value.ToStringDict(d)
+			return starlarkstruct.FromStringDict(starlarkstruct.Default, mergeStringDict(d, override))
+		default:
+			panic(fmt.Errorf("cannot merge %s", value.Type()))
+		}
 	default:
 		panic(fmt.Errorf("cannot merge %s", override.Type()))
 	}

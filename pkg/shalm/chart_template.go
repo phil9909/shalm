@@ -58,20 +58,8 @@ func (c *chartImpl) templateRecursive(thread *starlark.Thread, writer io.Writer,
 	return c.template(thread, writer, options)
 }
 
-func (c *chartImpl) templateValues() map[string]interface{} {
-	d := make(map[string]interface{})
-
-	for k, v := range c.values {
-		value := toGo(v)
-		if value != nil {
-			d[k] = value
-		}
-	}
-	return d
-}
-
 func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options *renderer.Options) error {
-	values := c.templateValues()
+	values := stringDictToGo(c.values)
 	methods := make(map[string]interface{})
 	for k, f := range c.methods {
 		method := f

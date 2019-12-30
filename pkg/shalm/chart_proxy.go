@@ -62,7 +62,7 @@ func (c *chartProxy) applyFunction() starlark.Callable {
 			},
 		}
 		shalmSpec := shalmv1a1.ShalmChartSpec{
-			Values:     shalmv1a1.ClonableMap(c.chartImpl.templateValues()),
+			Values:     shalmv1a1.ClonableMap(stringDictToGo(c.chartImpl.values)),
 			Args:       shalmv1a1.ClonableArray(c.args),
 			KwArgs:     shalmv1a1.ClonableMap(c.kwargs),
 			KubeConfig: "",

@@ -66,4 +66,17 @@ var _ = Describe("Converter", func() {
 		Expect(element).To(Equal(starlark.String("v3")))
 	})
 
+	It("merges string dicts", func() {
+		v := starlark.StringDict{}
+		v["k1"] = starlark.String("v1")
+		o := starlark.NewDict(0)
+		o.SetKey(starlark.String("k1"), starlark.String("o1"))
+		Expect(mergeStringDict(v, o)).To(HaveKeyWithValue("k1", starlark.String("o1")))
+		o.SetKey(starlark.String("k2"), starlark.String("o2"))
+		Expect(mergeStringDict(v, o)).To(HaveKeyWithValue("k2", starlark.String("o2")))
+
+		v["k3"] = starlark.String("v3")
+		Expect(mergeStringDict(v, o)).To(HaveKeyWithValue("k3", starlark.String("v3")))
+	})
+
 })
