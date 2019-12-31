@@ -16,6 +16,7 @@ This project brings the starlark scripting language to helm charts.
 * Manage user credentials
 * Act as glue code between helm charts
 * Rendering of [ytt templates](https://get-ytt.io/)
+* Also available as kubernetes controller
 
 ## Installation
 
@@ -133,6 +134,23 @@ def apply(self,k8s):
   self.nats.auth["password"] = self.auth.password
   self.nats.apply(k8s)
 ```
+
+## Using shalm controller
+
+Charts can be also applied (in parts) using the shalm controller.
+
+### Install shalm controller
+
+```bash
+shalm apply charts/shalm
+```
+
+### Install a shalm chart using the controller
+
+```bash
+shalm apply --proxy <chart>
+```
+
 
 ## Comparison
 
