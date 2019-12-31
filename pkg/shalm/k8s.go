@@ -17,19 +17,23 @@ import (
 func NewK8s() K8s {
 	kubeconfig, ok := os.LookupEnv("KUBECONFIG")
 	if !ok {
+		_, ok = os.LookupEnv("KUBERNETES_SERVICE_HOST")
+		if ok {
+			return &k8sImpl{}
+		}
 		home, err := os.UserHomeDir()
 		if err != nil {
 			panic(err)
 		}
 		kubeconfig = path.Join(home, ".kube", "config")
 	}
-	return &k8sImpl{kubeconfig: kubeconfig}
+	return &k8sImpl{kubeconfig: &kubeconfig}
 }
 
 // k8sImpl -
 type k8sImpl struct {
 	namespace  string
-	kubeconfig string
+	kubeconfig *string
 	cmd        string
 }
 
@@ -38,7 +42,10 @@ var (
 )
 
 func (k *k8sImpl) Inspect() string {
-	return "kubeconfig = " + k.kubeconfig + " namespace = " + k.namespace
+	if k.kubeconfig != nil {
+		return "kubeconfig = " + *k.kubeconfig + " namespace = " + k.namespace
+	}
+	return "namespace = " + k.namespace
 }
 
 // Apply -
@@ -115,7 +122,11 @@ func run(cmd *exec.Cmd) error {
 }
 
 func (k *k8sImpl) kubectl(command string, options *K8sOptions, flags ...string) *exec.Cmd {
-	flags = append([]string{command, "--kubeconfig", k.kubeconfig}, flags...)
+	if k.kubeconfig != nil {
+		flags = append([]string{command, "--kubeconfig", *k.kubeconfig}, flags...)
+	} else {
+		flags = append([]string{command}, flags...)
+	}
 	if options.Namespaced {
 		flags = append(flags, "-n", k.namespace)
 	}

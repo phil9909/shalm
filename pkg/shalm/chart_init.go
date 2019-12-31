@@ -114,7 +114,7 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 			if err != nil {
 				return starlark.None, err
 			}
-			return &k8sValueImpl{&k8sImpl{kubeconfig: kubeconfig, namespace: c.namespace}}, nil
+			return &k8sValueImpl{&k8sImpl{kubeconfig: &kubeconfig, namespace: c.namespace}}, nil
 		}),
 	}
 	globals, err := starlark.ExecFile(thread, file, nil, internal)

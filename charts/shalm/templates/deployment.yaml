@@ -1,0 +1,21 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shalm-controller
+  labels:
+    app: shalm-controller
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shalm-controller
+  template:
+    metadata:
+      labels:
+        app: shalm-controller
+    spec:
+      serviceAccountName: shalm-controller
+      containers:
+      - name: shalm-controller
+        image: shalm-controller:latest
+        imagePullPolicy: Never

@@ -35,7 +35,7 @@ var _ = Describe("k8s", func() {
 		writer := &bytes.Buffer{}
 		err := k8s.Get("kind", "name", writer, &K8sOptions{})
 		Expect(err).NotTo(HaveOccurred())
-		Expect(writer.String()).To(Equal("get --kubeconfig  kind name -o json\n"))
+		Expect(writer.String()).To(Equal("get kind name -o json\n"))
 	})
 	// It("watch works", func() {
 	// 	reader, err := k8s.Watch("kind", "name", &K8sOptions{})
