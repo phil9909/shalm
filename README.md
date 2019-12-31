@@ -151,6 +151,14 @@ shalm apply charts/shalm
 shalm apply --proxy <chart>
 ```
 
+or from inside another shalm chart
+
+```python
+def init(self):
+  self.mariadb = chart("mariadb",proxy=true)
+````
+
+
 
 ## Comparison
 
@@ -164,6 +172,7 @@ shalm apply --proxy <chart>
 | Repository                     |   +   |   +   |  -       |    -      |
 | Mature technology              |   -   |   +   |  +       |    +      |
 | Manage user credentials        |   +   |   -   |  -       |    -      |
+| Controller based installation  |   +   |   -   |  +       |    -      |
 | Remove outdated objects        | +<sup>(1)</sup> |   +   |  +       |    -      |
 | Migrate existing objects       | +<sup>(1)</sup> |   -   |  -       |    -      |
 
