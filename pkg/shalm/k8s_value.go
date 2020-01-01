@@ -40,6 +40,18 @@ var (
 	_ K8sValue          = (*k8sValueImpl)(nil)
 )
 
+func makeK8sValue(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple, namespace string) (value starlark.Value, e error) {
+	var kubeconfig string
+	if err := starlark.UnpackArgs("k8s", args, kwargs, "kubeconfig", &kubeconfig); err != nil {
+		return starlark.None, err
+	}
+	kubeconfig, err := kubeConfigFromContent(kubeconfig)
+	if err != nil {
+		return starlark.None, err
+	}
+	return &k8sValueImpl{&k8sImpl{kubeconfig: &kubeconfig, namespace: namespace}}, nil
+}
+
 // String -
 func (k *k8sValueImpl) String() string { return k.Inspect() }
 

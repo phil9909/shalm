@@ -21,6 +21,7 @@ import (
 
 type chartImpl struct {
 	Name            string
+	clazz           chartClass
 	Version         semver.Version
 	values          starlark.StringDict
 	methods         map[string]starlark.Callable
@@ -35,7 +36,7 @@ var (
 
 func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (*chartImpl, error) {
 	name := strings.Split(filepath.Base(dir), ":")[0]
-	c := &chartImpl{Name: name, dir: dir, namespace: namespace}
+	c := &chartImpl{Name: name, dir: dir, namespace: namespace, clazz: chartClass{Name: name}}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
 	if err := c.loadChartYaml(); err != nil {
@@ -139,6 +140,9 @@ func (c *chartImpl) Attr(name string) (starlark.Value, error) {
 	}
 	if name == "name" {
 		return starlark.String(c.Name), nil
+	}
+	if name == "__class__" {
+		return &c.clazz, nil
 	}
 	value, ok := c.values[name]
 	if !ok {

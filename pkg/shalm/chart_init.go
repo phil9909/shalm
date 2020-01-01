@@ -16,36 +16,24 @@ import (
 	"go.starlark.net/starlarkstruct"
 )
 
-type helmChart struct {
-	APIVersion  string   `json:"apiVersion,omitempty"`
-	Name        string   `json:"name,omitempty"`
-	Version     string   `json:"version,omitempty"`
-	Description string   `json:"description,omitempty"`
-	Keywords    []string `json:"keywords,omitempty"`
-	Home        string   `json:"home,omitempty"`
-	Sources     []string `json:"sources,omitempty"`
-	Icon        string   `json:"icon,omitempty"`
-}
-
 func (c *chartImpl) loadChartYaml() error {
-	var helmChart helmChart
 
-	err := c.loadYamlFile(c.path("Chart.yaml"), &helmChart)
+	err := c.loadYamlFile(c.path("Chart.yaml"), &c.clazz)
 	if err != nil {
 		return err
 	}
-	if strings.HasPrefix(helmChart.Version, "v") {
-		c.Version, err = semver.Parse(helmChart.Version[1:])
+	if strings.HasPrefix(c.clazz.Version, "v") {
+		c.Version, err = semver.Parse(c.clazz.Version[1:])
 		if err != nil {
 			return errors.Wrap(err, "Invalid version in helm chart")
 		}
 	} else {
-		c.Version, err = semver.Parse(helmChart.Version)
+		c.Version, err = semver.Parse(c.clazz.Version)
 		if err != nil {
 			return errors.Wrap(err, "Invalid version in helm chart")
 		}
 	}
-	c.Name = helmChart.Name
+	c.Name = c.clazz.Name
 	return nil
 }
 
@@ -94,27 +82,16 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 			return repo.Get(thread, url, namespace, proxy, args[1:], kwargs)
 		}),
 		"user_credential": starlark.NewBuiltin("user_credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-			s := &userCredential{}
-			s.setDefaultKeys()
-			if err := starlark.UnpackArgs("user_credential", args, kwargs, "name", &s.name,
-				"username_key?", &s.usernameKey, "password_key?", &s.passwordKey,
-				"username?", &s.username, "password?", &s.password); err != nil {
-				return starlark.None, err
+			s, err := makeUserCredential(thread, fn, args, kwargs)
+			if err != nil {
+				return s, err
 			}
-			c.userCredentials = append(c.userCredentials, s)
+			c.userCredentials = append(c.userCredentials, s.(*userCredential))
 			return s, nil
 		}),
 		"struct": starlark.NewBuiltin("struct", starlarkstruct.Make),
 		"k8s": starlark.NewBuiltin("k8s", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
-			var kubeconfig string
-			if err := starlark.UnpackArgs("k8s", args, kwargs, "kubeconfig", &kubeconfig); err != nil {
-				return starlark.None, err
-			}
-			kubeconfig, err := kubeConfigFromContent(kubeconfig)
-			if err != nil {
-				return starlark.None, err
-			}
-			return &k8sValueImpl{&k8sImpl{kubeconfig: &kubeconfig, namespace: c.namespace}}, nil
+			return makeK8sValue(thread, fn, args, kwargs, c.namespace)
 		}),
 	}
 	globals, err := starlark.ExecFile(thread, file, nil, internal)

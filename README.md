@@ -191,11 +191,11 @@ If no namespace is given, the namespace is inherited from the parent chart.
 
 | Parameter | Description |
 |-----------|-------------|
-| url       |  The chart is loaded from the given url. The url can be relative.  In this case the chart is loaded from a path relative to the current chart location.  |
-| namespace |  If no namespace is given, the namespace is inherited from the parent chart. |
-| proxy     |  If true, a proxy for the chart is returned. Applying or deleting a proxy chart is done by applying a `CustomerResource` to kubernetes. The installation process is then performed by the `shalm-controller` in the background
+| `url`       |  The chart is loaded from the given url. The url can be relative.  In this case the chart is loaded from a path relative to the current chart location.  |
+| `namespace` |  If no namespace is given, the namespace is inherited from the parent chart. |
+| `proxy`     |  If true, a proxy for the chart is returned. Applying or deleting a proxy chart is done by applying a `CustomerResource` to kubernetes. The installation process is then performed by the `shalm-controller` in the background
  |
-| ...       |  Additional parameters are passed to the `init` method of the corresponding chart. |
+| `...`       |  Additional parameters are passed to the `init` method of the corresponding chart. |
 
 
 #### `chart.apply(k8s)`
@@ -204,7 +204,7 @@ Applies the chart recursive to k8s. This method can be overwritten.
 
 | Parameter | Description |
 |-----------|-------------|
-| k8s       |  See below  |
+| `8s`       |  See below  |
 
 #### `self.__apply(k8s,timeout=0,glob=pattern)`
 
@@ -212,9 +212,9 @@ Applies the chart to k8s without recursion. This should only be used within `app
 
 | Parameter | Description |
 |-----------|-------------|
-| k8s       |  See below  |
-| timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
-| glob      |  Pattern used to find the templates. Default is "*.yaml"  |
+| `k8s`       |  See below  |
+| `timeout`   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
+| `glob`      |  Pattern used to find the templates. Default is "*.yaml"  |
 
 
 #### `chart.delete(k8s)`
@@ -223,7 +223,7 @@ Deletes the chart recursive from k8s. This method can be overwritten.
 
 | Parameter | Description |
 |-----------|-------------|
-| k8s       |  See below  |
+| `k8s`       |  See below  |
 
 
 #### `self.__delete(k8s,timeout=0,glob=pattern)`
@@ -232,9 +232,17 @@ Deletes the chart from k8s without recursion. This should only be used within `d
 
 | Parameter | Description |
 |-----------|-------------|
-| k8s       |  See below  |
-| timeout   |  Timeout passed to `kubectl apply`, A timeout of zero means wait forever.  |
-| glob      |  Pattern used to find the templates. Default is "*.yaml"  |
+| `k8s`       |  See below  |
+| `timeout`   |  Timeout passed to `kubectl apply`, A timeout of zero means wait forever.  |
+| `glob`      |  Pattern used to find the templates. Default is "*.yaml"  |
+
+#### Attributes
+
+| Name | Description |
+|------------|-------------|
+| `name`       |  Name of the chart. Defaults to `self.__class__.name`  |
+| `namespace`  |  Default namespace of the chart given via command line |
+| `__class__`  |  Class of the chart. See `chart_class` for details  |
 
 ### K8s
 
@@ -244,7 +252,7 @@ Create a new k8s object
 
 | Parameter | Description |
 |-----------|-------------|
-| kube_config_content  |  Content of kube config   |
+| `kube_config_content`  |  Content of kube config   |
 
 #### `k8s.delete(kind,name,namespaced=false,timeout=0)`
 
@@ -252,10 +260,10 @@ Deletes one kubernetes object
 
 | Parameter | Description |
 |-----------|-------------|
-| kind      |  k8s kind   |
-| name      |  name of k8s object   |
-| timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
-| namespaced |  If true object in the current namespace are deleted. Otherwise object in cluster scope will be deleted. Default is `true`  |
+| `kind`      |  k8s kind   |
+| `name`      |  name of k8s object   |
+| `timeout`   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
+| `namespaced` |  If true object in the current namespace are deleted. Otherwise object in cluster scope will be deleted. Default is `true`  |
 
 #### `k8s.get(kind,name,namespaced=false,timeout=0)`
 
@@ -263,10 +271,10 @@ Get one kubernetes object. The value is returned as a `dict`.
 
 | Parameter | Description |
 |-----------|-------------|
-| kind      |  k8s kind   |
-| name      |  name of k8s object   |
-| timeout   |  Timeout passed to `kubectl get`. A timeout of zero means wait forever.  |
-| namespaced |  If true object in the current namespace are listed. Otherwise object in cluster scope will be listed. Default is `true`  |
+| `kind`      |  k8s kind   |
+| `name`      |  name of k8s object   |
+| `timeout`   |  Timeout passed to `kubectl get`. A timeout of zero means wait forever.  |
+| `namespaced` |  If true object in the current namespace are listed. Otherwise object in cluster scope will be listed. Default is `true`  |
 
 #### `k8s.watch(kind,name,namespaced=false,timeout=0)`
 
@@ -274,10 +282,10 @@ Watch one kubernetes object. The value is returned as a `iterator`.
 
 | Parameter | Description |
 |-----------|-------------|
-| kind      |  k8s kind   |
-| name      |  name of k8s object   |
-| timeout   |  Timeout passed to `kubectl watch`. A timeout of zero means wait forever.  |
-| namespaced |  If true object in the current namespace are listed. Otherwise object in cluster scope will be listed. Default is `true`  |
+| `kind`      |  k8s kind   |
+| `name`      |  name of k8s object   |
+| `timeout`   |  Timeout passed to `kubectl watch`. A timeout of zero means wait forever.  |
+| `namespaced` |  If true object in the current namespace are listed. Otherwise object in cluster scope will be listed. Default is `true`  |
 
 #### `k8s.rollout_status(kind,name,timeout=0)`
 
@@ -285,9 +293,9 @@ Wait for rollout status of one kubernetes object
 
 | Parameter | Description |
 |-----------|-------------|
-| kind      |  k8s kind   |
-| name      |  name of k8s object   |
-| timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
+| `kind`      |  k8s kind   |
+| `name`      |  name of k8s object   |
+| `timeout`   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
 
 #### `k8s.wait(kind,name,condition, timeout=0)`
 
@@ -295,10 +303,10 @@ Wait for condition of one kubernetes object
 
 | Parameter | Description |
 |-----------|-------------|
-| kind      |  k8s kind   |
-| name      |  name of k8s object   |
-| condition  |  condition   |
-| timeout   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
+| `kind`      |  k8s kind   |
+| `name`      |  name of k8s object   |
+| `condition`  |  condition   |
+| `timeout`   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
 
 ### user_credential
 
@@ -310,23 +318,42 @@ Creates a new user credential. All user credentials created inside a `Chart.star
 
 | Parameter | Description |
 |-----------|-------------|
-| name      |  The name of the kubernetes secret used to hold the information   |
-| username  |  Username. If it's empty it's either read from the secret or created with a random content.  |
-| password  |  Password. If it's empty it's either read from the secret or created with a random content.  |
-| username_key |  The name of the key used to store the username inside the secret  |
-| password_key |  The name of the key used to store the password inside the secret  |
+| `name`      |  The name of the kubernetes secret used to hold the information   |
+| `username`  |  Username. If it's empty it's either read from the secret or created with a random content.  |
+| `password`  |  Password. If it's empty it's either read from the secret or created with a random content.  |
+| `username_key` |  The name of the key used to store the username inside the secret  |
+| `password_key` |  The name of the key used to store the password inside the secret  |
 
-#### `user_credential.username`
 
-Returns the content of the username attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor.
+#### Attributes
 
-#### `user_credential.password`
+| Name | Description |
+|------------|-------------|
+| `username` | Returns the content of the username attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor. |
+| `password` | Returns the content of the password attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor. |
 
-Returns the content of the password attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor.
 
 ### struct
 
 See [bazel documentation](https://docs.bazel.build/versions/master/skylark/lib/struct.html). `to_proto` and `to_json` are not yet supported.
+
+### chart_class
+
+The `chart_class` represents the values read from the `Chart.yaml` file
+
+#### Attributes
+
+| Name | Description |
+|------------|-------------|
+| `api_version` | API version |
+| `name`        | Name |
+| `version`     | Version |
+| `description` | Description |
+| `keywords`    | Keywords |
+| `home`        | Home |
+| `sources`     | Sources |
+| `icon`        | Icon |
+
 
 ## Difference to helm
 

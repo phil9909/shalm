@@ -31,6 +31,17 @@ var (
 	_ CredentialValue = (*userCredential)(nil)
 )
 
+func makeUserCredential(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
+	s := &userCredential{}
+	s.setDefaultKeys()
+	if err := starlark.UnpackArgs("user_credential", args, kwargs, "name", &s.name,
+		"username_key?", &s.usernameKey, "password_key?", &s.passwordKey,
+		"username?", &s.username, "password?", &s.password); err != nil {
+		return starlark.None, err
+	}
+	return s, nil
+}
+
 // String -
 func (c *userCredential) String() string {
 	buf := new(strings.Builder)
