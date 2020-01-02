@@ -36,7 +36,7 @@ var _ = Describe("Apply Chart", func() {
 			return k
 		}
 
-		err := apply(path.Join(example, "cf"), "mynamespace", shalm.NewK8sValue(k))
+		err := apply(path.Join(example, "cf"), k, shalm.WithNamespace("mynamespace"))
 		Expect(err).ToNot(HaveOccurred())
 		output := writer.String()
 		Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))

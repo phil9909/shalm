@@ -10,11 +10,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var nameSpace string = "default"
-
 func init() {
-
-	rootCmd.PersistentFlags().StringVarP(&nameSpace, "namespace", "n", "default", "namespace")
 	rootCmd.AddCommand(applyCmd)
 	rootCmd.AddCommand(templateCmd)
 	rootCmd.AddCommand(deleteCmd)
@@ -35,9 +31,6 @@ var rootCmd = &cobra.Command{
 // Execute executes the root command.
 func Execute() error {
 	return rootCmd.Execute()
-}
-func rootNamespace() string {
-	return nameSpace
 }
 
 func unwrapEvalError(err error) error {

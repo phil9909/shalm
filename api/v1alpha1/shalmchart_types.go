@@ -72,8 +72,8 @@ func (v *ClonableArray) DeepCopy() *ClonableArray {
 	return &result
 }
 
-// ShalmChartSpec defines the desired state of ShalmChart
-type ShalmChartSpec struct {
+// ChartSpec defines the desired state of ShalmChart
+type ChartSpec struct {
 	// INSERT ADDITIONAL SPEC FIELDS - desired state of cluster
 	// Important: Run "make" to regenerate code after modifying this file
 
@@ -81,14 +81,20 @@ type ShalmChartSpec struct {
 	Args       ClonableArray `json:"args,omitempty"`
 	KwArgs     ClonableMap   `json:"kwargs,omitempty"`
 	KubeConfig string        `json:"kubeconfig,omitempty"`
-	Namespace  string        `json:"namespace"`
+	Namespace  string        `json:"namespace,omitempty"`
+	Suffix     string        `json:"suffix,omitempty"`
 	ChartTgz   []byte        `json:"chart_tgz,omitempty"`
 }
 
-// ShalmChartStatus defines the observed state of ShalmChart
-type ShalmChartStatus struct {
-	// INSERT ADDITIONAL STATUS FIELD - define observed state of cluster
-	// Important: Run "make" to regenerate code after modifying this file
+// Operation defines the progress of the last operation
+type Operation struct {
+	Type     string `json:"type,omitempty"`
+	Progress int    `json:"progress,omitempty"`
+}
+
+// ChartStatus defines the observed state of ShalmChart
+type ChartStatus struct {
+	LastOp Operation `json:"lastOp,omitempty"`
 }
 
 // +kubebuilder:object:root=true
@@ -98,8 +104,8 @@ type ShalmChart struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
 
-	Spec   ShalmChartSpec   `json:"spec,omitempty"`
-	Status ShalmChartStatus `json:"status,omitempty"`
+	Spec   ChartSpec   `json:"spec,omitempty"`
+	Status ChartStatus `json:"status,omitempty"`
 }
 
 // +kubebuilder:object:root=true

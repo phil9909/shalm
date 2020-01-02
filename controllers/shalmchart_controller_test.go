@@ -52,12 +52,13 @@ var _ = Describe("ShalmChartReconciler", func() {
 			return k8s
 		}
 		chart := shalmv1a1.ShalmChart{
-			Spec: shalmv1a1.ShalmChartSpec{
+			Spec: shalmv1a1.ChartSpec{
 				Values:     nil,
 				Args:       nil,
 				KwArgs:     nil,
 				KubeConfig: "",
 				Namespace:  "",
+				Suffix:     "",
 				ChartTgz:   chartTgz,
 			},
 		}
@@ -112,7 +113,7 @@ var _ = Describe("ShalmChartReconciler", func() {
 				DeletionTimestamp: &v1.
 					Time{Time: time.Now()},
 			},
-			Spec: shalmv1a1.ShalmChartSpec{
+			Spec: shalmv1a1.ChartSpec{
 				Values:     nil,
 				Args:       nil,
 				KwArgs:     nil,

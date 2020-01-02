@@ -23,7 +23,7 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			c, err := newChart(thread, repo, dir.Root())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 		})
@@ -33,7 +33,7 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: v6.12.2\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			c, err := newChart(thread, repo, dir.Root())
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 			Expect(c.GetVersion()).To(Equal(semver.Version{Major: 6, Minor: 12, Patch: 2}))
@@ -45,7 +45,7 @@ var _ = Describe("Chart", func() {
 			defer dir.Remove()
 			repo := NewRepo()
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
-			c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			c, err := newChart(thread, repo, dir.Root())
 			Expect(err).NotTo(HaveOccurred())
 			attr, err := c.Attr("replicas")
 			Expect(err).NotTo(HaveOccurred())
@@ -77,7 +77,7 @@ def delete(self,k8s):
 `),
 				0644)
 			var err error
-			c, err = newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			c, err = newChart(thread, repo, dir.Root())
 			Expect(err).NotTo(HaveOccurred())
 
 		})
@@ -93,7 +93,7 @@ def delete(self,k8s):
 			attr, err := c.Attr("method")
 			Expect(err).NotTo(HaveOccurred())
 			value, err := starlark.Call(thread, attr.(starlark.Callable), nil, nil)
-			Expect(value.(starlark.String).GoString()).To(Equal("namespace"))
+			Expect(value.(starlark.String).GoString()).To(Equal("default"))
 		})
 		It("overrides apply", func() {
 			attr, err := c.Attr("apply")
@@ -130,7 +130,7 @@ def delete(self,k8s):
 			dir.WriteFile("Chart.yaml", []byte("name: mariadb\nversion: 6.12.2\n"), 0644)
 			repo := NewRepo()
 			var err error
-			c, err = newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+			c, err = newChart(thread, repo, dir.Root(), WithNamespace("namespace"))
 			Expect(err).NotTo(HaveOccurred())
 			Expect(c.GetName()).To(Equal("mariadb"))
 
@@ -197,7 +197,7 @@ def delete(self,k8s):
 			dir.WriteFile("chart1/Chart.star", []byte("def init(self):\n  self.chart2 = chart(\"../chart2\",namespace=\"chart2\")\n"), 0644)
 
 			dir.WriteFile("chart2/templates/deployment.yaml", []byte("namespace: {{ .Release.Namespace}}"), 0644)
-			c, err := newChart(thread, repo, dir.Join("chart1"), "namespace", nil, nil)
+			c, err := newChart(thread, repo, dir.Join("chart1"))
 			Expect(err).NotTo(HaveOccurred())
 			writer := bytes.Buffer{}
 			k := &FakeK8s{
@@ -222,7 +222,7 @@ def delete(self,k8s):
 		defer dir.Remove()
 		repo := NewRepo()
 		dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
-		c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+		c, err := newChart(thread, repo, dir.Root())
 		Expect(err).NotTo(HaveOccurred())
 		Expect(c.String()).To(ContainSubstring("replicas = \"1\""))
 		Expect(c.Hash()).NotTo(Equal(uint32(0)))
@@ -233,7 +233,7 @@ def delete(self,k8s):
 		Expect(value.(starlark.String).GoString()).To(ContainSubstring("shalm"))
 		value, err = c.Attr("namespace")
 		Expect(err).NotTo(HaveOccurred())
-		Expect(value.(starlark.String).GoString()).To(Equal("namespace"))
+		Expect(value.(starlark.String).GoString()).To(Equal("default"))
 		value, err = c.Attr("apply")
 		Expect(err).NotTo(HaveOccurred())
 		Expect(value.(starlark.Callable).Name()).To(Equal("apply"))
@@ -247,7 +247,7 @@ def delete(self,k8s):
 		defer dir.Remove()
 		repo := NewRepo()
 		dir.WriteFile("Chart.star", []byte("def init(self):\n  user_credential(\"test\")\n"), 0644)
-		c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+		c, err := newChart(thread, repo, dir.Root())
 		Expect(err).NotTo(HaveOccurred())
 		writer := bytes.Buffer{}
 		k := &FakeK8s{
@@ -282,7 +282,7 @@ def delete(self,k8s):
 		defer dir.Remove()
 		repo := NewRepo()
 		dir.WriteFile("Chart.star", []byte("def init(self):\n  self.timeout=50\n"), 0644)
-		c, err := newChart(thread, repo, dir.Root(), "namespace", nil, nil)
+		c, err := newChart(thread, repo, dir.Root())
 		Expect(err).NotTo(HaveOccurred())
 		c.mergeValues(map[string]interface{}{"timeout": 60, "string": "test"})
 		Expect(c.values["timeout"]).To(Equal(starlark.MakeInt(60)))

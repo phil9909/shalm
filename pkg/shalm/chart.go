@@ -20,13 +20,13 @@ import (
 )
 
 type chartImpl struct {
-	Name            string
 	clazz           chartClass
 	Version         semver.Version
 	values          starlark.StringDict
 	methods         map[string]starlark.Callable
 	dir             string
 	namespace       string
+	suffix          string
 	userCredentials []*userCredential
 }
 
@@ -34,9 +34,10 @@ var (
 	_ ChartValue = (*chartImpl)(nil)
 )
 
-func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (*chartImpl, error) {
+func newChart(thread *starlark.Thread, repo Repo, dir string, opts ...ChartOption) (*chartImpl, error) {
 	name := strings.Split(filepath.Base(dir), ":")[0]
-	c := &chartImpl{Name: name, dir: dir, namespace: namespace, clazz: chartClass{Name: name}}
+	co := chartOptions(opts)
+	c := &chartImpl{dir: dir, namespace: co.namespace, suffix: co.suffix, clazz: chartClass{Name: name}}
 	c.values = make(map[string]starlark.Value)
 	c.methods = make(map[string]starlark.Callable)
 	if err := c.loadChartYaml(); err != nil {
@@ -49,7 +50,7 @@ func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, 
 			return nil, err
 		}
 	}
-	if err := c.init(thread, repo, args, kwargs); err != nil {
+	if err := c.init(thread, repo, co.args, co.kwargs); err != nil {
 		return nil, err
 	}
 	return c, nil
@@ -57,7 +58,10 @@ func newChart(thread *starlark.Thread, repo Repo, dir string, namespace string, 
 }
 
 func (c *chartImpl) GetName() string {
-	return c.Name
+	if c.suffix == "" {
+		return c.clazz.Name
+	}
+	return fmt.Sprintf("%s-%s", c.clazz.Name, c.suffix)
 }
 
 func (c *chartImpl) GetVersion() semver.Version {
@@ -139,7 +143,7 @@ func (c *chartImpl) Attr(name string) (starlark.Value, error) {
 		return starlark.String(c.namespace), nil
 	}
 	if name == "name" {
-		return starlark.String(c.Name), nil
+		return starlark.String(c.GetName()), nil
 	}
 	if name == "__class__" {
 		return &c.clazz, nil
@@ -317,7 +321,7 @@ func (c *chartImpl) Package(writer io.Writer) error {
 	defer gz.Close()
 	return c.walk(func(file string, size int64, body io.Reader, err error) error {
 		hdr := &tar.Header{
-			Name: path.Join(c.Name, file),
+			Name: path.Join(c.clazz.Name, file),
 			Mode: 0644,
 			Size: size,
 		}

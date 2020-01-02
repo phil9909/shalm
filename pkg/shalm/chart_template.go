@@ -78,14 +78,14 @@ func (c *chartImpl) template(thread *starlark.Thread, writer io.Writer, options 
 		Values:  values,
 		Methods: methods,
 		Chart: chart{
-			Name:       c.Name,
+			Name:       c.clazz.Name,
 			AppVersion: c.Version.String(),
 			Version:    c.Version.String(),
 		},
 		Release: release{
-			Name:      c.Name,
+			Name:      c.GetName(),
 			Namespace: c.namespace,
-			Service:   c.Name,
+			Service:   c.GetName(),
 			Revision:  1,
 			IsInstall: false,
 			IsUpgrade: true,

@@ -24,7 +24,7 @@ var _ = Describe("Chart Proxy", func() {
 			dir.WriteFile("values.yaml", []byte("replicas: \"1\"\ntimeout: \"30s\"\n"), 0644)
 			args := starlark.Tuple{starlark.String("hello")}
 			kwargs := []starlark.Tuple{starlark.Tuple{starlark.String("key"), starlark.String("value")}}
-			impl, err := newChart(thread, repo, dir.Root(), "namespace", args, kwargs)
+			impl, err := newChart(thread, repo, dir.Root(), WithArgs(args), WithKwArgs(kwargs))
 			Expect(err).NotTo(HaveOccurred())
 			chart, err = newChartProxy(impl, "http://test.com", args, kwargs)
 			Expect(err).NotTo(HaveOccurred())
@@ -48,9 +48,9 @@ var _ = Describe("Chart Proxy", func() {
 			err := chart.Apply(thread, k)
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k.ApplyCallCount()).To(Equal(1))
-			Expect(buffer.String()).To(ContainSubstring(`{"kind":"Namespace","apiVersion":"v1","metadata":{"name":"namespace","creationTimestamp":null},"spec":{},"status":{}}`))
-			Expect(buffer.String()).To(ContainSubstring(`"spec":{"values":{"replicas":"1","timeout":"30s"},"args":["hello"],"kwargs":{"key":"value"},"namespace":"namespace","chart_tgz":"H4sI`))
-			Expect(buffer.String()).To(ContainSubstring(`"name":"mariadb","namespace":"namespace"`))
+			Expect(buffer.String()).To(ContainSubstring(`{"kind":"Namespace","apiVersion":"v1","metadata":{"name":"default","creationTimestamp":null},"spec":{},"status":{}}`))
+			Expect(buffer.String()).To(ContainSubstring(`"spec":{"values":{"replicas":"1","timeout":"30s"},"args":["hello"],"kwargs":{"key":"value"},"namespace":"default","chart_tgz":"H4sI`))
+			Expect(buffer.String()).To(ContainSubstring(`"name":"mariadb","namespace":"default"`))
 		})
 		It("deletes a ShalmChart from k8s", func() {
 			k := &FakeK8s{}

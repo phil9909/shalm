@@ -16,15 +16,15 @@ var packageCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		exit(pkg(args[0], rootNamespace()))
+		exit(pkg(args[0]))
 	},
 }
 
-func pkg(url string, namespace string) error {
+func pkg(url string) error {
 	repo := shalm.NewRepo()
 
 	thread := &starlark.Thread{Name: "main"}
-	c, err := repo.Get(thread, url, rootNamespace(), false, nil, nil)
+	c, err := repo.Get(thread, url)
 	if err != nil {
 		return err
 	}

@@ -83,7 +83,7 @@ func (r *ShalmChartReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 
 }
 
-func (r *ShalmChartReconciler) apply(spec *shalmv1a1.ShalmChartSpec) error {
+func (r *ShalmChartReconciler) apply(spec *shalmv1a1.ChartSpec) error {
 	thread := &starlark.Thread{Name: "main"}
 	chart, err := r.Repo.GetFromSpec(thread, spec)
 	if err != nil {
@@ -92,7 +92,7 @@ func (r *ShalmChartReconciler) apply(spec *shalmv1a1.ShalmChartSpec) error {
 	return chart.Apply(thread, r.K8s(spec.KubeConfig))
 }
 
-func (r *ShalmChartReconciler) delete(spec *shalmv1a1.ShalmChartSpec) error {
+func (r *ShalmChartReconciler) delete(spec *shalmv1a1.ChartSpec) error {
 	thread := &starlark.Thread{Name: "main"}
 	chart, err := r.Repo.GetFromSpec(thread, spec)
 	if err != nil {

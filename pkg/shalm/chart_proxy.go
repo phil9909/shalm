@@ -61,12 +61,13 @@ func (c *chartProxy) applyFunction() starlark.Callable {
 				Name: c.namespace,
 			},
 		}
-		shalmSpec := shalmv1a1.ShalmChartSpec{
+		shalmSpec := shalmv1a1.ChartSpec{
 			Values:     shalmv1a1.ClonableMap(stringDictToGo(c.chartImpl.values)),
 			Args:       shalmv1a1.ClonableArray(c.args),
 			KwArgs:     shalmv1a1.ClonableMap(c.kwargs),
 			KubeConfig: "",
 			Namespace:  c.namespace,
+			Suffix:     c.suffix,
 		}
 		buffer := &bytes.Buffer{}
 		if err := c.chartImpl.Package(buffer); err != nil {
@@ -79,7 +80,7 @@ func (c *chartProxy) applyFunction() starlark.Callable {
 				APIVersion: shalmv1a1.GroupVersion.String(),
 			},
 			ObjectMeta: v1.ObjectMeta{
-				Name:      c.Name,
+				Name:      c.GetName(),
 				Namespace: c.namespace,
 			},
 			Spec: shalmSpec,
@@ -112,7 +113,7 @@ func (c *chartProxy) deleteFunction() starlark.Callable {
 			return nil, err
 		}
 
-		return starlark.None, k.DeleteObject("ShalmChart", c.Name, &K8sOptions{})
+		return starlark.None, k.DeleteObject("ShalmChart", c.GetName(), &K8sOptions{})
 	})
 }
 

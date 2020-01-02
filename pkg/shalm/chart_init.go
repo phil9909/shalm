@@ -33,7 +33,6 @@ func (c *chartImpl) loadChartYaml() error {
 			return errors.Wrap(err, "Invalid version in helm chart")
 		}
 	}
-	c.Name = c.clazz.Name
 	return nil
 }
 
@@ -69,17 +68,19 @@ func (c *chartImpl) init(thread *starlark.Thread, repo Repo, args starlark.Tuple
 			if !(filepath.IsAbs(url) || strings.HasPrefix(url, "http")) {
 				url = path.Join(c.dir, url)
 			}
-			namespace := c.namespace
-			proxy := false
+			co := ChartOptions{namespace: c.namespace, suffix: c.suffix}
 			parser := &kwargsParser{kwargs: kwargs}
 			parser.Arg("namespace", func(value starlark.Value) {
-				namespace = value.(starlark.String).GoString()
+				co.namespace = value.(starlark.String).GoString()
 			})
 			parser.Arg("proxy", func(value starlark.Value) {
-				proxy = bool(value.(starlark.Bool))
+				co.proxy = bool(value.(starlark.Bool))
 			})
-			kwargs = parser.Parse()
-			return repo.Get(thread, url, namespace, proxy, args[1:], kwargs)
+			parser.Arg("suffix", func(value starlark.Value) {
+				co.suffix = value.(starlark.String).GoString()
+			})
+			co.kwargs = parser.Parse()
+			return repo.Get(thread, url, co.Options())
 		}),
 		"user_credential": starlark.NewBuiltin("user_credential", func(thread *starlark.Thread, fn *starlark.Builtin, args starlark.Tuple, kwargs []starlark.Tuple) (value starlark.Value, e error) {
 			s, err := makeUserCredential(thread, fn, args, kwargs)

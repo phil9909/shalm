@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"runtime"
 
+	shalmv1a1 "github.com/kramerul/shalm/api/v1alpha1"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 	"go.starlark.net/starlark"
@@ -30,12 +31,12 @@ var _ = Describe("OCIRepo", func() {
 			repo = NewRepo()
 		})
 		It("reads chart from directory", func() {
-			chart, err := repo.Get(thread, path.Join(example, "mariadb"), "namespace", false, nil, nil)
+			chart, err := repo.Get(thread, path.Join(example, "mariadb"), WithNamespace("namespace"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
 		It("reads chart from tar file", func() {
-			chart, err := repo.Get(thread, path.Join(example, "mariadb-6.12.2.tgz"), "namespace", false, nil, nil)
+			chart, err := repo.Get(thread, path.Join(example, "mariadb-6.12.2.tgz"), WithNamespace("namespace"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
@@ -47,15 +48,25 @@ var _ = Describe("OCIRepo", func() {
 			})
 
 			go http.ListenAndServe("127.0.0.1:8675", nil)
-			chart, err := repo.Get(thread, "http://localhost:8675/mariadb.tgz", "namespace", false, nil, nil)
+			chart, err := repo.Get(thread, "http://localhost:8675/mariadb.tgz", WithNamespace("namespace"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
 		It("creates a proxy", func() {
-			chart, err := repo.Get(thread, path.Join(example, "mariadb-6.12.2.tgz"), "namespace", true, nil, nil)
+			chart, err := repo.Get(thread, path.Join(example, "mariadb-6.12.2.tgz"), WithNamespace("namespace"), WithProxy(true))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
 			Expect(chart).To(BeAssignableToTypeOf(&chartProxy{}))
+		})
+		It("creates chart from spec", func() {
+			tgz, err := ioutil.ReadFile(path.Join(example, "mariadb-6.12.2.tgz"))
+			Expect(err).ToNot(HaveOccurred())
+			chart, err := repo.GetFromSpec(thread, &shalmv1a1.ChartSpec{
+				Namespace: "namespace",
+				ChartTgz:  tgz,
+			})
+			Expect(err).ToNot(HaveOccurred())
+			Expect(chart.GetName()).To(Equal("mariadb"))
 		})
 
 	})

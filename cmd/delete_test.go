@@ -25,7 +25,7 @@ var _ = Describe("Delete Chart", func() {
 			return k
 		}
 
-		err := delete(path.Join(example, "cf"), "mynamespace", shalm.NewK8sValue(k))
+		err := delete(path.Join(example, "cf"), k)
 		Expect(err).ToNot(HaveOccurred())
 		output := writer.String()
 		Expect(output).To(ContainSubstring("CREATE OR REPLACE USER 'uaa'"))

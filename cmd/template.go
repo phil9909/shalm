@@ -11,7 +11,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-var templateChartArgs = chartArgs{}
+var templateChartArgs = shalm.ChartOptions{}
 
 var templateCmd = &cobra.Command{
 	Use:   "template [chart]",
@@ -19,15 +19,15 @@ var templateCmd = &cobra.Command{
 	Long:  ``,
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		exit(template(args[0], rootNamespace(), os.Stdout))
+		exit(template(args[0], os.Stdout))
 	},
 }
 
-func template(url string, namespace string, writer io.Writer) error {
+func template(url string, writer io.Writer) error {
 
 	thread := &starlark.Thread{Name: "main"}
 	repo := shalm.NewRepo()
-	c, err := repo.Get(thread, url, namespace, false, nil, templateChartArgs.KwArgs())
+	c, err := repo.Get(thread, url, templateChartArgs.Options())
 	if err != nil {
 		return err
 	}

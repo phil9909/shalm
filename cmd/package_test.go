@@ -15,7 +15,7 @@ var _ = Describe("Package Chart", func() {
 		defer func() {
 			os.Remove(filename)
 		}()
-		err := pkg(path.Join(example, "cf"), "")
+		err := pkg(path.Join(example, "cf"))
 		Expect(err).ToNot(HaveOccurred())
 		_, err = os.Stat(filename)
 		Expect(err).ToNot(HaveOccurred())

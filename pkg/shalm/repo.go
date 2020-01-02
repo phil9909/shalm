@@ -43,17 +43,19 @@ func NewRepo() Repo {
 }
 
 // Get -
-func (r *repoImpl) Get(thread *starlark.Thread, url string, namespace string, proxy bool, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error) {
+func (r *repoImpl) Get(thread *starlark.Thread, url string, opts ...ChartOption) (ChartValue, error) {
+
+	co := chartOptions(opts)
 
 	proxyFunc := func(chart *chartImpl, err error) (ChartValue, error) {
 		return chart, err
 	}
-	if proxy {
+	if co.proxy {
 		proxyFunc = func(chart *chartImpl, err error) (ChartValue, error) {
 			if err != nil {
 				return nil, err
 			}
-			return newChartProxy(chart, url, args, kwargs)
+			return newChartProxy(chart, url, co.args, co.kwargs)
 		}
 	}
 
@@ -66,13 +68,13 @@ func (r *repoImpl) Get(thread *starlark.Thread, url string, namespace string, pr
 			return nil, fmt.Errorf("Error fetching %s: status=%d", url, res.StatusCode)
 		}
 		defer res.Body.Close()
-		return proxyFunc(newChartFromReader(thread, r, r.cacheDirForChart([]byte(url)), res.Body, namespace, args, kwargs))
+		return proxyFunc(newChartFromReader(thread, r, r.cacheDirForChart([]byte(url)), res.Body, opts...))
 	}
 	if stat, err := os.Stat(url); err == nil {
 		if stat.IsDir() {
-			return proxyFunc(newChart(thread, r, url, namespace, args, kwargs))
+			return proxyFunc(newChart(thread, r, url, opts...))
 		}
-		return proxyFunc(newChartFromFile(thread, r, r.cacheDirForChart([]byte(url)), url, namespace, args, kwargs))
+		return proxyFunc(newChartFromFile(thread, r, r.cacheDirForChart([]byte(url)), url, opts...))
 	}
 	return nil, fmt.Errorf("Chart not found for url %s", url)
 }
@@ -84,9 +86,10 @@ func (r *repoImpl) cacheDirForChart(data []byte) string {
 	return cacheDir
 }
 
-func (r *repoImpl) GetFromSpec(thread *starlark.Thread, spec *shalmv1a1.ShalmChartSpec) (ChartValue, error) {
-	c, err := newChartFromReader(thread, r, r.cacheDirForChart(spec.ChartTgz), bytes.NewReader(spec.ChartTgz), spec.Namespace,
-		toStarlark(spec.Args).(starlark.Tuple), kwargsToStarlark(spec.KwArgs))
+func (r *repoImpl) GetFromSpec(thread *starlark.Thread, spec *shalmv1a1.ChartSpec) (ChartValue, error) {
+	c, err := newChartFromReader(thread, r, r.cacheDirForChart(spec.ChartTgz), bytes.NewReader(spec.ChartTgz),
+		WithNamespace(spec.Namespace), WithSuffix(spec.Suffix), WithArgs(toStarlark(spec.Args).(starlark.Tuple)),
+		WithKwArgs(kwargsToStarlark(spec.KwArgs)))
 	if err != nil {
 		return nil, err
 	}
@@ -94,18 +97,18 @@ func (r *repoImpl) GetFromSpec(thread *starlark.Thread, spec *shalmv1a1.ShalmCha
 	return c, nil
 }
 
-func newChartFromReader(thread *starlark.Thread, repo Repo, dir string, reader io.Reader, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (*chartImpl, error) {
+func newChartFromReader(thread *starlark.Thread, repo Repo, dir string, reader io.Reader, opts ...ChartOption) (*chartImpl, error) {
 	if err := tarExtract(reader, dir); err != nil {
 		return nil, err
 	}
-	return newChart(thread, repo, dir, namespace, args, kwargs)
+	return newChart(thread, repo, dir, opts...)
 }
 
-func newChartFromFile(thread *starlark.Thread, repo Repo, dir string, tarFile string, namespace string, args starlark.Tuple, kwargs []starlark.Tuple) (*chartImpl, error) {
+func newChartFromFile(thread *starlark.Thread, repo Repo, dir string, tarFile string, opts ...ChartOption) (*chartImpl, error) {
 	in, err := os.Open(tarFile)
 	if err != nil {
 		return nil, err
 	}
 	defer in.Close()
-	return newChartFromReader(thread, repo, dir, in, namespace, args, kwargs)
+	return newChartFromReader(thread, repo, dir, in, opts...)
 }

@@ -65,10 +65,48 @@ type K8sValue interface {
 	K8s
 }
 
+// ChartOptions -
+type ChartOptions struct {
+	namespace string
+	suffix    string
+	proxy     bool
+	args      starlark.Tuple
+	kwargs    []starlark.Tuple
+	cmdArgs   []string
+}
+
+// ChartOption -
+type ChartOption func(options *ChartOptions)
+
+// WithNamespace -
+func WithNamespace(namespace string) ChartOption {
+	return func(options *ChartOptions) { options.namespace = namespace }
+}
+
+// WithSuffix -
+func WithSuffix(suffix string) ChartOption {
+	return func(options *ChartOptions) { options.suffix = suffix }
+}
+
+// WithProxy -
+func WithProxy(proxy bool) ChartOption {
+	return func(options *ChartOptions) { options.proxy = proxy }
+}
+
+// WithArgs -
+func WithArgs(args starlark.Tuple) ChartOption {
+	return func(options *ChartOptions) { options.args = args }
+}
+
+// WithKwArgs -
+func WithKwArgs(kwargs []starlark.Tuple) ChartOption {
+	return func(options *ChartOptions) { options.kwargs = kwargs }
+}
+
 // Repo -
 type Repo interface {
 	// Get -
-	Get(thread *starlark.Thread, url string, namespace string, proxy bool, args starlark.Tuple, kwargs []starlark.Tuple) (ChartValue, error)
+	Get(thread *starlark.Thread, url string, options ...ChartOption) (ChartValue, error)
 	// GetFromSpec -
-	GetFromSpec(thread *starlark.Thread, spec *shalmv1a1.ShalmChartSpec) (ChartValue, error)
+	GetFromSpec(thread *starlark.Thread, spec *shalmv1a1.ChartSpec) (ChartValue, error)
 }
