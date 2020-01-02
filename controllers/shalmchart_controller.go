@@ -62,18 +62,31 @@ func (r *ShalmChartReconciler) Reconcile(req ctrl.Request) (ctrl.Result, error) 
 	if shalmChart.ObjectMeta.DeletionTimestamp.IsZero() {
 		if !containsString(shalmChart.ObjectMeta.Finalizers, myFinalizerName) {
 			shalmChart.ObjectMeta.Finalizers = append(shalmChart.ObjectMeta.Finalizers, myFinalizerName)
+			shalmChart.Status.LastOp = shalmv1a1.Operation{Type: "apply", Progress: 0}
 			if err := r.Update(context.Background(), &shalmChart); err != nil {
 				return result, err
 			}
 		}
-		return result, r.apply(&shalmChart.Spec)
+		if err := r.apply(&shalmChart.Spec); err != nil {
+			return result, err
+		}
+		shalmChart.Status.LastOp.Progress = 100
+		if err := r.Update(context.Background(), &shalmChart); err != nil {
+			return result, err
+		}
+		return result, err
 	}
 	if containsString(shalmChart.ObjectMeta.Finalizers, myFinalizerName) {
+		shalmChart.Status.LastOp = shalmv1a1.Operation{Type: "delete", Progress: 0}
+		if err := r.Update(context.Background(), &shalmChart); err != nil {
+			return result, err
+		}
 		if err := r.delete(&shalmChart.Spec); err != nil {
 			return result, err
 		}
 
 		shalmChart.ObjectMeta.Finalizers = removeString(shalmChart.ObjectMeta.Finalizers, myFinalizerName)
+		shalmChart.Status.LastOp.Progress = 100
 		if err := r.Update(context.Background(), &shalmChart); err != nil {
 			return result, err
 		}
