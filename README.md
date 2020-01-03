@@ -194,8 +194,7 @@ If no namespace is given, the namespace is inherited from the parent chart.
 | `url`       |  The chart is loaded from the given url. The url can be relative.  In this case the chart is loaded from a path relative to the current chart location.  |
 | `namespace` |  If no namespace is given, the namespace is inherited from the parent chart. |
 | `suffix`    |  This suffix is appended to each chart name. The suffix is inhertied from the parent if no value is given|
-| `proxy`     |  If true, a proxy for the chart is returned. Applying or deleting a proxy chart is done by applying a `CustomerResource` to kubernetes. The installation process is then performed by the `shalm-controller` in the background
- |
+| `proxy`     |  If true, a proxy for the chart is returned. Applying or deleting a proxy chart is done by applying a `CustomerResource` to kubernetes. The installation process is then performed by the `shalm-controller` in the background |
 | `...`       |  Additional parameters are passed to the `init` method of the corresponding chart. |
 
 
