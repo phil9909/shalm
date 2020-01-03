@@ -2,3 +2,5 @@ pylm
 .vscode
 /shalm
 bin
+cover.out
+.idea

@@ -1,0 +1,20 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shalm
+  labels:
+    app: shalm
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shalm
+  template:
+    metadata:
+      labels:
+        app: shalm
+    spec:
+      serviceAccountName: shalm
+      containers:
+      - name: shalm
+        image: wonderix/shalm:latest
