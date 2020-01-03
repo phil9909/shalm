@@ -20,10 +20,12 @@ This project brings the starlark scripting language to helm charts.
 
 ## Installation
 
+* Install `kubectl` e.g. using `brew install kubernetes-cli`
+* Install `go` e.g. using `brew install go`
+* Install `shalm`
 ```bash
 go get github.com/kramerul/shalm
 ```
-
 
 ## Usage
 
