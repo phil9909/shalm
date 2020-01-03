@@ -25,10 +25,10 @@ In addition, existing `helm` charts (e.g. [postgresql](https://github.com/kramer
 
 ### Example
 
-The [cloudfoundry example](https://github.com/kramerul/shalm/tree/master/example/cloudfoundry) illustrates in a simple way how `shalm` could be used to solve this problem. There is a lot of stuff missing in the example, but hopefully it shows how it could work.
+The [cloudfoundry example](https://github.com/kramerul/shalm/tree/master/charts/example/cloudfoundry) illustrates in a simple way how `shalm` could be used to solve this problem. There is a lot of stuff missing in the example, but hopefully it shows how it could work.
 
 The example can be run using the follwing command
 
 ```bash
-go run github.com/kramerul/shalm template example/cloudfoundry/cloudfoundry
+go run github.com/kramerul/shalm template charts/example/cloudfoundry/cloudfoundry
 ```

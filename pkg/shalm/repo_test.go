@@ -17,7 +17,7 @@ var (
 	_, b, _, _ = runtime.Caller(0)
 	basepath   = filepath.Dir(b)
 	root       = path.Join(filepath.Dir(b), "..", "..")
-	example    = path.Join(root, "example", "simple")
+	example    = path.Join(root, "charts", "example", "simple")
 )
 
 var _ = Describe("OCIRepo", func() {
