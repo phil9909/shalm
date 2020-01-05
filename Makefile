@@ -65,11 +65,14 @@ endif
 	mkdir -p bin
 	cd bin && go run .. package /tmp/shalm
 
+shalm::
+	go build -ldflags "-X github.com/kramerul/shalm/cmd.version=${VERSION}" -o bin/shalm . 
+
 binaries:
 	mkdir -p bin
 	cd bin; \
 	for GOOS in linux darwin windows; do \
-	  CGO_ENABLED=0 GOOS=$$GOOS GOARCH=amd64 GO111MODULE=on go build -o shalm ..; \
+	  CGO_ENABLED=0 GOOS=$$GOOS GOARCH=amd64 GO111MODULE=on go build -ldflags "-X github.com/kramerul/shalm/cmd.version=${VERSION}" -o shalm ..; \
 		tar czf shalm-binary-$$GOOS.tgz shalm; \
 	done
 

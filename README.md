@@ -20,7 +20,19 @@ This project brings the starlark scripting language to helm charts.
 
 ## Installation
 
+
+### Prerequisite 
 * Install `kubectl` e.g. using `brew install kubernetes-cli`
+
+### Install binary
+
+* Download `shalm` (e.g. for mac os)
+```bash
+curl https://github.com/kramerul/shalm/releases/download/0.1.0/shalm-binary-darwin.tgz | tar xzf
+```
+
+### Build `shalm` from source
+
 * Install `go` e.g. using `brew install go`
 * Install `shalm`
 ```bash
