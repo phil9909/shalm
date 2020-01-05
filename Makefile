@@ -1,7 +1,7 @@
 
 # Image URL to use all building/pushing image targets
 OS := $(shell uname )
-VERSION := $(shell git describe --tags )
+VERSION := $(shell git describe --tags --always --dirty)
 IMG ?= wonderix/shalm:${VERSION}
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
@@ -62,7 +62,17 @@ else
 	sed -i -e 's|version:.*|version: ${VERSION}|g' /tmp/shalm/Chart.yaml
 	sed -i -e 's|image: wonderix/shalm:.*|image: wonderix/shalm:${VERSION}|g' /tmp/shalm/ytt/deployment.yaml
 endif
-	go run . package /tmp/shalm
+	mkdir -p bin
+	cd bin && go run .. package /tmp/shalm
+
+binaries:
+	mkdir -p bin
+	cd bin; \
+	for GOOS in linux darwin windows; do \
+	  CGO_ENABLED=0 GOOS=$$GOOS GOARCH=amd64 GO111MODULE=on go build -o shalm ..; \
+		tar czf shalm-binary-$$GOOS.tgz shalm; \
+	done
+
 
 # find or download controller-gen
 # download controller-gen if necessary
