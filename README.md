@@ -1,7 +1,6 @@
 
 # Scriptable helm charts
 
-
 This project brings the starlark scripting language to helm charts.
 
 ## Features
@@ -20,13 +19,14 @@ This project brings the starlark scripting language to helm charts.
 
 ## Installation
 
+### Prerequisite
 
-### Prerequisite 
 * Install `kubectl` e.g. using `brew install kubernetes-cli`
 
 ### Install binary
 
 * Download `shalm` (e.g. for mac os)
+
 ```bash
 curl https://github.com/kramerul/shalm/releases/download/0.1.0/shalm-binary-darwin.tgz | tar xzf
 ```
@@ -35,6 +35,7 @@ curl https://github.com/kramerul/shalm/releases/download/0.1.0/shalm-binary-darw
 
 * Install `go` e.g. using `brew install go`
 * Install `shalm`
+
 ```bash
 go get github.com/kramerul/shalm
 ```
@@ -91,7 +92,6 @@ def create_database(self,db="db",username="",password=""):
    ...
 ```
 
-
 2. Define a constructor for a service, which requires a database
 
 ```python
@@ -99,7 +99,6 @@ def init(self,database=None):
   if database:
     database.create_database(db="uaa",username="uaa",password="randompass")
 ```
-
 
 3. Use the API within another chart
 
@@ -172,8 +171,6 @@ def init(self):
   self.mariadb = chart("mariadb",proxy=true)
 ````
 
-
-
 ## Comparison
 
 |                                | shalm | helm  | ytt/kapp | kustomize |
@@ -211,7 +208,6 @@ If no namespace is given, the namespace is inherited from the parent chart.
 | `proxy`     |  If true, a proxy for the chart is returned. Applying or deleting a proxy chart is done by applying a `CustomerResource` to kubernetes. The installation process is then performed by the `shalm-controller` in the background |
 | `...`       |  Additional parameters are passed to the `init` method of the corresponding chart. |
 
-
 #### `chart.apply(k8s)`
 
 Applies the chart recursive to k8s. This method can be overwritten.
@@ -230,7 +226,6 @@ Applies the chart to k8s without recursion. This should only be used within `app
 | `timeout`   |  Timeout passed to `kubectl apply`. A timeout of zero means wait forever.  |
 | `glob`      |  Pattern used to find the templates. Default is "*.yaml"  |
 
-
 #### `chart.delete(k8s)`
 
 Deletes the chart recursive from k8s. This method can be overwritten.
@@ -238,7 +233,6 @@ Deletes the chart recursive from k8s. This method can be overwritten.
 | Parameter | Description |
 |-----------|-------------|
 | `k8s`       |  See below  |
-
 
 #### `self.__delete(k8s,timeout=0,glob=pattern)`
 
@@ -324,8 +318,6 @@ Wait for condition of one kubernetes object
 
 ### user_credential
 
-
-
 #### `user_credential(name,username='',password='',username_key='username',password_key='password')`
 
 Creates a new user credential. All user credentials created inside a `Chart.star` file are automatically applied to kubernetes.
@@ -338,14 +330,12 @@ Creates a new user credential. All user credentials created inside a `Chart.star
 | `username_key` |  The name of the key used to store the username inside the secret  |
 | `password_key` |  The name of the key used to store the password inside the secret  |
 
-
 #### Attributes
 
 | Name | Description |
 |------------|-------------|
 | `username` | Returns the content of the username attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor. |
 | `password` | Returns the content of the password attribute. It is only valid after calling `chart.__apply(k8s)` or it was set in the constructor. |
-
 
 ### struct
 
@@ -368,7 +358,6 @@ The `chart_class` represents the values read from the `Chart.yaml` file
 | `sources`     | Sources |
 | `icon`        | Icon |
 
-
 ## Difference to helm
 
 * Subcharts are not loaded automatically. They must be loaded using the `chart` command
@@ -378,4 +367,3 @@ It's not possible to set values (from `values.yaml`) directly.
 If you would like to set a lot of values, it's more convenient to write a separate shalm chart.
 * `shalm` doesn't track installed charts on a kubernetes cluster. It works more like `kubectl apply`
 * The `.Release.Name` value is build as follows: `<chart.name>-<chart.suffix>`. If no suffix is given, the hyphen is also ommited.
-
