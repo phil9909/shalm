@@ -316,9 +316,9 @@ func unpackRendererOptions(parser *kwargsParser) *renderer.Options {
 
 func (c *chartImpl) Package(writer io.Writer) error {
 	gz := gzip.NewWriter(writer)
+	defer gz.Close()
 	tw := tar.NewWriter(gz)
 	defer tw.Close()
-	defer gz.Close()
 	return c.walk(func(file string, size int64, body io.Reader, err error) error {
 		hdr := &tar.Header{
 			Name: path.Join(c.clazz.Name, file),

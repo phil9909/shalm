@@ -1,6 +1,8 @@
 
 # Image URL to use all building/pushing image targets
-IMG ?= wonderix/shalm:latest
+OS := $(shell uname )
+VERSION := $(shell git describe --tags )
+IMG ?= wonderix/shalm:${VERSION}
 # Produce CRDs that work back to Kubernetes 1.11 (no version conversion)
 CRD_OPTIONS ?= "crd:trivialVersions=true"
 
@@ -49,6 +51,18 @@ docker-build: test
 # Push the docker image
 docker-push:
 	docker push ${IMG}
+
+chart:
+	rm -rf /tmp/shalm
+	cp -r charts/shalm /tmp/shalm
+ifeq ($(OS),Darwin)
+	sed -i '' -e 's|version:.*|version: ${VERSION}|g' /tmp/shalm/Chart.yaml
+	sed -i '' -e 's|image: wonderix/shalm:.*|image: wonderix/shalm:${VERSION}|g' /tmp/shalm/ytt/deployment.yaml
+else
+	sed -i -e 's|version:.*|version: ${VERSION}|g' /tmp/shalm/Chart.yaml
+	sed -i -e 's|image: wonderix/shalm:.*|image: wonderix/shalm:${VERSION}|g' /tmp/shalm/ytt/deployment.yaml
+endif
+	go run . package /tmp/shalm
 
 # find or download controller-gen
 # download controller-gen if necessary
