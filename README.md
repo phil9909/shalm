@@ -69,7 +69,7 @@ Just follow the rules of helm to write charts. Additionally, you can put a `Char
 ### Using ytt yaml templates
 
 You can use ytt yaml templates to render kubernetes artifacts. You simpy put them in the `ytt` folder inside a chart.
-There is currently no support for `data`, `star` or `text` files. The only value supplied to the templates is `self`, 
+There is currently no support for `data`, `star` or `text` files. The only value supplied to the templates is `self`,
 which is the current chart. You can access all values and methods within your chart.
 
 ```yaml
@@ -85,14 +85,14 @@ metadata:
 
 The following example shows how a database manager could be shared.
 
-1. Define an API for a database manager (e.g. mariadb)
+* Define an API for a database manager (e.g. mariadb)
 
 ```python
 def create_database(self,db="db",username="",password=""):
    ...
 ```
 
-2. Define a constructor for a service, which requires a database
+* Define a constructor for a service, which requires a database
 
 ```python
 def init(self,database=None):
@@ -100,7 +100,7 @@ def init(self,database=None):
     database.create_database(db="uaa",username="uaa",password="randompass")
 ```
 
-3. Use the API within another chart
+* Use the API within another chart
 
 ```python
 def init(self):
@@ -126,11 +126,11 @@ def apply(self,k8s):
 
 ### Create User Credentials
 
-User credentials are used to manage username and password pairs. They are mapped to kubernets `Secrets`. 
+User credentials are used to manage username and password pairs. They are mapped to kubernets `Secrets`.
 If the secret doesn't exist, the username and password are created with random content, otherwise the fields are
 read from the secret. The keys used to store the username and password inside the secret can be modified.
 
-The content of username and password can only be accessed after the call to `__apply`. 
+The content of username and password can only be accessed after the call to `__apply`.
 Therefore, you need to override the `apply` method.
 
 All user credentials created inside a `Chart.star` file are automatically applied to kubernetes.
@@ -256,7 +256,7 @@ Deletes the chart from k8s without recursion. This should only be used within `d
 
 #### `k8s(kube_config_content)`
 
-Create a new k8s object 
+Create a new k8s object
 
 | Parameter | Description |
 |-----------|-------------|
@@ -362,8 +362,8 @@ The `chart_class` represents the values read from the `Chart.yaml` file
 
 * Subcharts are not loaded automatically. They must be loaded using the `chart` command
 * Global variables are not supported.
-* The `--set` command line parameters are passed to the `init` method of the corresponding chart. 
-It's not possible to set values (from `values.yaml`) directly. 
+* The `--set` command line parameters are passed to the `init` method of the corresponding chart.
+It's not possible to set values (from `values.yaml`) directly.
 If you would like to set a lot of values, it's more convenient to write a separate shalm chart.
 * `shalm` doesn't track installed charts on a kubernetes cluster. It works more like `kubectl apply`
 * The `.Release.Name` value is build as follows: `<chart.name>-<chart.suffix>`. If no suffix is given, the hyphen is also ommited.
