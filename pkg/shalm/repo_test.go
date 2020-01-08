@@ -2,6 +2,7 @@ package shalm
 
 import (
 	"io/ioutil"
+	"net"
 	"net/http"
 	"path"
 	"path/filepath"
@@ -48,6 +49,13 @@ var _ = Describe("OCIRepo", func() {
 			})
 
 			go http.ListenAndServe("127.0.0.1:8675", nil)
+			for {
+				con, err := net.Dial("tcp", "127.0.0.1:8675")
+				if err == nil {
+					con.Close()
+					break
+				}
+			}
 			chart, err := repo.Get(thread, "http://localhost:8675/mariadb.tgz", WithNamespace("namespace"))
 			Expect(err).ToNot(HaveOccurred())
 			Expect(chart.GetName()).To(Equal("mariadb"))
