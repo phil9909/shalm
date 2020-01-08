@@ -10,3 +10,10 @@ def create_database(self,db="db",username="",password=""):
     GRANT ALL PRIVILEGES ON `{db}`.* TO '{username}'@'%' WITH GRANT OPTION;
     FLUSH PRIVILEGES;
     """.format(username=username, password=password,db=db)
+
+
+def delete(self,k8s):
+  self.__delete(k8s)
+  k8s.delete("persistentvolumeclaims","data-mariadb-master-0")
+  for i in range(0,self.slave.replicas):
+    k8s.delete("persistentvolumeclaims","data-mariadb-slave-" + str(i))

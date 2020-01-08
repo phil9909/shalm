@@ -1,7 +1,7 @@
 def init(self,shootname="test"):
   self.shootname = shootname
   self.domain = shootname + ".istio.shoot.canary.k8s-hana.ondemand.com"
-  self.c21s = chart("https://storage.googleapis.com/c21s-helm/tested/20191210_0637-c21s.tgz",namespace="kubecf",domain=self.domain)
+  self.c21s = chart("https://storage.googleapis.com/c21s-helm/tested/20200108_0619-c21s.tgz",namespace="kubecf",domain=self.domain)
 
 def apply(self,garden_k8s):
   self.__apply(garden_k8s)
