@@ -10,9 +10,9 @@ import (
 // AddFlags -
 func (v *ChartOptions) AddFlags(flagsSet *pflag.FlagSet) {
 	flagsSet.StringArrayVar(&v.cmdArgs, "set", nil, "Set values on the command line (can specify multiple or separate values with commas: key1=val1,key2=val2)")
-	flagsSet.BoolVar(&v.proxy, "proxy", false, "Install helm chart using a combination of CR and operator")
-	flagsSet.StringVar(&v.namespace, "n", "default", "Namespace for installation")
-	flagsSet.StringVar(&v.suffix, "s", "", "Suffix which is used to build the chart name")
+	flagsSet.BoolVarP(&v.proxy, "proxy", "p", false, "Install helm chart using a combination of CR and operator")
+	flagsSet.StringVarP(&v.namespace, "namespace", "n", "default", "Namespace for installation")
+	flagsSet.StringVarP(&v.suffix, "suffix", "s", "", "Suffix which is used to build the chart name")
 }
 
 // Options -
