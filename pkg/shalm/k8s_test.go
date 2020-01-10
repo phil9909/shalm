@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"io"
 
+	. "github.com/kramerul/shalm/pkg/shalm/test"
 	. "github.com/onsi/ginkgo"
 	. "github.com/onsi/gomega"
 )
@@ -36,6 +37,17 @@ var _ = Describe("k8s", func() {
 		err := k8s.Get("kind", "name", writer, &K8sOptions{})
 		Expect(err).NotTo(HaveOccurred())
 		Expect(writer.String()).To(Equal("get kind name -o json\n"))
+	})
+	It("KubeConfigContent works", func() {
+		dir := NewTestDir()
+		defer dir.Remove()
+		dir.MkdirAll("chart2/templates", 0755)
+		dir.WriteFile("kubeconfig", []byte("hello"), 0644)
+		kubeconfig := dir.Join("kubeconfig")
+		k8s := k8sImpl{kubeconfig: &kubeconfig}
+		content := k8s.KubeConfigContent()
+		Expect(content).NotTo(BeNil())
+		Expect(*content).To(Equal("hello"))
 	})
 	// It("watch works", func() {
 	// 	reader, err := k8s.Watch("kind", "name", &K8sOptions{})

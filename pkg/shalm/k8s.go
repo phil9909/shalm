@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io"
+	"io/ioutil"
 	"os"
 	"os/exec"
 	"strings"
@@ -109,9 +110,17 @@ func (k *k8sImpl) IsNotExist(err error) bool {
 	return strings.Contains(err.Error(), "NotFound")
 }
 
-// IsNotExist -
+// KubeConfigContent -
 func (k *k8sImpl) KubeConfigContent() *string {
-	return k.kubeconfig
+	if k.kubeconfig == nil {
+		return nil
+	}
+	data, err := ioutil.ReadFile(*k.kubeconfig)
+	if err != nil {
+		return nil
+	}
+	content := string(data)
+	return &content
 }
 
 func run(cmd *exec.Cmd) error {
