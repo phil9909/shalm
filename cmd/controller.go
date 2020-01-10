@@ -47,7 +47,7 @@ func controller() error {
 		Scheme: mgr.GetScheme(),
 		Log:    reconcilerLog,
 		Repo:   shalm.NewRepo(),
-		K8s:    func(kubeconfig string) shalm.K8s { return shalm.NewK8s() },
+		K8s:    shalm.NewK8sFromContent,
 	}
 	err = reconciler.SetupWithManager(mgr)
 	if err != nil {

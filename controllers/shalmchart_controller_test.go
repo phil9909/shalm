@@ -86,8 +86,8 @@ var _ = Describe("ShalmChartReconciler", func() {
 			Log:    ctrl.Log.WithName("reconciler"),
 			Scheme: nil,
 			Repo:   shalm.NewRepo(),
-			K8s: func(kubeconfig string) shalm.K8s {
-				return k8s
+			K8s: func(kubeconfig string) (shalm.K8s, error) {
+				return k8s, nil
 			},
 		}
 		_, err := reconciler.Reconcile(ctrl.Request{})
@@ -146,8 +146,8 @@ var _ = Describe("ShalmChartReconciler", func() {
 			Log:    ctrl.Log.WithName("reconciler"),
 			Scheme: nil,
 			Repo:   shalm.NewRepo(),
-			K8s: func(kubeconfig string) shalm.K8s {
-				return k8s
+			K8s: func(kubeconfig string) (shalm.K8s, error) {
+				return k8s, nil
 			},
 		}
 		_, err := reconciler.Reconcile(ctrl.Request{})

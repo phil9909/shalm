@@ -10,17 +10,6 @@ import (
 
 var _ = Describe("kube config", func() {
 
-	It("read it from env", func() {
-		kubeconfig := kubeConfigFromEnv()
-		Expect(kubeconfig).NotTo(BeEmpty())
-	})
-
-	It("read it from env", func() {
-		os.Unsetenv("KUBECONFIG")
-		kubeconfig := kubeConfigFromEnv()
-		Expect(kubeconfig).NotTo(BeEmpty())
-	})
-
 	It("read it from plain value", func() {
 		os.Unsetenv("KUBECONFIG")
 		kubeconfig, err := kubeConfigFromContent("Hello world")

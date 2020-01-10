@@ -8,19 +8,6 @@ import (
 	"path"
 )
 
-func kubeConfigFromEnv() string {
-	kubeconfig, ok := os.LookupEnv("KUBECONFIG")
-	if ok {
-		return kubeconfig
-	}
-	home, err := os.UserHomeDir()
-	if err != nil {
-		panic(err)
-	}
-	kubeconfig = path.Join(home, ".kube", "config")
-	return kubeconfig
-}
-
 func kubeConfigFromContent(content string) (string, error) {
 	c := []byte(content)
 	md5Sum := md5.Sum(c)

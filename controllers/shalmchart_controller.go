@@ -39,7 +39,7 @@ type ShalmChartReconciler struct {
 	Log    logr.Logger
 	Scheme *runtime.Scheme
 	Repo   shalm.Repo
-	K8s    func(kubeconfig string) shalm.K8s
+	K8s    func(kubeconfig string) (shalm.K8s, error)
 }
 
 type shalmChartPredicate struct {
@@ -102,7 +102,11 @@ func (r *ShalmChartReconciler) apply(spec *shalmv1a1.ChartSpec) error {
 	if err != nil {
 		return err
 	}
-	return chart.Apply(thread, r.K8s(spec.KubeConfig))
+	k8s, err := r.K8s(spec.KubeConfig)
+	if err != nil {
+		return err
+	}
+	return chart.Apply(thread, k8s)
 }
 
 func (r *ShalmChartReconciler) delete(spec *shalmv1a1.ChartSpec) error {
@@ -111,7 +115,11 @@ func (r *ShalmChartReconciler) delete(spec *shalmv1a1.ChartSpec) error {
 	if err != nil {
 		return err
 	}
-	return chart.Delete(thread, r.K8s(spec.KubeConfig))
+	k8s, err := r.K8s(spec.KubeConfig)
+	if err != nil {
+		return err
+	}
+	return chart.Delete(thread, k8s)
 }
 
 // SetupWithManager -

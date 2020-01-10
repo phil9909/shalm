@@ -57,6 +57,7 @@ type K8s interface {
 	Delete(output func(io.Writer) error, options *K8sOptions) error
 	Get(kind string, name string, writer io.Writer, options *K8sOptions) error
 	IsNotExist(err error) bool
+	KubeConfigContent() *string
 }
 
 // K8sValue -

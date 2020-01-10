@@ -92,6 +92,16 @@ type FakeK8s struct {
 	isNotExistReturnsOnCall map[int]struct {
 		result1 bool
 	}
+	KubeConfigContentStub        func() *string
+	kubeConfigContentMutex       sync.RWMutex
+	kubeConfigContentArgsForCall []struct {
+	}
+	kubeConfigContentReturns struct {
+		result1 *string
+	}
+	kubeConfigContentReturnsOnCall map[int]struct {
+		result1 *string
+	}
 	RolloutStatusStub        func(string, string, *shalm.K8sOptions) error
 	rolloutStatusMutex       sync.RWMutex
 	rolloutStatusArgsForCall []struct {
@@ -557,6 +567,58 @@ func (fake *FakeK8s) IsNotExistReturnsOnCall(i int, result1 bool) {
 	}{result1}
 }
 
+func (fake *FakeK8s) KubeConfigContent() *string {
+	fake.kubeConfigContentMutex.Lock()
+	ret, specificReturn := fake.kubeConfigContentReturnsOnCall[len(fake.kubeConfigContentArgsForCall)]
+	fake.kubeConfigContentArgsForCall = append(fake.kubeConfigContentArgsForCall, struct {
+	}{})
+	fake.recordInvocation("KubeConfigContent", []interface{}{})
+	fake.kubeConfigContentMutex.Unlock()
+	if fake.KubeConfigContentStub != nil {
+		return fake.KubeConfigContentStub()
+	}
+	if specificReturn {
+		return ret.result1
+	}
+	fakeReturns := fake.kubeConfigContentReturns
+	return fakeReturns.result1
+}
+
+func (fake *FakeK8s) KubeConfigContentCallCount() int {
+	fake.kubeConfigContentMutex.RLock()
+	defer fake.kubeConfigContentMutex.RUnlock()
+	return len(fake.kubeConfigContentArgsForCall)
+}
+
+func (fake *FakeK8s) KubeConfigContentCalls(stub func() *string) {
+	fake.kubeConfigContentMutex.Lock()
+	defer fake.kubeConfigContentMutex.Unlock()
+	fake.KubeConfigContentStub = stub
+}
+
+func (fake *FakeK8s) KubeConfigContentReturns(result1 *string) {
+	fake.kubeConfigContentMutex.Lock()
+	defer fake.kubeConfigContentMutex.Unlock()
+	fake.KubeConfigContentStub = nil
+	fake.kubeConfigContentReturns = struct {
+		result1 *string
+	}{result1}
+}
+
+func (fake *FakeK8s) KubeConfigContentReturnsOnCall(i int, result1 *string) {
+	fake.kubeConfigContentMutex.Lock()
+	defer fake.kubeConfigContentMutex.Unlock()
+	fake.KubeConfigContentStub = nil
+	if fake.kubeConfigContentReturnsOnCall == nil {
+		fake.kubeConfigContentReturnsOnCall = make(map[int]struct {
+			result1 *string
+		})
+	}
+	fake.kubeConfigContentReturnsOnCall[i] = struct {
+		result1 *string
+	}{result1}
+}
+
 func (fake *FakeK8s) RolloutStatus(arg1 string, arg2 string, arg3 *shalm.K8sOptions) error {
 	fake.rolloutStatusMutex.Lock()
 	ret, specificReturn := fake.rolloutStatusReturnsOnCall[len(fake.rolloutStatusArgsForCall)]
@@ -764,6 +826,8 @@ func (fake *FakeK8s) Invocations() map[string][][]interface{} {
 	defer fake.inspectMutex.RUnlock()
 	fake.isNotExistMutex.RLock()
 	defer fake.isNotExistMutex.RUnlock()
+	fake.kubeConfigContentMutex.RLock()
+	defer fake.kubeConfigContentMutex.RUnlock()
 	fake.rolloutStatusMutex.RLock()
 	defer fake.rolloutStatusMutex.RUnlock()
 	fake.waitMutex.RLock()

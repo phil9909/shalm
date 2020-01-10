@@ -1,10 +1,14 @@
 # Build the manager binary
-FROM golang:1.13-alpine as builder
+FROM alpine as kubectl-builder
 
 WORKDIR /workspace
 
 ADD https://storage.googleapis.com/kubernetes-release/release/v1.17.0/bin/linux/amd64/kubectl /workspace/kubectl
 RUN chmod +x /workspace/kubectl
+
+FROM golang:1.13-alpine as shalm-builder
+
+WORKDIR /workspace
 
 # Copy the Go Modules manifests
 COPY go.mod go.mod
@@ -30,7 +34,7 @@ FROM alpine
 
 WORKDIR /app
 ENV HOME=/app
-COPY --from=builder /workspace/shalm .
-COPY --from=builder /workspace/kubectl /usr/bin/kubectl
+COPY --from=kubectl-builder /workspace/kubectl /usr/bin/kubectl
+COPY --from=shalm-builder /workspace/shalm .
 
 ENTRYPOINT ["/app/shalm","controller"]

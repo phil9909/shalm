@@ -6,7 +6,6 @@ import (
 	"io"
 	"os"
 	"os/exec"
-	"path"
 	"strings"
 	"time"
 
@@ -15,19 +14,19 @@ import (
 
 // NewK8s create new instance to interact with kubernetes
 func NewK8s() K8s {
-	kubeconfig, ok := os.LookupEnv("KUBECONFIG")
-	if !ok {
-		_, ok = os.LookupEnv("KUBERNETES_SERVICE_HOST")
-		if ok {
-			return &k8sImpl{}
-		}
-		home, err := os.UserHomeDir()
-		if err != nil {
-			panic(err)
-		}
-		kubeconfig = path.Join(home, ".kube", "config")
+	return &k8sImpl{}
+}
+
+// NewK8sFromContent create new instance to interact with kubernetes
+func NewK8sFromContent(kubeConfig string) (K8s, error) {
+	if kubeConfig == "" {
+		return NewK8s(), nil
 	}
-	return &k8sImpl{kubeconfig: &kubeconfig}
+	kubeconfig, err := kubeConfigFromContent(kubeConfig)
+	if err != nil {
+		return nil, err
+	}
+	return &k8sImpl{kubeconfig: &kubeconfig}, nil
 }
 
 // k8sImpl -
@@ -108,6 +107,11 @@ func (k *k8sImpl) Watch(kind string, name string, options *K8sOptions) (io.ReadC
 // IsNotExist -
 func (k *k8sImpl) IsNotExist(err error) bool {
 	return strings.Contains(err.Error(), "NotFound")
+}
+
+// IsNotExist -
+func (k *k8sImpl) KubeConfigContent() *string {
+	return k.kubeconfig
 }
 
 func run(cmd *exec.Cmd) error {

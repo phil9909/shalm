@@ -62,12 +62,15 @@ func (c *chartProxy) applyFunction() starlark.Callable {
 			},
 		}
 		shalmSpec := shalmv1a1.ChartSpec{
-			Values:     shalmv1a1.ClonableMap(stringDictToGo(c.chartImpl.values)),
-			Args:       shalmv1a1.ClonableArray(c.args),
-			KwArgs:     shalmv1a1.ClonableMap(c.kwargs),
-			KubeConfig: "",
-			Namespace:  c.namespace,
-			Suffix:     c.suffix,
+			Values:    shalmv1a1.ClonableMap(stringDictToGo(c.chartImpl.values)),
+			Args:      shalmv1a1.ClonableArray(c.args),
+			KwArgs:    shalmv1a1.ClonableMap(c.kwargs),
+			Namespace: c.namespace,
+			Suffix:    c.suffix,
+		}
+		kubeConfig := k.KubeConfigContent()
+		if kubeConfig != nil {
+			shalmSpec.KubeConfig = *kubeConfig
 		}
 		buffer := &bytes.Buffer{}
 		if err := c.chartImpl.Package(buffer); err != nil {

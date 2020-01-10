@@ -41,6 +41,10 @@ var _ = Describe("Chart Proxy", func() {
 				ApplyStub: func(cb func(io.Writer) error, options *K8sOptions) error {
 					return cb(buffer)
 				},
+				KubeConfigContentStub: func() *string {
+					result := "hello"
+					return &result
+				},
 			}
 			k.ForNamespaceStub = func(s string) K8s {
 				return k
@@ -49,7 +53,7 @@ var _ = Describe("Chart Proxy", func() {
 			Expect(err).NotTo(HaveOccurred())
 			Expect(k.ApplyCallCount()).To(Equal(1))
 			Expect(buffer.String()).To(ContainSubstring(`{"kind":"Namespace","apiVersion":"v1","metadata":{"name":"default","creationTimestamp":null},"spec":{},"status":{}}`))
-			Expect(buffer.String()).To(ContainSubstring(`"spec":{"values":{"replicas":"1","timeout":"30s"},"args":["hello"],"kwargs":{"key":"value"},"namespace":"default","chart_tgz":"H4sI`))
+			Expect(buffer.String()).To(ContainSubstring(`"spec":{"values":{"replicas":"1","timeout":"30s"},"args":["hello"],"kwargs":{"key":"value"},"kubeconfig":"hello","namespace":"default","chart_tgz":"H4sI`))
 			Expect(buffer.String()).To(ContainSubstring(`"name":"mariadb","namespace":"default"`))
 		})
 		It("deletes a ShalmChart from k8s", func() {
