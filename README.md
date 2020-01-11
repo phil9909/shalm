@@ -169,7 +169,13 @@ or from inside another shalm chart
 ```python
 def init(self):
   self.mariadb = chart("mariadb",proxy=true)
-````
+```
+
+### Limitations
+
+The `proxy` mode is not working correctly in combination with multiple clusters. When you create a new `K8s` object to install stuff into a second cluster and turn `proxy` mode on, the custom resource `shalmchart` will be installed also in the second cluster. But normally there will be no shalm controller running in the second cluster.
+
+In the future, there will be three proxy modes `off`, `local` and `remote`. `local` will install the custom resource in the local cluster and the operator will do the actual installation into the second cluster. `remote` will apply the custom resource into the second cluster and the actual installation will run locally inside the second cluster.
 
 ## Comparison
 
